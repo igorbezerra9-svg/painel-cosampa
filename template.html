@@ -888,9 +888,9 @@
     var innerW = useW - padL - padR, innerH = H - padT - padB;
     var n = items.length, rawMax = 0, maxPct = 1;
     items.forEach(function (d) { rawMax = Math.max(rawMax, d.valor, d.meta); maxPct = Math.max(maxPct, div(d.valor, d.meta) || 0); });
-    var scale = niceScale(rawMax * 1.06, 6);
-    var pctCeil = Math.max(1, Math.ceil(maxPct * 1.15 * 10) / 10);
-    var groupW = innerW / n, barW = Math.min(46, groupW * 0.3), gap = 5;
+    var scale = niceScale(rawMax * 1.6, 6);
+    var pctCeil = Math.max(1, Math.ceil(maxPct * 1.06 * 10) / 10);
+    var groupW = innerW / n, barW = Math.min(38, groupW * 0.24), gap = 32;
     svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
     svg.style.width = wide ? useW + "px" : "100%";
     svg.innerHTML = "";
@@ -908,7 +908,7 @@
         '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(d.meta) + "</b></div>" +
         '<div class="tt-row"><span>% meta</span><b>' + fmtPct(div(d.valor, d.meta)) + "</b></div>");
     }
-    var pts = [];
+    var pts = [], pillTops = [];
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
       var metaH = (d.meta / scale.max) * innerH, metaY = padT + innerH - metaH;
@@ -920,8 +920,9 @@
         node.addEventListener("mouseleave", hideTip);
       });
       svg.appendChild(metaBar); svg.appendChild(realBar);
-      drawPill(svg, cx - barW / 2 - gap / 2, metaH > 26 ? metaY + 15 : metaY - 11, fmtFullBRL(d.meta));
-      drawPill(svg, cx + barW / 2 + gap / 2, realH > 26 ? realY + 15 : realY - 11, fmtFullBRL(d.valor));
+      var metaPillText = drawPill(svg, cx - barW / 2 - gap / 2, metaY - 11, fmtCompactBRL(d.meta));
+      var realPillText = drawPill(svg, cx + barW / 2 + gap / 2, realY - 11, fmtCompactBRL(d.valor));
+      pillTops.push(Math.min(metaPillText.previousSibling.getBBox().y, realPillText.previousSibling.getBBox().y));
 
       var pct = div(d.valor, d.meta);
       var ly = padT + innerH - ((pct || 0) / pctCeil) * innerH;
@@ -933,12 +934,13 @@
     });
     var pathD = pts.map(function (p, i) { return (i === 0 ? "M" : "L") + p[0] + " " + p[1]; }).join(" ");
     svg.appendChild(el("path", { d: pathD, class: "line-series" }));
-    pts.forEach(function (p) {
+    pts.forEach(function (p, i) {
       var dot = el("circle", { cx: p[0], cy: p[1], r: 4.5, class: "line-series-dot" });
       dot.addEventListener("mousemove", function (evt) { tip(evt, p[2]); });
       dot.addEventListener("mouseleave", hideTip);
       svg.appendChild(dot);
-      drawPill(svg, p[0], p[1] - 13, fmtPct(p[3]));
+      var labelY = Math.max(20, Math.min(p[1] - 13, pillTops[i] - 26));
+      drawPill(svg, p[0], labelY, fmtPct(p[3]));
     });
   }
 
