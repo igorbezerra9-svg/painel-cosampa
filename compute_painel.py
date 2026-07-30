@@ -1,5 +1,5 @@
-"""Reads Faturamento.xlsx and regenerates painel.html from template.html.
-Dumps row-level (columnar, dictionary-encoded) EC data so the page can filter and
+"""Reads the published Google Sheets CSVs and regenerates index.html from template.html.
+Dumps row-level (columnar, dictionary-encoded) data so the page can filter and
 recompute client-side, like Power BI slicers.
 Run standalone: python compute_painel.py
 """
@@ -11,9 +11,13 @@ from datetime import datetime
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(os.path.dirname(HERE), "Faturamento.xlsx")
 TEMPLATE = os.path.join(HERE, "template.html")
 OUTPUT = os.path.join(HERE, "index.html")
+
+# published "File > Share > Publish to web" CSV links, one per sheet tab
+_PUB_ID = "2PACX-1vQBw3K_VdQ7nlyT69EG_DTTKlBj4V_6RYGNPMIRmCA2pRVu9GbWGu8GPYbxT6cieuS1SvLu1hm5O7L7"
+OBRAS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/%s/pub?gid=2013581159&single=true&output=csv" % _PUB_ID
+EC_CSV_URL = "https://docs.google.com/spreadsheets/d/e/%s/pub?gid=520154810&single=true&output=csv" % _PUB_ID
 
 CENTRO_COL = "Centro de Serviço"
 
@@ -35,17 +39,41 @@ class Dict:
 
 
 def to_num(series):
-    return pd.to_numeric(series, errors="coerce").fillna(0)
+    """Handles both plain '2.00' style numbers and Google Sheets' localized
+    '98.757,75' (dot thousands, comma decimal) export for the same columns."""
+    def parse(v):
+        if pd.isna(v):
+            return 0.0
+        s = str(v).strip()
+        if s == "" or s == "-":
+            return 0.0
+        if "," in s:
+            s = s.replace(".", "").replace(",", ".")
+        try:
+            return float(s)
+        except ValueError:
+            return 0.0
+    return series.apply(parse)
+
+
+def col_ci(df, name):
+    """Case-insensitive column lookup — Google Sheets export changed the
+    capitalization of a couple of headers (e.g. produtividade -> Produtividade)."""
+    for c in df.columns:
+        if c.strip().lower() == name.lower():
+            return df[c]
+    return pd.Series([None] * len(df))
 
 
 def transform_ec(df, sup, centro, proc, equipe):
-    df = df.dropna(subset=["data"]).copy()
-    df["data"] = pd.to_datetime(df["data"])
+    df = df.copy()
+    df["data"] = pd.to_datetime(df["data"], dayfirst=True, errors="coerce")
+    df = df.dropna(subset=["data"])
     df["valor_total"] = to_num(df["valor_total"])
     df["meta_valor"] = to_num(df["meta_valor"])
     df["qtd_serv"] = to_num(df["qtd_serv"])
     df["meta_qtd"] = to_num(df["meta_qtd"])
-    df["produtividade"] = to_num(df.get("produtividade"))
+    df["produtividade"] = to_num(col_ci(df, "produtividade"))
     # the model also carries a duplicate "Sul" copy of every row (a virtual
     # "combined" member) — we never materialize that here at all. Rows with a
     # blank Centro de Serviço are kept (they show up in unfiltered totals, same
@@ -66,8 +94,9 @@ def transform_ec(df, sup, centro, proc, equipe):
 
 
 def transform_obras(df, sup, centro, proc, equipe):
-    df = df.dropna(subset=["dia_interv"]).copy()
-    df["dia_interv"] = pd.to_datetime(df["dia_interv"])
+    df = df.copy()
+    df["dia_interv"] = pd.to_datetime(df["dia_interv"], dayfirst=True, errors="coerce")
+    df = df.dropna(subset=["dia_interv"])
     df["valor_total"] = to_num(df["valor_total"])
     df["meta_valor"] = to_num(df["meta_valor"])
     df["qtd_serv"] = to_num(df["qtd_serv"])
@@ -97,9 +126,8 @@ def transform_obras(df, sup, centro, proc, equipe):
 
 
 def main():
-    xl = pd.ExcelFile(SRC)
-    ec_raw = pd.read_excel(xl, sheet_name="Emergencial_Comercial")
-    ob_raw = pd.read_excel(xl, sheet_name="Obras")
+    ec_raw = pd.read_csv(EC_CSV_URL)
+    ob_raw = pd.read_csv(OBRAS_CSV_URL)
 
     sup, centro, proc, equipe = Dict(), Dict(), Dict(), Dict()
     ec = transform_ec(ec_raw, sup, centro, proc, equipe)
@@ -107,9 +135,10 @@ def main():
     obSup, obCentro, obProc, obEquipe = Dict(), Dict(), Dict(), Dict()
     ob = transform_obras(ob_raw, obSup, obCentro, obProc, obEquipe)
 
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
     data = {
-        "generated": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "sourceModified": datetime.fromtimestamp(os.path.getmtime(SRC)).strftime("%d/%m/%Y %H:%M"),
+        "generated": now,
+        "sourceModified": now,
         "dicts": {"supervisor": sup.values, "centro": centro.values, "processo": proc.values, "equipe": equipe.values},
         "ec": ec,
         "obDicts": {"supervisor": obSup.values, "centro": obCentro.values, "processo": obProc.values, "equipe": obEquipe.values},
