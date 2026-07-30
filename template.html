@@ -128,7 +128,7 @@
   .kpi.kpi-status.cell-warn { border-left-color: var(--status-warn); }
   .kpi.kpi-status.cell-crit { border-left-color: var(--status-crit); }
   .kpi-label { font-size: 10.5px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 9px; }
-  .kpi-value { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 0 0 7px; letter-spacing: -0.015em; }
+  .kpi-value { font-size: clamp(18px, 2.1vw, 25px); font-weight: 800; font-variant-numeric: tabular-nums; margin: 0 0 7px; letter-spacing: -0.015em; line-height: 1.15; }
   .kpi-delta { font-size: 11.5px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
   .kpi-delta.up { color: var(--status-good); }
   .kpi-delta.down { color: var(--status-crit); }
@@ -660,11 +660,11 @@
     var qtdDelta = prev && prev.qtd ? div(cur.qtd - prev.qtd, prev.qtd) : null;
     var prodDelta = prev && prev.produtividade ? div(cur.produtividade - prev.produtividade, prev.produtividade) : null;
     var metaSub = cur.pctMeta == null ? "" : (cur.pctMeta >= 1
-      ? '<span class="good">' + fmtCompactBRL(cur.valor - cur.meta) + " acima da meta</span>"
-      : '<span class="crit">' + fmtCompactBRL(cur.valor - cur.meta) + " abaixo da meta</span>");
+      ? '<span class="good">' + fmtFullBRL(cur.valor - cur.meta) + " acima da meta</span>"
+      : '<span class="crit">' + fmtFullBRL(cur.valor - cur.meta) + " abaixo da meta</span>");
     document.getElementById(elId).innerHTML = [
-      kpi("Meta", fmtCompactBRL(cur.meta), null, cur.pctMeta == null ? "" : "% atingimento da meta " + fmtPct(cur.pctMeta)),
-      kpi("Valor Realizado", fmtCompactBRL(cur.valor), valorDelta, metaSub, pctClass(cur.pctMeta)),
+      kpi("Meta", fmtFullBRL(cur.meta), null, cur.pctMeta == null ? "" : "% atingimento da meta " + fmtPct(cur.pctMeta)),
+      kpi("Valor Realizado", fmtFullBRL(cur.valor), valorDelta, metaSub, pctClass(cur.pctMeta)),
       kpi("Qtd. Serviços", fmtInt.format(Math.round(cur.qtd)) + " serviços", qtdDelta),
       kpi("Produtividade", fmtNum(cur.produtividade, 2), prodDelta)
     ].join("");
