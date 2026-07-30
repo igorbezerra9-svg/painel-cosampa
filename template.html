@@ -151,6 +151,11 @@
   .copy-btn svg { width: 15px; height: 15px; pointer-events: none; }
   .kpi .copy-btn { top: 12px; right: 12px; width: 25px; height: 25px; }
   .kpi .copy-btn svg { width: 13px; height: 13px; }
+
+  .seg-toggle { position: absolute; top: 14px; right: 14px; display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 2px; gap: 2px; }
+  .seg-btn { font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
+  .seg-btn:hover { color: var(--text-primary); }
+  .seg-btn.active { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
   .chart-scroll { overflow-x: auto; }
   svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
   .bar { transition: opacity .12s; cursor: pointer; }
@@ -273,9 +278,13 @@
       <section class="page active" id="page-geral">
         <div class="kpi-grid" id="kpis"></div>
         <div class="panel" style="margin-bottom:16px">
-          <p class="panel-title">Realizado vs. Meta por Mês</p>
+          <div class="seg-toggle" data-chart-toggle="ec">
+            <button type="button" class="seg-btn active" data-mode="month">Mensal</button>
+            <button type="button" class="seg-btn" data-mode="week">Semanal</button>
+          </div>
+          <p class="panel-title" id="chartMesTitle-ec">Realizado vs. Meta por Mês</p>
           <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta atingido</p>
-          <svg class="chart" id="chartMes" viewBox="0 0 980 260"></svg>
+          <div class="chart-scroll"><svg class="chart" id="chartMes" viewBox="0 0 980 260"></svg></div>
         </div>
         <div class="grid-2">
           <div class="panel">
@@ -383,9 +392,13 @@
       <section class="page" id="page-geralOb">
         <div class="kpi-grid" id="kpisOb"></div>
         <div class="panel" style="margin-bottom:16px">
-          <p class="panel-title">Realizado vs. Meta por Mês — Obras</p>
+          <div class="seg-toggle" data-chart-toggle="ob">
+            <button type="button" class="seg-btn active" data-mode="month">Mensal</button>
+            <button type="button" class="seg-btn" data-mode="week">Semanal</button>
+          </div>
+          <p class="panel-title" id="chartMesTitle-ob">Realizado vs. Meta por Mês — Obras</p>
           <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta atingido</p>
-          <svg class="chart" id="chartMesOb" viewBox="0 0 980 260"></svg>
+          <div class="chart-scroll"><svg class="chart" id="chartMesOb" viewBox="0 0 980 260"></svg></div>
         </div>
         <div class="grid-2">
           <div class="panel">
@@ -465,6 +478,23 @@
   var PROC_TAB_PAGES = { procSup: true };
   var EQUIPE_PAGES = { analiseEquipes: true };
   var procTabSelection = null;
+  var chartMode = { ec: "month", ob: "month" };
+  var CHART_TITLES = {
+    ec: { month: "Realizado vs. Meta por Mês", week: "Realizado vs. Meta por Semana" },
+    ob: { month: "Realizado vs. Meta por Mês — Obras", week: "Realizado vs. Meta por Semana — Obras" }
+  };
+  document.querySelectorAll(".seg-toggle").forEach(function (toggle) {
+    var g = toggle.dataset.chartToggle;
+    toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        toggle.querySelectorAll(".seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        chartMode[g] = btn.dataset.mode;
+        document.getElementById("chartMesTitle-" + g).textContent = CHART_TITLES[g][chartMode[g]];
+        renderAll();
+      });
+    });
+  });
 
   var root = document.getElementById("root");
   function cv(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
@@ -788,16 +818,20 @@
     var svg = document.getElementById(svgId);
     var H = 260, padL = 8, padR = 8, padT = 26, padB = 26;
     if (!items.length) return emptyChart(svg, W, H);
-    var innerW = W - padL - padR, innerH = H - padT - padB;
+    var needed = items.length * 46;
+    var wide = needed > W;
+    var useW = wide ? needed : W;
+    var innerW = useW - padL - padR, innerH = H - padT - padB;
     var n = items.length, maxVal = 0;
     items.forEach(function (d) { maxVal = Math.max(maxVal, d.valor, d.meta); });
     maxVal = maxVal * 1.08 || 1;
     var groupW = innerW / n, backW = Math.min(46, groupW * 0.6), frontW = backW * 0.52;
-    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
+    svg.style.width = wide ? useW + "px" : "100%";
     svg.innerHTML = "";
     for (var g = 0; g <= 4; g++) {
       var gy = padT + innerH - (innerH * g / 4);
-      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
+      svg.appendChild(el("line", { x1: padL, x2: useW - padR, y1: gy, y2: gy, class: "gridline" }));
     }
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
@@ -808,8 +842,8 @@
       [back, front].forEach(function (node) {
         node.addEventListener("mousemove", function (evt) {
           showTip(evt, "<div><b>" + d.label + "</b></div>" +
-            '<div class="tt-row"><span>Realizado</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
-            '<div class="tt-row"><span>Meta</span><b>' + fmtCompactBRL(d.meta) + "</b></div>" +
+            '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
+            '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(d.meta) + "</b></div>" +
             '<div class="tt-row"><span>% meta</span><b>' + fmtPct(div(d.valor, d.meta)) + "</b></div>");
         });
         node.addEventListener("mouseleave", hideTip);
@@ -846,7 +880,7 @@
       var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
         showTip(evt, "<div><b>" + d.label + "</b></div>" +
-          '<div class="tt-row"><span>Valor</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
+          '<div class="tt-row"><span>Valor</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
           '<div class="tt-row"><span>Produtividade</span><b>' + fmtNum(d.produtividade, 2) + "</b></div>");
       });
       rect.addEventListener("mouseleave", hideTip);
@@ -948,8 +982,8 @@
       var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
         showTip(evt, "<div><b>" + d.label + "</b></div>" +
-          '<div class="tt-row"><span>Realizado</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
-          '<div class="tt-row"><span>Meta</span><b>' + fmtCompactBRL(d.meta) + "</b></div>" +
+          '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
+          '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(d.meta) + "</b></div>" +
           '<div class="tt-row"><span>% meta</span><b>' + fmtPct(d.pct) + "</b></div>");
       });
       rect.addEventListener("mouseleave", hideTip);
@@ -984,6 +1018,22 @@
       var mi = parseInt(mk.slice(5, 7), 10) - 1;
       return { label: MONTH_FULL[mi], valor: map[mk].valor, meta: map[mk].meta };
     });
+  }
+  function weekStart(dateStr) {
+    var d = new Date(dateStr + "T00:00:00");
+    var dow = (d.getDay() + 6) % 7; // 0=Mon..6=Sun
+    d.setDate(d.getDate() - dow);
+    var yyyy = d.getFullYear(), mm = String(d.getMonth() + 1).padStart(2, "0"), dd = String(d.getDate()).padStart(2, "0");
+    return { key: yyyy + "-" + mm + "-" + dd, label: dd + "/" + mm };
+  }
+  function weeklyBreakdown(group, idxs) {
+    var rows = GROUPS[group].rows, map = {};
+    idxs.forEach(function (i) {
+      var w = weekStart(rows.date[i]);
+      if (!map[w.key]) map[w.key] = { valor: 0, meta: 0, label: w.label };
+      map[w.key].valor += rows.valor[i]; map[w.key].meta += rows.meta[i];
+    });
+    return Object.keys(map).sort().map(function (k) { return { label: map[k].label, valor: map[k].valor, meta: map[k].meta }; });
   }
   function dimBreakdown(group, idxs, dimArrKey, dictKey) {
     var rows = GROUPS[group].rows, map = {};
@@ -1271,7 +1321,7 @@
 
     if (activePage === "geral") {
       renderKpisInto("kpis", "ec");
-      drawBulletChart("chartMes", monthlyBreakdown("ec", idxs), seriesColor("ec"), 980);
+      drawBulletChart("chartMes", chartMode.ec === "week" ? weeklyBreakdown("ec", idxs) : monthlyBreakdown("ec", idxs), seriesColor("ec"), 980);
       drawProcChart("chartProc", dimBreakdown("ec", idxs, "proc", "processo"), seriesColor("ec"));
       drawBulletChart("chartCentro", dimBreakdown("ec", idxs, "centro", "centro"), seriesColor("ec"), 480);
     } else if (activePage === "fat") {
@@ -1291,7 +1341,7 @@
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "geralOb") {
       renderKpisInto("kpisOb", "ob");
-      drawBulletChart("chartMesOb", monthlyBreakdown("ob", idxs), seriesColor("ob"), 980);
+      drawBulletChart("chartMesOb", chartMode.ob === "week" ? weeklyBreakdown("ob", idxs) : monthlyBreakdown("ob", idxs), seriesColor("ob"), 980);
       drawProcChart("chartProcOb", dimBreakdown("ob", idxs, "proc", "processo"), seriesColor("ob"));
       drawBulletChart("chartCentroOb", dimBreakdown("ob", idxs, "centro", "centro"), seriesColor("ob"), 480);
     } else if (activePage === "escaladoOb") {
