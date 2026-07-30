@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install pandas
+      - run: pip install pandas tzdata
 
       - run: python compute_painel.py
 

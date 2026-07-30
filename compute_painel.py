@@ -7,8 +7,11 @@ import json
 import os
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
+
+BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "template.html")
@@ -135,7 +138,7 @@ def main():
     obSup, obCentro, obProc, obEquipe = Dict(), Dict(), Dict(), Dict()
     ob = transform_obras(ob_raw, obSup, obCentro, obProc, obEquipe)
 
-    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    now = datetime.now(BRASILIA).strftime("%d/%m/%Y %H:%M")
     data = {
         "generated": now,
         "sourceModified": now,
