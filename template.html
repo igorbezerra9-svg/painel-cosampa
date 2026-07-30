@@ -17,8 +17,11 @@
     --accent-soft:    #fbead0;
     --series-ob:      #2a78d6;
     --series-ob-soft: #dce9fa;
+    --series-ob-strong: #184f95;
     --series-ec:      #eb6834;
     --series-ec-soft: #fbe2d5;
+    --series-ec-strong: #a8471c;
+    --pill-bg:        rgba(15,13,8,.82);
     --status-good:    #0ca30c;
     --status-warn:    #b8790f;
     --status-crit:    #d03b3b;
@@ -33,7 +36,7 @@
       --text-muted: #8f8570; --grid: #322b1b; --baseline: #4a4028; --border: rgba(247,242,230,0.11);
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -14px rgba(0,0,0,.55);
       --accent: #eda100; --accent-ink: #2b1d00; --accent-soft: #3a2a08;
-      --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ec: #d95926; --series-ec-soft: #3a2013;
+      --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ob-strong: #6ba6ec; --series-ec: #d95926; --series-ec-soft: #3a2013; --series-ec-strong: #e88a5c; --pill-bg: rgba(10,9,6,.85);
       --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
       --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
     }
@@ -170,6 +173,13 @@
   .line-series { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
   .line-series-dot { fill: var(--accent); stroke: var(--surface-1); stroke-width: 2.5; cursor: pointer; }
   .bar-inline-label { fill: #fff; font-size: 11.5px; font-weight: 800; font-family: inherit; pointer-events: none; }
+  .pill-label-text { fill: #fff; font-size: 10.5px; font-weight: 800; font-family: inherit; pointer-events: none; }
+
+  .chart-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .chart-legend .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+  .chart-legend .legend-swatch { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+  .chart-legend .legend-line { width: 16px; height: 0; border-top: 3px solid var(--accent); border-radius: 2px; flex: none; position: relative; }
+  .chart-legend .legend-line::after { content: ""; position: absolute; top: -3px; left: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
   .empty-note { fill: var(--text-muted); font-size: 12px; font-family: inherit; }
 
   .tooltip {
@@ -286,8 +296,13 @@
             <button type="button" class="seg-btn" data-mode="week">Semanal</button>
           </div>
           <p class="panel-title" id="chartMesTitle-ec">Realizado vs. Meta por Mês</p>
-          <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta atingido</p>
+          <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
           <div class="chart-scroll"><svg class="chart" id="chartMes" viewBox="0 0 980 260"></svg></div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec-strong)"></span>Meta</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec)"></span>Realizado</span>
+            <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
+          </div>
         </div>
         <div class="grid-2">
           <div class="panel">
@@ -297,8 +312,13 @@
           </div>
           <div class="panel">
             <p class="panel-title">Realizado vs. Meta por Centro de Serviço</p>
-            <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta</p>
-            <svg class="chart" id="chartCentro" viewBox="0 0 480 260"></svg>
+            <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
+            <div class="chart-scroll"><svg class="chart" id="chartCentro" viewBox="0 0 480 260"></svg></div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec-strong)"></span>Meta</span>
+              <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec)"></span>Realizado</span>
+              <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
+            </div>
           </div>
         </div>
       </section>
@@ -400,8 +420,13 @@
             <button type="button" class="seg-btn" data-mode="week">Semanal</button>
           </div>
           <p class="panel-title" id="chartMesTitle-ob">Realizado vs. Meta por Mês — Obras</p>
-          <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta atingido</p>
+          <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
           <div class="chart-scroll"><svg class="chart" id="chartMesOb" viewBox="0 0 980 260"></svg></div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob-strong)"></span>Meta</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob)"></span>Realizado</span>
+            <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
+          </div>
         </div>
         <div class="grid-2">
           <div class="panel">
@@ -411,8 +436,13 @@
           </div>
           <div class="panel">
             <p class="panel-title">Realizado vs. Meta por Centro de Serviço</p>
-            <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta</p>
-            <svg class="chart" id="chartCentroOb" viewBox="0 0 480 260"></svg>
+            <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
+            <div class="chart-scroll"><svg class="chart" id="chartCentroOb" viewBox="0 0 480 260"></svg></div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob-strong)"></span>Meta</span>
+              <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob)"></span>Realizado</span>
+              <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
+            </div>
           </div>
         </div>
       </section>
@@ -502,6 +532,7 @@
   var root = document.getElementById("root");
   function cv(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
   function seriesColor(group) { return cv(group === "ob" ? "--series-ob" : "--series-ec"); }
+  function seriesColorStrong(group) { return cv(group === "ob" ? "--series-ob-strong" : "--series-ec-strong"); }
   document.getElementById("genDate").textContent = DATA.generated;
 
   // ---------- formatting ----------
@@ -817,47 +848,97 @@
   }
 
   // bullet-style bar: gray bar = meta (full height), colored bar = realizado, % label above
-  function drawBulletChart(svgId, items, color, W) {
+  function niceNum(range, round) {
+    if (range <= 0) return 1;
+    var exp = Math.floor(Math.log(range) / Math.LN10);
+    var frac = range / Math.pow(10, exp);
+    var niceFrac;
+    if (round) { niceFrac = frac < 1.5 ? 1 : frac < 3 ? 2 : frac < 7 ? 5 : 10; }
+    else { niceFrac = frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10; }
+    return niceFrac * Math.pow(10, exp);
+  }
+  function niceScale(maxVal, ticks) {
+    if (maxVal <= 0) return { max: 1, step: 1 };
+    var step = niceNum(maxVal / (ticks - 1), true);
+    return { max: Math.ceil(maxVal / step) * step, step: step };
+  }
+  // measures the rendered text and draws a rounded dark pill behind it
+  function drawPill(svg, cx, cy, text, cls) {
+    var t = el("text", { x: cx, y: cy, class: cls || "pill-label-text", "text-anchor": "middle" });
+    t.textContent = text;
+    svg.appendChild(t);
+    var box = t.getBBox();
+    var padX = 6, padY = 3;
+    var rect = el("rect", {
+      x: box.x - padX, y: box.y - padY, width: box.width + padX * 2, height: box.height + padY * 2,
+      rx: (box.height + padY * 2) / 2, fill: "var(--pill-bg)"
+    });
+    svg.insertBefore(rect, t);
+    return t;
+  }
+
+  // grouped Meta/Realizado bars (own R$ axis, with ticks) + a % da meta line (own 0-100%+ band)
+  function drawComboChart(svgId, items, color, colorStrong, W) {
     var svg = document.getElementById(svgId);
-    var H = 260, padL = 8, padR = 8, padT = 26, padB = 26;
+    var H = 360, padL = 78, padR = 16, padT = 34, padB = 34;
     if (!items.length) return emptyChart(svg, W, H);
-    var needed = items.length * 46;
+    var needed = items.length * 200;
     var wide = needed > W;
     var useW = wide ? needed : W;
     var innerW = useW - padL - padR, innerH = H - padT - padB;
-    var n = items.length, maxVal = 0;
-    items.forEach(function (d) { maxVal = Math.max(maxVal, d.valor, d.meta); });
-    maxVal = maxVal * 1.08 || 1;
-    var groupW = innerW / n, backW = Math.min(46, groupW * 0.6), frontW = backW * 0.52;
+    var n = items.length, rawMax = 0, maxPct = 1;
+    items.forEach(function (d) { rawMax = Math.max(rawMax, d.valor, d.meta); maxPct = Math.max(maxPct, div(d.valor, d.meta) || 0); });
+    var scale = niceScale(rawMax * 1.06, 6);
+    var pctCeil = Math.max(1, Math.ceil(maxPct * 1.15 * 10) / 10);
+    var groupW = innerW / n, barW = Math.min(46, groupW * 0.3), gap = 5;
     svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
     svg.style.width = wide ? useW + "px" : "100%";
     svg.innerHTML = "";
-    for (var g = 0; g <= 4; g++) {
-      var gy = padT + innerH - (innerH * g / 4);
+    for (var g = 0; g * scale.step <= scale.max + 0.0001; g++) {
+      var v = g * scale.step;
+      var gy = padT + innerH - (v / scale.max) * innerH;
       svg.appendChild(el("line", { x1: padL, x2: useW - padR, y1: gy, y2: gy, class: "gridline" }));
+      var tick = el("text", { x: padL - 10, y: gy + 4, class: "axis-label", "text-anchor": "end" });
+      tick.textContent = fmtCompactBRL(v);
+      svg.appendChild(tick);
     }
+    function tip(evt, d) {
+      showTip(evt, "<div><b>" + d.label + "</b></div>" +
+        '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
+        '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(d.meta) + "</b></div>" +
+        '<div class="tt-row"><span>% meta</span><b>' + fmtPct(div(d.valor, d.meta)) + "</b></div>");
+    }
+    var pts = [];
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
-      var backH = (d.meta / maxVal) * innerH, frontH = (d.valor / maxVal) * innerH;
-      var backY = padT + innerH - backH, frontY = padT + innerH - frontH;
-      var back = el("rect", { x: cx - backW / 2, y: backY, width: backW, height: Math.max(backH, 1), rx: 3, fill: cv("--grid"), class: "bar" });
-      var front = el("rect", { x: cx - frontW / 2, y: frontY, width: frontW, height: Math.max(frontH, 1), rx: 3, fill: color, class: "bar" });
-      [back, front].forEach(function (node) {
-        node.addEventListener("mousemove", function (evt) {
-          showTip(evt, "<div><b>" + d.label + "</b></div>" +
-            '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
-            '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(d.meta) + "</b></div>" +
-            '<div class="tt-row"><span>% meta</span><b>' + fmtPct(div(d.valor, d.meta)) + "</b></div>");
-        });
+      var metaH = (d.meta / scale.max) * innerH, metaY = padT + innerH - metaH;
+      var realH = (d.valor / scale.max) * innerH, realY = padT + innerH - realH;
+      var metaBar = el("rect", { x: cx - barW - gap / 2, y: metaY, width: barW, height: Math.max(metaH, 1), rx: 4, fill: colorStrong, class: "bar" });
+      var realBar = el("rect", { x: cx + gap / 2, y: realY, width: barW, height: Math.max(realH, 1), rx: 4, fill: color, class: "bar" });
+      [metaBar, realBar].forEach(function (node) {
+        node.addEventListener("mousemove", function (evt) { tip(evt, d); });
         node.addEventListener("mouseleave", hideTip);
       });
-      svg.appendChild(back); svg.appendChild(front);
-      var lbl = el("text", { x: cx, y: backY - 8, class: "pct-label", "text-anchor": "middle" });
-      lbl.textContent = fmtPct(div(d.valor, d.meta));
-      svg.appendChild(lbl);
-      var axisLbl = el("text", { x: cx, y: H - 8, class: "axis-label", "text-anchor": "middle" });
+      svg.appendChild(metaBar); svg.appendChild(realBar);
+      drawPill(svg, cx - barW / 2 - gap / 2, metaH > 26 ? metaY + 15 : metaY - 11, fmtFullBRL(d.meta));
+      drawPill(svg, cx + barW / 2 + gap / 2, realH > 26 ? realY + 15 : realY - 11, fmtFullBRL(d.valor));
+
+      var pct = div(d.valor, d.meta);
+      var ly = padT + innerH - ((pct || 0) / pctCeil) * innerH;
+      pts.push([cx, ly, d, pct]);
+
+      var axisLbl = el("text", { x: cx, y: H - 10, class: "axis-label", "text-anchor": "middle" });
       axisLbl.textContent = d.label;
       svg.appendChild(axisLbl);
+    });
+    var pathD = pts.map(function (p, i) { return (i === 0 ? "M" : "L") + p[0] + " " + p[1]; }).join(" ");
+    svg.appendChild(el("path", { d: pathD, class: "line-series" }));
+    pts.forEach(function (p) {
+      var dot = el("circle", { cx: p[0], cy: p[1], r: 4.5, class: "line-series-dot" });
+      dot.addEventListener("mousemove", function (evt) { tip(evt, p[2]); });
+      dot.addEventListener("mouseleave", hideTip);
+      svg.appendChild(dot);
+      drawPill(svg, p[0], p[1] - 13, fmtPct(p[3]));
     });
   }
 
@@ -1342,9 +1423,9 @@
 
     if (activePage === "geral") {
       renderKpisInto("kpis", "ec");
-      drawBulletChart("chartMes", chartMode.ec === "week" ? weeklyBreakdown("ec", idxs) : monthlyBreakdown("ec", idxs), seriesColor("ec"), 980);
+      drawComboChart("chartMes", chartMode.ec === "week" ? weeklyBreakdown("ec", idxs) : monthlyBreakdown("ec", idxs), seriesColor("ec"), seriesColorStrong("ec"), 980);
       drawProcChart("chartProc", dimBreakdown("ec", idxs, "proc", "processo"), seriesColor("ec"));
-      drawBulletChart("chartCentro", dimBreakdown("ec", idxs, "centro", "centro"), seriesColor("ec"), 480);
+      drawComboChart("chartCentro", dimBreakdown("ec", idxs, "centro", "centro"), seriesColor("ec"), seriesColorStrong("ec"), 480);
     } else if (activePage === "fat") {
       renderCentroMesTable();
       renderProcCentroTable();
@@ -1362,9 +1443,9 @@
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "geralOb") {
       renderKpisInto("kpisOb", "ob");
-      drawBulletChart("chartMesOb", chartMode.ob === "week" ? weeklyBreakdown("ob", idxs) : monthlyBreakdown("ob", idxs), seriesColor("ob"), 980);
+      drawComboChart("chartMesOb", chartMode.ob === "week" ? weeklyBreakdown("ob", idxs) : monthlyBreakdown("ob", idxs), seriesColor("ob"), seriesColorStrong("ob"), 980);
       drawProcChart("chartProcOb", dimBreakdown("ob", idxs, "proc", "processo"), seriesColor("ob"));
-      drawBulletChart("chartCentroOb", dimBreakdown("ob", idxs, "centro", "centro"), seriesColor("ob"), 480);
+      drawComboChart("chartCentroOb", dimBreakdown("ob", idxs, "centro", "centro"), seriesColor("ob"), seriesColorStrong("ob"), 480);
     } else if (activePage === "escaladoOb") {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
     } else if (activePage === "equipesOb") {
