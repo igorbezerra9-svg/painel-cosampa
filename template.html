@@ -147,7 +147,7 @@
   .gridline { stroke: var(--grid); stroke-width: 1; }
   .axis-label { fill: var(--text-muted); font-size: 10px; font-family: inherit; font-weight: 600; }
   .pct-label { fill: var(--text-primary); font-size: 11px; font-weight: 800; font-family: inherit; }
-  .val-label { fill: var(--text-secondary); font-size: 9.5px; font-weight: 700; font-family: inherit; }
+  .val-label { fill: var(--text-secondary); font-size: 11px; font-weight: 700; font-family: inherit; }
   .meta-line { fill: none; stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 3 3; }
   .prod-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
   .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 2; }
@@ -323,7 +323,7 @@
       <section class="page" id="page-fatGrafico">
         <div class="panel" style="margin-bottom:16px">
           <p class="panel-title">Valor Realizado e Meta por Equipe</p>
-          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta</p>
+          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta · ▲ = fora da escala (passe o mouse pra ver o valor real)</p>
           <div class="chart-scroll"><svg class="chart" id="chartFatGrafico" viewBox="0 0 900 260"></svg></div>
         </div>
         <div class="panel">
@@ -346,8 +346,8 @@
           <p class="panel-caption">Cinza = escalados (trabalhou + faltou) · verde = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
           <div class="chart-scroll"><svg class="chart" id="chartDiaFat" viewBox="0 0 900 260"></svg></div>
         </div>
-        <div class="grid-2">
-          <div class="panel">
+        <div class="stack-1">
+          <div class="panel" style="margin-bottom:14px">
             <p class="panel-title">Turnos Escalados por Centro de Serviço e Dia</p>
             <div class="tablewrap"><table class="datatable" id="tblEscaladoCentroDiaFat"></table></div>
           </div>
@@ -385,8 +385,8 @@
           <p class="panel-caption">Cinza = escalados (trabalhou + faltou) · verde = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
           <div class="chart-scroll"><svg class="chart" id="chartDiaOb" viewBox="0 0 900 260"></svg></div>
         </div>
-        <div class="grid-2">
-          <div class="panel">
+        <div class="stack-1">
+          <div class="panel" style="margin-bottom:14px">
             <p class="panel-title">Turnos Escalados por Centro de Serviço e Dia</p>
             <div class="tablewrap"><table class="datatable" id="tblEscaladoCentroDia"></table></div>
           </div>
@@ -400,7 +400,7 @@
       <section class="page" id="page-equipesOb">
         <div class="panel" style="margin-bottom:16px">
           <p class="panel-title">Valor Realizado e Meta por Equipe</p>
-          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta</p>
+          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta · ▲ = fora da escala (passe o mouse pra ver o valor real)</p>
           <div class="chart-scroll"><svg class="chart" id="chartEquipesOb" viewBox="0 0 900 260"></svg></div>
         </div>
         <div class="panel">
@@ -777,13 +777,13 @@
   // side-by-side pair of plain count bars (gray + accent), used for escalado/trabalhado by day
   function drawPairedBarChart(svgId, items, color) {
     var svg = document.getElementById(svgId);
-    var H = 260, padL = 10, padR = 10, padT = 30, padB = 26;
-    var W = Math.max(640, items.length * 34);
+    var H = 340, padL = 12, padR = 12, padT = 30, padB = 30;
+    var W = Math.max(760, items.length * 44);
     if (!items.length) return emptyChart(svg, W, H);
     var innerW = W - padL - padR, innerH = H - padT - padB;
     var maxVal = 0; items.forEach(function (d) { maxVal = Math.max(maxVal, d.escalado, d.trabalhado); });
-    maxVal = maxVal * 1.2 || 1;
-    var groupW = innerW / items.length, barW = Math.min(12, groupW * 0.32);
+    maxVal = maxVal * 1.18 || 1;
+    var groupW = innerW / items.length, barW = Math.min(16, groupW * 0.36), gap = 2;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.style.width = W + "px";
     svg.innerHTML = "";
@@ -795,8 +795,8 @@
       var cx = padL + groupW * i + groupW / 2;
       var h1 = (d.escalado / maxVal) * innerH, y1 = padT + innerH - h1;
       var h2 = (d.trabalhado / maxVal) * innerH, y2 = padT + innerH - h2;
-      var b1 = el("rect", { x: cx - barW - 1, y: y1, width: barW, height: Math.max(h1, 1), rx: 2, fill: cv("--grid"), class: "bar" });
-      var b2 = el("rect", { x: cx + 1, y: y2, width: barW, height: Math.max(h2, 1), rx: 2, fill: color, class: "bar" });
+      var b1 = el("rect", { x: cx - barW - gap, y: y1, width: barW, height: Math.max(h1, 1), rx: 3, fill: cv("--baseline"), class: "bar" });
+      var b2 = el("rect", { x: cx + gap, y: y2, width: barW, height: Math.max(h2, 1), rx: 3, fill: color, class: "bar" });
       [b1, b2].forEach(function (node) {
         node.addEventListener("mousemove", function (evt) {
           showTip(evt, "<div><b>Dia " + d.label + "</b></div>" +
@@ -806,25 +806,37 @@
         node.addEventListener("mouseleave", hideTip);
       });
       svg.appendChild(b1); svg.appendChild(b2);
-      var t1 = el("text", { x: cx - barW / 2 - 1, y: y1 - 4, class: "val-label", "text-anchor": "middle" });
+      var t1 = el("text", { x: cx - barW / 2 - gap, y: y1 - 5, class: "val-label", "text-anchor": "middle" });
       t1.textContent = fmtInt.format(d.escalado); svg.appendChild(t1);
-      var t2 = el("text", { x: cx + barW / 2 + 1, y: y2 - 4, class: "val-label", "text-anchor": "middle" });
+      var t2 = el("text", { x: cx + barW / 2 + gap, y: y2 - 5, class: "val-label", "text-anchor": "middle" });
       t2.textContent = fmtInt.format(d.trabalhado); svg.appendChild(t2);
-      var axisLbl = el("text", { x: cx, y: H - 8, class: "axis-label", "text-anchor": "middle" });
+      var axisLbl = el("text", { x: cx, y: H - 10, class: "axis-label", "text-anchor": "middle" });
       axisLbl.textContent = d.label; svg.appendChild(axisLbl);
     });
   }
 
   // single bar per category, colored by its own % status, sorted by caller
+  function percentile(values, p) {
+    if (!values.length) return 0;
+    var s = values.slice().sort(function (a, b) { return a - b; });
+    return s[Math.min(s.length - 1, Math.floor(s.length * p))];
+  }
+
+  // single bar per category, colored by its own % status; a handful of outliers
+  // don't get to squash everyone else — the scale caps near the 85th percentile
+  // and outlier bars are flagged with a chevron instead of stretching the axis
   function drawStatusBarChart(svgId, items) {
     var svg = document.getElementById(svgId);
-    var H = 260, padL = 10, padR = 10, padT = 26, padB = 40;
-    var W = Math.max(640, items.length * 26);
+    var H = 360, padL = 12, padR = 12, padT = 30, padB = 78;
+    var W = Math.max(760, items.length * 30);
     if (!items.length) return emptyChart(svg, W, H);
     var innerW = W - padL - padR, innerH = H - padT - padB;
-    var maxVal = 0; items.forEach(function (d) { maxVal = Math.max(maxVal, d.valor); });
-    maxVal = maxVal * 1.15 || 1;
-    var groupW = innerW / items.length, barW = Math.min(16, groupW * 0.6);
+    var trueMax = 0; items.forEach(function (d) { trueMax = Math.max(trueMax, d.valor); });
+    var cap = percentile(items.map(function (d) { return d.valor; }), 0.85) * 1.5;
+    var ceiling = (trueMax > cap * 1.1 && cap > 0) ? cap : trueMax;
+    var maxVal = ceiling * 1.15 || 1;
+    var groupW = innerW / items.length, barW = Math.min(18, groupW * 0.58);
+    var step = Math.max(1, Math.ceil(items.length / 26));
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.style.width = W + "px";
     svg.innerHTML = "";
@@ -834,9 +846,11 @@
     }
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
-      var barH = (d.valor / maxVal) * innerH, by = padT + innerH - barH;
+      var clipped = d.valor > ceiling;
+      var shownVal = Math.min(d.valor, ceiling);
+      var barH = (shownVal / maxVal) * innerH, by = padT + innerH - barH;
       var color = cv(statusColorVar(d.pct));
-      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 2, fill: color, class: "bar" });
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
         showTip(evt, "<div><b>" + d.label + "</b></div>" +
           '<div class="tt-row"><span>Realizado</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
@@ -845,14 +859,22 @@
       });
       rect.addEventListener("mouseleave", hideTip);
       svg.appendChild(rect);
-      if (i % Math.ceil(items.length / 24 || 1) === 0) {
-        var lbl = el("text", { x: cx, y: by - 5, class: "val-label", "text-anchor": "middle" });
-        lbl.textContent = d.pct == null ? "—" : Math.round(d.pct * 100) + "%";
+      if (clipped) {
+        svg.appendChild(el("path", {
+          d: "M" + (cx - 5) + " " + (by + 6) + " L" + cx + " " + (by - 2) + " L" + (cx + 5) + " " + (by + 6),
+          fill: "none", stroke: cv("--surface-1"), "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round"
+        }));
+      }
+      if (clipped || i % step === 0) {
+        var lbl = el("text", { x: cx, y: by - 6, class: "val-label", "text-anchor": "middle" });
+        lbl.textContent = (d.pct == null ? "—" : Math.round(d.pct * 100) + "%") + (clipped ? " ▲" : "");
         svg.appendChild(lbl);
       }
-      var axisLbl = el("text", { x: cx, y: H - padB + 14, class: "axis-label", "text-anchor": "middle", transform: "rotate(60 " + cx + " " + (H - padB + 14) + ")" });
-      axisLbl.textContent = d.label;
-      svg.appendChild(axisLbl);
+      if (i % step === 0) {
+        var axisLbl = el("text", { x: cx, y: padT + innerH + 12, class: "axis-label", "text-anchor": "end", transform: "rotate(-45 " + cx + " " + (padT + innerH + 12) + ")" });
+        axisLbl.textContent = d.label;
+        svg.appendChild(axisLbl);
+      }
     });
   }
 
