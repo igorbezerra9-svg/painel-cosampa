@@ -167,8 +167,9 @@
   .meta-line { fill: none; stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 3 3; }
   .prod-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
   .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 2; }
-  .line-series { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
-  .line-series-dot { fill: var(--accent); stroke: var(--surface-1); stroke-width: 2; cursor: pointer; }
+  .line-series { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+  .line-series-dot { fill: var(--accent); stroke: var(--surface-1); stroke-width: 2.5; cursor: pointer; }
+  .bar-inline-label { fill: #fff; font-size: 11.5px; font-weight: 800; font-family: inherit; pointer-events: none; }
   .empty-note { fill: var(--text-muted); font-size: 12px; font-family: inherit; }
 
   .tooltip {
@@ -909,13 +910,13 @@
   // bars = trabalhados · line = escalados (with its value labeled above each point)
   function drawEscaladoChart(svgId, items, color) {
     var svg = document.getElementById(svgId);
-    var H = 340, padL = 14, padR = 14, padT = 42, padB = 30;
-    var W = Math.max(760, items.length * 38);
+    var H = 360, padL = 14, padR = 14, padT = 46, padB = 32;
+    var W = Math.max(760, items.length * 48);
     if (!items.length) return emptyChart(svg, W, H);
     var innerW = W - padL - padR, innerH = H - padT - padB;
     var maxVal = 0; items.forEach(function (d) { maxVal = Math.max(maxVal, d.escalado, d.trabalhado); });
     maxVal = maxVal * 1.25 || 1;
-    var groupW = innerW / items.length, barW = Math.min(20, groupW * 0.5);
+    var groupW = innerW / items.length, barW = Math.min(32, groupW * 0.68);
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.style.width = W + "px";
     svg.innerHTML = "";
@@ -932,25 +933,29 @@
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
       var barH = (d.trabalhado / maxVal) * innerH, by = padT + innerH - barH;
-      var bar = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
+      var bar = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 6, fill: color, class: "bar" });
       bar.addEventListener("mousemove", function (evt) { tip(evt, d); });
       bar.addEventListener("mouseleave", hideTip);
       svg.appendChild(bar);
-      var barLbl = el("text", { x: cx, y: by - 5, class: "val-label", "text-anchor": "middle" });
+      var fitsInside = barH >= 24;
+      var barLbl = el("text", {
+        x: cx, y: fitsInside ? by + 17 : by - 6,
+        class: fitsInside ? "bar-inline-label" : "val-label", "text-anchor": "middle"
+      });
       barLbl.textContent = fmtInt.format(d.trabalhado);
       svg.appendChild(barLbl);
 
       var ly = padT + innerH - (d.escalado / maxVal) * innerH;
       pts.push([cx, ly, d]);
 
-      var axisLbl = el("text", { x: cx, y: H - 10, class: "axis-label", "text-anchor": "middle" });
+      var axisLbl = el("text", { x: cx, y: H - 11, class: "axis-label", "text-anchor": "middle" });
       axisLbl.textContent = d.label;
       svg.appendChild(axisLbl);
     });
     var pathD = pts.map(function (p, i) { return (i === 0 ? "M" : "L") + p[0] + " " + p[1]; }).join(" ");
     svg.appendChild(el("path", { d: pathD, class: "line-series" }));
     pts.forEach(function (p) {
-      var dot = el("circle", { cx: p[0], cy: p[1], r: 3.5, class: "line-series-dot" });
+      var dot = el("circle", { cx: p[0], cy: p[1], r: 4.5, class: "line-series-dot" });
       dot.addEventListener("mousemove", function (evt) { tip(evt, p[2]); });
       dot.addEventListener("mouseleave", hideTip);
       svg.appendChild(dot);
