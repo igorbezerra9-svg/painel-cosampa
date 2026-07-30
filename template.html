@@ -1,0 +1,1152 @@
+<title>Painel Cosampa — Faturamento & Obras</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --plane:          #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --accent:         #1baf7a;
+    --accent-soft:    #d6f1e6;
+    --status-good:    #0ca30c;
+    --status-warn:    #b8790f;
+    --status-crit:    #d03b3b;
+    --status-good-soft: #e3f4e3;
+    --status-warn-soft: #fbedd2;
+    --status-crit-soft: #fae0e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --plane: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --accent: #199e70; --accent-soft: #123626;
+      --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
+      --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --plane: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --accent: #199e70; --accent-soft: #123626;
+    --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
+    --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
+  }
+
+  .viz-root { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--plane); color: var(--text-primary); padding: 32px clamp(16px,3vw,40px) 64px; max-width: 1320px; margin: 0 auto; box-sizing: border-box; }
+  .viz-root * { box-sizing: border-box; }
+  .viz-root ::selection { background: var(--accent-soft); }
+
+  header.top { margin-bottom: 18px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 8px; }
+  h1 { font-size: clamp(22px,3vw,28px); font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; text-wrap: balance; }
+  .subtitle { font-size: 13.5px; color: var(--text-secondary); margin: 0; }
+  .subtitle b { color: var(--text-primary); font-weight: 600; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 20px 0 24px; overflow-x: auto; }
+  .tab-btn { font-family: inherit; padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--text-muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-sep { width: 1px; align-self: stretch; background: var(--border); margin: 6px 4px; }
+
+  .app { display: flex; gap: 24px; align-items: flex-start; }
+  .sidebar { width: 208px; flex: none; display: flex; flex-direction: column; gap: 16px; position: sticky; top: 16px; }
+  .fg { display: flex; flex-direction: column; gap: 6px; }
+  .fg-label { font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  select.fg-select {
+    font-family: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary); width: 100%; cursor: pointer;
+  }
+  .fg-btn {
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; text-align: left;
+  }
+  .fg-btn:hover { color: var(--text-primary); border-color: var(--baseline); }
+  .fg-btn.active { color: var(--accent); border-color: var(--accent); }
+  .fg-btn svg { width: 9px; height: 9px; opacity: .55; flex: none; }
+  .fg-count { background: var(--accent); color: #fff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: auto; }
+  .fg-wrap { position: relative; }
+  .fg-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; width: 240px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.20); padding: 6px; max-height: 280px; overflow-y: auto;
+  }
+  .fg-panel[hidden] { display: none; }
+  .fg-opt { display: flex; align-items: center; gap: 9px; padding: 7px 8px; font-size: 12.5px; border-radius: 6px; cursor: pointer; }
+  .fg-opt:hover { background: var(--grid); }
+  .fg-opt input { accent-color: var(--accent); width: 14px; height: 14px; flex: none; }
+  .fg-actions { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px 2px; margin-top: 4px; border-top: 1px solid var(--border); }
+  .fg-actions button { font-family: inherit; font-size: 11px; font-weight: 700; color: var(--accent); background: none; border: none; cursor: pointer; }
+  .btn-clear { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--status-crit); background: none; border: 1px dashed var(--status-crit); border-radius: 8px; padding: 7px 8px; cursor: pointer; display: none; }
+  .btn-clear.show { display: block; }
+  .result-note { font-size: 11px; color: var(--text-muted); }
+
+  .proc-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .proc-tab {
+    font-family: inherit; font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer;
+  }
+  .proc-tab:hover { color: var(--text-primary); }
+  .proc-tab.active { background: var(--text-primary); color: var(--plane); border-color: var(--text-primary); }
+
+  .main { flex: 1; min-width: 0; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+  .kpi { background: var(--surface-1); padding: 16px; min-width: 0; }
+  .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin: 0 0 8px; }
+  .kpi-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .kpi-delta { font-size: 11.5px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+  .kpi-delta.up { color: var(--status-good); }
+  .kpi-delta.down { color: var(--status-crit); }
+  .kpi-delta svg { width: 10px; height: 10px; }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border); }
+  .kpi-sub .crit { color: var(--status-crit); } .kpi-sub .good { color: var(--status-good); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px 14px; }
+  .panel-title { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); margin: 0 0 2px; }
+  .panel-caption { font-size: 11px; color: var(--text-muted); margin: 0 0 12px; }
+  .chart-scroll { overflow-x: auto; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .bar { transition: opacity .12s; cursor: pointer; }
+  .bar:hover { opacity: .82; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axis-label { fill: var(--text-muted); font-size: 10px; font-family: inherit; }
+  .pct-label { fill: var(--text-primary); font-size: 10.5px; font-weight: 700; font-family: inherit; }
+  .val-label { fill: var(--text-secondary); font-size: 9.5px; font-weight: 600; font-family: inherit; }
+  .meta-line { fill: none; stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .prod-line { fill: none; stroke: var(--accent); stroke-width: 1.75; stroke-dasharray: 3 3; }
+  .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 1.75; }
+  .empty-note { fill: var(--text-muted); font-size: 12px; font-family: inherit; }
+
+  .tooltip { position: absolute; pointer-events: none; z-index: 5; opacity: 0; transition: opacity .1s; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; box-shadow: 0 4px 16px rgba(0,0,0,.18); white-space: nowrap; color: var(--text-primary); }
+  .tooltip b { font-variant-numeric: tabular-nums; }
+  .tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; color: var(--text-secondary); }
+  .tooltip .tt-row + .tt-row { margin-top: 2px; }
+
+  .tablewrap { overflow-x: auto; }
+  table.datatable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.datatable th, table.datatable td { padding: 8px 10px; text-align: right; white-space: nowrap; }
+  table.datatable th:first-child, table.datatable td:first-child { text-align: left; }
+  table.datatable thead th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 700; }
+  table.datatable tbody td { border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+  table.datatable tbody tr:last-child td { border-bottom: none; }
+  table.datatable tbody tr.total td { font-weight: 700; border-top: 1px solid var(--baseline); }
+  td.cell-good { background: var(--status-good-soft); color: var(--status-good); font-weight: 700; }
+  td.cell-warn { background: var(--status-warn-soft); color: var(--status-warn); font-weight: 700; }
+  td.cell-crit { background: var(--status-crit-soft); color: var(--status-crit); font-weight: 700; }
+  td.cell-empty { color: var(--text-muted); }
+  td.cell-plain { color: var(--text-secondary); }
+
+  footer.note { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  @media (max-width: 860px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; position: static; flex-direction: row; flex-wrap: wrap; }
+    .fg { flex: 1; min-width: 140px; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="viz-root" id="root">
+
+  <header class="top">
+    <p class="eyebrow">Cosampa · Faturamento.xlsx</p>
+    <h1>Faturamento &amp; Obras</h1>
+    <p class="subtitle">Recalculado em <b id="genDate"></b> a partir do <code>Faturamento.xlsx</code> (arquivo modificado em <b id="srcDate"></b>). Atualiza sozinho todo dia.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-page="geral" type="button">Painel Geral</button>
+    <button class="tab-btn" data-page="fat" type="button">Faturamento</button>
+    <button class="tab-btn" data-page="procSup" type="button">Processo - Supervisor</button>
+    <button class="tab-btn" data-page="analiseEquipes" type="button">Análise Equipes</button>
+    <button class="tab-btn" data-page="fatGrafico" type="button">Faturamento Gráfico</button>
+    <button class="tab-btn" data-page="produtividadeMensal" type="button">Produtividade - Mensal</button>
+    <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
+    <span class="tab-sep"></span>
+    <button class="tab-btn" data-page="geralOb" type="button">Painel Geral - Obras</button>
+    <button class="tab-btn" data-page="escaladoOb" type="button">Requerido x Escalado - Obras</button>
+    <button class="tab-btn" data-page="equipesOb" type="button">Faturamento Equipes - Obras</button>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="fg">
+        <span class="fg-label">Mês</span>
+        <select class="fg-select" id="selMes"></select>
+      </div>
+      <div class="fg" id="fgDia" style="display:none">
+        <span class="fg-label">Dia</span>
+        <select class="fg-select" id="selDia"></select>
+      </div>
+      <div class="fg" id="fgProc">
+        <span class="fg-label">Processo</span>
+        <div class="fg-wrap" data-dim="proc"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
+      </div>
+      <div class="fg">
+        <span class="fg-label">Supervisor</span>
+        <div class="fg-wrap" data-dim="sup"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
+      </div>
+      <div class="fg">
+        <span class="fg-label">Centro de Serviço</span>
+        <div class="fg-wrap" data-dim="centro"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
+      </div>
+      <div class="fg" id="fgEquipe" style="display:none">
+        <span class="fg-label">Equipe</span>
+        <div class="fg-wrap" data-dim="equipe"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
+      </div>
+      <button class="btn-clear" id="btnClear" type="button">✕ Limpar filtros</button>
+      <p class="result-note" id="resultNote"></p>
+    </aside>
+
+    <div class="main">
+
+      <section class="page active" id="page-geral">
+        <div class="kpi-grid" id="kpis"></div>
+        <div class="panel" style="margin-bottom:16px">
+          <p class="panel-title">Realizado vs. Meta por Mês</p>
+          <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta atingido</p>
+          <svg class="chart" id="chartMes" viewBox="0 0 980 260"></svg>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Faturamento × Produtividade por Processo</p>
+            <p class="panel-caption">Barra = valor realizado (R$) · linha = produtividade média</p>
+            <svg class="chart" id="chartProc" viewBox="0 0 480 260"></svg>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Realizado vs. Meta por Centro de Serviço</p>
+            <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta</p>
+            <svg class="chart" id="chartCentro" viewBox="0 0 480 260"></svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-fat">
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">% Meta por Centro de Serviço — Mensal</p>
+            <p class="panel-caption">Linhas = mês · colunas = centro de serviço</p>
+            <div class="tablewrap"><table class="datatable" id="tblCentroMes"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">% Meta por Processo — Mensal</p>
+            <p class="panel-caption">Linhas = processo · colunas = centro de serviço</p>
+            <div class="tablewrap"><table class="datatable" id="tblProcCentro"></table></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Resumo por Centro de Serviço</p>
+            <p class="panel-caption">Equipes ativas, meta e realizado por equipe</p>
+            <div class="tablewrap"><table class="datatable" id="tblCentroResumo"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Realizado vs. Dia da Semana</p>
+            <p class="panel-caption">% da meta por mês e dia da semana</p>
+            <div class="tablewrap"><table class="datatable" id="tblDiaSemana"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-procSup">
+        <div class="proc-tabs" id="procTabs"></div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Por Supervisor</p>
+            <p class="panel-caption">Cor = status vs. meta do supervisor no processo selecionado</p>
+            <div class="tablewrap"><table class="datatable" id="tblProcSupervisor"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Por Equipe</p>
+            <p class="panel-caption">Cor = status vs. meta da equipe no processo selecionado</p>
+            <div class="tablewrap"><table class="datatable" id="tblProcEquipe"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-analiseEquipes">
+        <div class="panel">
+          <p class="panel-title">Análise de Equipes</p>
+          <p class="panel-caption">Valor Realizado, Meta, Produtividade e Ticket Médio por equipe · cor = status vs. meta</p>
+          <div class="tablewrap"><table class="datatable" id="tblAnaliseEquipes"></table></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-fatGrafico">
+        <div class="panel" style="margin-bottom:16px">
+          <p class="panel-title">Valor Realizado e Meta por Equipe</p>
+          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta</p>
+          <div class="chart-scroll"><svg class="chart" id="chartFatGrafico" viewBox="0 0 900 260"></svg></div>
+        </div>
+        <div class="panel">
+          <p class="panel-title">Detalhe por Equipe</p>
+          <div class="tablewrap"><table class="datatable" id="tblFatGrafico"></table></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-produtividadeMensal">
+        <div class="panel">
+          <p class="panel-title">Produtividade de Equipes — Mensal</p>
+          <p class="panel-caption">Linhas = equipe · colunas = mês</p>
+          <div class="tablewrap"><table class="datatable" id="tblProdutividadeMensal"></table></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-escaladoFat">
+        <div class="panel" style="margin-bottom:16px">
+          <p class="panel-title">Turnos Escalados e Turnos Trabalhados por Dia</p>
+          <p class="panel-caption">Cinza = escalados (trabalhou + faltou) · verde = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
+          <div class="chart-scroll"><svg class="chart" id="chartDiaFat" viewBox="0 0 900 260"></svg></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Turnos Escalados por Centro de Serviço e Dia</p>
+            <div class="tablewrap"><table class="datatable" id="tblEscaladoCentroDiaFat"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Turnos Trabalhados por Centro de Serviço e Dia</p>
+            <div class="tablewrap"><table class="datatable" id="tblTrabalhadoCentroDiaFat"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-geralOb">
+        <div class="kpi-grid" id="kpisOb"></div>
+        <div class="panel" style="margin-bottom:16px">
+          <p class="panel-title">Realizado vs. Meta por Mês — Obras</p>
+          <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta atingido</p>
+          <svg class="chart" id="chartMesOb" viewBox="0 0 980 260"></svg>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Valor × Produtividade por Processo</p>
+            <p class="panel-caption">Barra = valor realizado (R$) · linha = produtividade média</p>
+            <svg class="chart" id="chartProcOb" viewBox="0 0 480 260"></svg>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Realizado vs. Meta por Centro de Serviço</p>
+            <p class="panel-caption">Barra cinza = meta · barra verde = realizado · rótulo = % da meta</p>
+            <svg class="chart" id="chartCentroOb" viewBox="0 0 480 260"></svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-escaladoOb">
+        <div class="panel" style="margin-bottom:16px">
+          <p class="panel-title">Turnos Escalados e Turnos Trabalhados por Dia</p>
+          <p class="panel-caption">Cinza = escalados (trabalhou + faltou) · verde = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
+          <div class="chart-scroll"><svg class="chart" id="chartDiaOb" viewBox="0 0 900 260"></svg></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Turnos Escalados por Centro de Serviço e Dia</p>
+            <div class="tablewrap"><table class="datatable" id="tblEscaladoCentroDia"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Turnos Trabalhados por Centro de Serviço e Dia</p>
+            <div class="tablewrap"><table class="datatable" id="tblTrabalhadoCentroDia"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-equipesOb">
+        <div class="panel" style="margin-bottom:16px">
+          <p class="panel-title">Valor Realizado e Meta por Equipe</p>
+          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta</p>
+          <div class="chart-scroll"><svg class="chart" id="chartEquipesOb" viewBox="0 0 900 260"></svg></div>
+        </div>
+        <div class="panel">
+          <p class="panel-title">Detalhe por Equipe</p>
+          <div class="tablewrap"><table class="datatable" id="tblEquipesOb"></table></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <footer class="note">
+    Recalculado direto do <code>Faturamento.xlsx</code>, linha a linha (abas <code>Emergencial_Comercial</code> e <code>Obras</code>), com as mesmas fórmulas do modelo Power BI — os filtros à esquerda recalculam tudo no navegador, sem servidor. Atualizado automaticamente uma vez por dia. Os totais de Faturamento consideram apenas os 3 centros de serviço reais (Campos Sales, Juazeiro do Norte, Milagres) — o modelo também guarda uma cópia agregada de cada linha sob um centro virtual "Sul", que fica de fora por padrão para não contar tudo em dobro.
+  </footer>
+
+  <div class="tooltip" id="tooltip"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- row-level data read from Faturamento.xlsx — regenerated by compute_painel.py ----
+  var DATA = /*__DATA_JSON__*/{
+    generated: "—", sourceModified: "—",
+    dicts: { supervisor: [], centro: [], processo: [], equipe: [] },
+    ec: { date: [], sup: [], centro: [], proc: [], equipe: [], valor: [], meta: [], qtd: [], metaQtd: [], prod: [] },
+    obDicts: { supervisor: [], centro: [], processo: [], equipe: [] },
+    ob: { date: [], sup: [], centro: [], proc: [], equipe: [], valor: [], meta: [], qtd: [], metaQtd: [], status: [] }
+  }/*__END_DATA_JSON__*/;
+
+  var GROUPS = {
+    ec: { rows: DATA.ec, dicts: DATA.dicts },
+    ob: { rows: DATA.ob, dicts: DATA.obDicts }
+  };
+  var PAGE_GROUP = {
+    geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", fatGrafico: "ec", produtividadeMensal: "ec", escaladoFat: "ec",
+    geralOb: "ob", escaladoOb: "ob", equipesOb: "ob"
+  };
+  var DIA_PAGES = { fat: true, escaladoOb: true, escaladoFat: true };
+  var PROC_TAB_PAGES = { procSup: true };
+  var EQUIPE_PAGES = { analiseEquipes: true };
+  var procTabSelection = null;
+
+  var root = document.getElementById("root");
+  function cv(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  document.getElementById("genDate").textContent = DATA.generated;
+  document.getElementById("srcDate").textContent = DATA.sourceModified;
+
+  // ---------- formatting ----------
+  var fmtInt = new Intl.NumberFormat("pt-BR");
+  function fmtPct(v) { return v == null ? "—" : (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; }
+  function fmtCompactBRL(v) {
+    if (v == null) return "—";
+    var abs = Math.abs(v);
+    if (abs >= 1e6) return "R$ " + (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    if (abs >= 1e3) return "R$ " + (v / 1e3).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " mil";
+    return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function fmtFullBRL(v) { return v == null ? "—" : "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtNum(v, d) { return v == null ? "—" : v.toLocaleString("pt-BR", { maximumFractionDigits: d == null ? 0 : d, minimumFractionDigits: d == null ? 0 : d }); }
+  function div(a, b) { return (!b || a == null) ? null : a / b; }
+  function pctClass(pct) { if (pct == null) return "cell-empty"; if (pct >= 1) return "cell-good"; if (pct >= 0.9) return "cell-warn"; return "cell-crit"; }
+  function statusColorVar(pct) { if (pct == null) return "--text-muted"; if (pct >= 1) return "--status-good"; if (pct >= 0.9) return "--status-warn"; return "--status-crit"; }
+
+  var MONTH_FULL = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  var WEEKDAY_PT = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"];
+  function weekdayIdx(dateStr) { var d = new Date(dateStr + "T00:00:00"); return (d.getDay() + 6) % 7; }
+
+  // ---------- filters (independent per dataset group) ----------
+  var filters = {
+    ec: { mes: "", dia: "", sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() },
+    ob: { mes: "", dia: "", sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() }
+  };
+  var activeGroup = "ec";
+  var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
+  var FILTER_DICT_KEY = { proc: "processo", sup: "supervisor", centro: "centro", equipe: "equipe" };
+
+  var selMes = document.getElementById("selMes");
+  var selDia = document.getElementById("selDia");
+  selDia.appendChild(new Option("Todos", ""));
+  WEEKDAY_PT.forEach(function (name, idx) {
+    var opt = document.createElement("option"); opt.value = String(idx); opt.textContent = name;
+    selDia.appendChild(opt);
+  });
+  selMes.addEventListener("change", function () { filters[activeGroup].mes = selMes.value; renderAll(); });
+  selDia.addEventListener("change", function () { filters[activeGroup].dia = selDia.value; renderAll(); });
+
+  function closeAllPanels() { document.querySelectorAll(".fg-panel").forEach(function (p) { p.setAttribute("hidden", ""); }); }
+  document.addEventListener("click", closeAllPanels);
+
+  function updateClearVisibility() {
+    var f = filters[activeGroup];
+    var any = f.mes || f.dia || f.sup.size || f.centro.size || f.proc.size;
+    document.getElementById("btnClear").classList.toggle("show", !!any);
+  }
+  function updateFilterBtn(dim) {
+    var wrap = document.querySelector('.fg-wrap[data-dim="' + dim + '"]');
+    var btn = wrap.querySelector(".fg-btn");
+    var count = filters[activeGroup][dim].size;
+    btn.innerHTML = FILTER_LABELS[dim] + (count ? ' <span class="fg-count">' + count + "</span>" : "") +
+      '<svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    btn.classList.toggle("active", !!count);
+    updateClearVisibility();
+  }
+  function buildFilterUI(dim) {
+    var dict = GROUPS[activeGroup].dicts[FILTER_DICT_KEY[dim]];
+    var sel = filters[activeGroup][dim];
+    var wrap = document.querySelector('.fg-wrap[data-dim="' + dim + '"]');
+    var btn = wrap.querySelector(".fg-btn");
+    var panel = wrap.querySelector(".fg-panel");
+    var items = dict.map(function (name, idx) { return { name: name, idx: idx }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+
+    panel.innerHTML = items.map(function (it) {
+      return '<label class="fg-opt"><input type="checkbox" value="' + it.idx + '"' + (sel.has(it.idx) ? " checked" : "") + '> <span>' + it.name + "</span></label>";
+    }).join("") + '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>';
+
+    var freshBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(freshBtn, btn);
+    btn = freshBtn;
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var isHidden = panel.hasAttribute("hidden");
+      closeAllPanels();
+      if (isHidden) panel.removeAttribute("hidden");
+    });
+    panel.addEventListener("click", function (e) { e.stopPropagation(); });
+    panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        var idx = parseInt(cb.value, 10);
+        var s = filters[activeGroup][dim];
+        if (cb.checked) s.add(idx); else s.delete(idx);
+        updateFilterBtn(dim); renderAll();
+      });
+    });
+    panel.querySelector('[data-act="all"]').addEventListener("click", function () {
+      panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; filters[activeGroup][dim].add(parseInt(cb.value, 10)); });
+      updateFilterBtn(dim); renderAll();
+    });
+    panel.querySelector('[data-act="none"]').addEventListener("click", function () {
+      panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+      filters[activeGroup][dim].clear(); updateFilterBtn(dim); renderAll();
+    });
+    updateFilterBtn(dim);
+  }
+  function rebuildSidebar() {
+    var rows = GROUPS[activeGroup].rows;
+    var monthsPresent = Array.from(new Set(rows.date.map(function (d) { return d.slice(0, 7); }))).sort();
+    selMes.innerHTML = '<option value="">Todos</option>';
+    monthsPresent.forEach(function (mk) {
+      var mi = parseInt(mk.slice(5, 7), 10) - 1;
+      var opt = document.createElement("option"); opt.value = mk; opt.textContent = MONTH_FULL[mi];
+      selMes.appendChild(opt);
+    });
+    selMes.value = filters[activeGroup].mes;
+    selDia.value = filters[activeGroup].dia;
+    ["proc", "sup", "centro", "equipe"].forEach(buildFilterUI);
+  }
+
+  document.getElementById("btnClear").addEventListener("click", function () {
+    var f = filters[activeGroup];
+    f.mes = ""; f.dia = ""; f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear();
+    rebuildSidebar();
+    renderAll();
+  });
+
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+      btn.classList.add("active");
+      var page = btn.dataset.page;
+      document.getElementById("page-" + page).classList.add("active");
+      document.getElementById("fgDia").style.display = DIA_PAGES[page] ? "flex" : "none";
+      document.getElementById("fgProc").style.display = PROC_TAB_PAGES[page] ? "none" : "flex";
+      document.getElementById("fgEquipe").style.display = EQUIPE_PAGES[page] ? "flex" : "none";
+      var group = PAGE_GROUP[page];
+      if (group !== activeGroup) { activeGroup = group; rebuildSidebar(); }
+      renderAll();
+    });
+  });
+  rebuildSidebar();
+
+  // ---------- filtering + aggregation (generic over group) ----------
+  function matchDims(group, i) {
+    var rows = GROUPS[group].rows, f = filters[group];
+    if (f.sup.size && !f.sup.has(rows.sup[i])) return false;
+    if (f.centro.size && !f.centro.has(rows.centro[i])) return false;
+    if (f.proc.size && !f.proc.has(rows.proc[i])) return false;
+    if (f.equipe.size && !f.equipe.has(rows.equipe[i])) return false;
+    return true;
+  }
+  function matchAll(group, i) {
+    if (!matchDims(group, i)) return false;
+    var rows = GROUPS[group].rows, f = filters[group];
+    if (f.mes && rows.date[i].slice(0, 7) !== f.mes) return false;
+    if (f.dia !== "" && String(weekdayIdx(rows.date[i])) !== f.dia) return false;
+    return true;
+  }
+  function currentIdxs(group) {
+    var rows = GROUPS[group].rows, out = [];
+    for (var i = 0; i < rows.date.length; i++) if (matchAll(group, i)) out.push(i);
+    return out;
+  }
+  function isProdRow(group, rows, i) {
+    return group === "ec" ? rows.prod[i] === 1 : (rows.status[i] === 0 || rows.status[i] === 1);
+  }
+  function aggRows(group, idxs) {
+    var rows = GROUPS[group].rows, valor = 0, meta = 0, qtd = 0, metaQtd = 0, prodDen = 0;
+    idxs.forEach(function (i) {
+      valor += rows.valor[i]; meta += rows.meta[i]; qtd += rows.qtd[i]; metaQtd += rows.metaQtd[i];
+      if (isProdRow(group, rows, i)) prodDen++;
+    });
+    return { valor: valor, meta: meta, qtd: qtd, metaQtd: metaQtd, produtividade: prodDen ? qtd / prodDen : null, pctMeta: div(valor, meta), n: idxs.length };
+  }
+  function visibleValues(group, dim) {
+    var dict = GROUPS[group].dicts[FILTER_DICT_KEY[dim]];
+    var sel = filters[group][dim];
+    var idxs = sel.size ? Array.from(sel) : dict.map(function (_, i) { return i; });
+    return idxs.map(function (idx) { return { idx: idx, name: dict[idx] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+  }
+
+  // ---------- KPI cards ----------
+  var ICONS = {
+    up: '<svg viewBox="0 0 12 12" fill="none"><path d="M6 9V3M2.5 5.5L6 2l3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    down: '<svg viewBox="0 0 12 12" fill="none"><path d="M6 3v6M2.5 6.5L6 10l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+  function deltaHtml(pct) {
+    if (pct == null) return "";
+    var dir = pct >= 0 ? "up" : "down";
+    return '<span class="kpi-delta ' + dir + '">' + ICONS[dir] + " " + fmtPct(Math.abs(pct)) + " vs mês ant.</span>";
+  }
+  function kpi(label, value, deltaPct, subHtml) {
+    return '<div class="kpi"><p class="kpi-label">' + label + '</p><p class="kpi-value">' + value + "</p>" + deltaHtml(deltaPct) + (subHtml ? '<p class="kpi-sub">' + subHtml + "</p>" : "") + "</div>";
+  }
+  function computeKpis(group) {
+    var rows = GROUPS[group].rows;
+    var curIdxs = currentIdxs(group);
+    var cur = aggRows(group, curIdxs);
+    var maxDate = null;
+    curIdxs.forEach(function (i) { var dt = rows.date[i]; if (maxDate === null || dt > maxDate) maxDate = dt; });
+    var prev = null;
+    if (maxDate) {
+      var y = parseInt(maxDate.slice(0, 4), 10), m = parseInt(maxDate.slice(5, 7), 10);
+      m -= 1; if (m === 0) { m = 12; y -= 1; }
+      var prevKey = y + "-" + String(m).padStart(2, "0");
+      var prevIdxs = [];
+      for (var i = 0; i < rows.date.length; i++) { if (matchDims(group, i) && rows.date[i].slice(0, 7) === prevKey) prevIdxs.push(i); }
+      prev = aggRows(group, prevIdxs);
+    }
+    return { cur: cur, prev: prev };
+  }
+  function renderKpisInto(elId, group) {
+    var r = computeKpis(group), cur = r.cur, prev = r.prev;
+    var valorDelta = prev && prev.valor ? div(cur.valor - prev.valor, prev.valor) : null;
+    var qtdDelta = prev && prev.qtd ? div(cur.qtd - prev.qtd, prev.qtd) : null;
+    var prodDelta = prev && prev.produtividade ? div(cur.produtividade - prev.produtividade, prev.produtividade) : null;
+    var metaSub = cur.pctMeta == null ? "" : (cur.pctMeta >= 1
+      ? '<span class="good">' + fmtCompactBRL(cur.valor - cur.meta) + " acima da meta</span>"
+      : '<span class="crit">' + fmtCompactBRL(cur.valor - cur.meta) + " abaixo da meta</span>");
+    document.getElementById(elId).innerHTML = [
+      kpi("Meta", fmtCompactBRL(cur.meta), null, cur.pctMeta == null ? "" : "% atingimento da meta " + fmtPct(cur.pctMeta)),
+      kpi("Valor Realizado", fmtCompactBRL(cur.valor), valorDelta, metaSub),
+      kpi("Qtd. Serviços", fmtInt.format(Math.round(cur.qtd)) + " serviços", qtdDelta),
+      kpi("Produtividade", fmtNum(cur.produtividade, 2), prodDelta)
+    ].join("");
+  }
+
+  // ---------- chart primitives ----------
+  var tooltip = document.getElementById("tooltip");
+  function showTip(evt, html) {
+    tooltip.innerHTML = html; tooltip.style.opacity = 1;
+    var r = root.getBoundingClientRect();
+    tooltip.style.left = (evt.clientX - r.left + 14) + "px";
+    tooltip.style.top = (evt.clientY - r.top + 14) + "px";
+  }
+  function hideTip() { tooltip.style.opacity = 0; }
+  var svgns = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) { var e = document.createElementNS(svgns, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function emptyChart(svg, W, H) {
+    svg.innerHTML = "";
+    var t = el("text", { x: W / 2, y: H / 2, class: "empty-note", "text-anchor": "middle" });
+    t.textContent = "Sem dados para os filtros selecionados";
+    svg.appendChild(t);
+  }
+
+  // bullet-style bar: gray bar = meta (full height), colored bar = realizado, % label above
+  function drawBulletChart(svgId, items, color, W) {
+    var svg = document.getElementById(svgId);
+    var H = 260, padL = 8, padR = 8, padT = 26, padB = 26;
+    if (!items.length) return emptyChart(svg, W, H);
+    var innerW = W - padL - padR, innerH = H - padT - padB;
+    var n = items.length, maxVal = 0;
+    items.forEach(function (d) { maxVal = Math.max(maxVal, d.valor, d.meta); });
+    maxVal = maxVal * 1.08 || 1;
+    var groupW = innerW / n, backW = Math.min(46, groupW * 0.6), frontW = backW * 0.52;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.innerHTML = "";
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + innerH - (innerH * g / 4);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
+    }
+    items.forEach(function (d, i) {
+      var cx = padL + groupW * i + groupW / 2;
+      var backH = (d.meta / maxVal) * innerH, frontH = (d.valor / maxVal) * innerH;
+      var backY = padT + innerH - backH, frontY = padT + innerH - frontH;
+      var back = el("rect", { x: cx - backW / 2, y: backY, width: backW, height: Math.max(backH, 1), rx: 3, fill: cv("--grid"), class: "bar" });
+      var front = el("rect", { x: cx - frontW / 2, y: frontY, width: frontW, height: Math.max(frontH, 1), rx: 3, fill: color, class: "bar" });
+      [back, front].forEach(function (node) {
+        node.addEventListener("mousemove", function (evt) {
+          showTip(evt, "<div><b>" + d.label + "</b></div>" +
+            '<div class="tt-row"><span>Realizado</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
+            '<div class="tt-row"><span>Meta</span><b>' + fmtCompactBRL(d.meta) + "</b></div>" +
+            '<div class="tt-row"><span>% meta</span><b>' + fmtPct(div(d.valor, d.meta)) + "</b></div>");
+        });
+        node.addEventListener("mouseleave", hideTip);
+      });
+      svg.appendChild(back); svg.appendChild(front);
+      var lbl = el("text", { x: cx, y: backY - 8, class: "pct-label", "text-anchor": "middle" });
+      lbl.textContent = fmtPct(div(d.valor, d.meta));
+      svg.appendChild(lbl);
+      var axisLbl = el("text", { x: cx, y: H - 8, class: "axis-label", "text-anchor": "middle" });
+      axisLbl.textContent = d.label;
+      svg.appendChild(axisLbl);
+    });
+  }
+
+  function drawProcChart(svgId, items) {
+    var svg = document.getElementById(svgId);
+    var W = 480, H = 260, padL = 8, padR = 8, padT = 26, padB = 40;
+    if (!items.length) return emptyChart(svg, W, H);
+    var innerW = W - padL - padR, innerH = H - padT - padB;
+    var n = items.length, maxVal = 0, maxProd = 0;
+    items.forEach(function (d) { maxVal = Math.max(maxVal, d.valor); maxProd = Math.max(maxProd, d.produtividade || 0); });
+    maxVal = maxVal * 1.15 || 1; maxProd = maxProd * 1.25 || 1;
+    var groupW = innerW / n, barW = Math.min(30, groupW * 0.5);
+    var lineTop = padT, lineBand = innerH * 0.55;
+    svg.innerHTML = "";
+    for (var g = 0; g <= 3; g++) {
+      var gy = padT + innerH - (innerH * g / 3);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
+    }
+    var pts = [];
+    items.forEach(function (d, i) {
+      var cx = padL + groupW * i + groupW / 2;
+      var barH = (d.valor / maxVal) * innerH, by = padT + innerH - barH;
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: cv("--accent"), class: "bar" });
+      rect.addEventListener("mousemove", function (evt) {
+        showTip(evt, "<div><b>" + d.label + "</b></div>" +
+          '<div class="tt-row"><span>Valor</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
+          '<div class="tt-row"><span>Produtividade</span><b>' + fmtNum(d.produtividade, 2) + "</b></div>");
+      });
+      rect.addEventListener("mouseleave", hideTip);
+      svg.appendChild(rect);
+      var py = d.produtividade == null ? null : lineTop + lineBand - (d.produtividade / maxProd) * lineBand;
+      if (py != null) pts.push([cx, py, d.produtividade]);
+      var axisLbl = el("text", { x: cx, y: H - padB + 14, class: "axis-label", "text-anchor": "middle" });
+      axisLbl.textContent = d.label.length > 10 ? d.label.slice(0, 9) + "…" : d.label;
+      svg.appendChild(axisLbl);
+    });
+    if (pts.length > 1) {
+      var pathD = pts.map(function (p, i) { return (i === 0 ? "M" : "L") + p[0] + " " + p[1]; }).join(" ");
+      svg.appendChild(el("path", { d: pathD, class: "prod-line" }));
+    }
+    pts.forEach(function (p) {
+      svg.appendChild(el("circle", { cx: p[0], cy: p[1], r: 3, class: "prod-dot" }));
+      var t = el("text", { x: p[0], y: p[1] - 7, class: "val-label", "text-anchor": "middle" });
+      t.textContent = fmtNum(p[2], 2);
+      svg.appendChild(t);
+    });
+  }
+
+  // side-by-side pair of plain count bars (gray + accent), used for escalado/trabalhado by day
+  function drawPairedBarChart(svgId, items) {
+    var svg = document.getElementById(svgId);
+    var H = 260, padL = 10, padR = 10, padT = 30, padB = 26;
+    var W = Math.max(640, items.length * 34);
+    if (!items.length) return emptyChart(svg, W, H);
+    var innerW = W - padL - padR, innerH = H - padT - padB;
+    var maxVal = 0; items.forEach(function (d) { maxVal = Math.max(maxVal, d.escalado, d.trabalhado); });
+    maxVal = maxVal * 1.2 || 1;
+    var groupW = innerW / items.length, barW = Math.min(12, groupW * 0.32);
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.style.width = W + "px";
+    svg.innerHTML = "";
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + innerH - (innerH * g / 4);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
+    }
+    items.forEach(function (d, i) {
+      var cx = padL + groupW * i + groupW / 2;
+      var h1 = (d.escalado / maxVal) * innerH, y1 = padT + innerH - h1;
+      var h2 = (d.trabalhado / maxVal) * innerH, y2 = padT + innerH - h2;
+      var b1 = el("rect", { x: cx - barW - 1, y: y1, width: barW, height: Math.max(h1, 1), rx: 2, fill: cv("--grid"), class: "bar" });
+      var b2 = el("rect", { x: cx + 1, y: y2, width: barW, height: Math.max(h2, 1), rx: 2, fill: cv("--accent"), class: "bar" });
+      [b1, b2].forEach(function (node) {
+        node.addEventListener("mousemove", function (evt) {
+          showTip(evt, "<div><b>Dia " + d.label + "</b></div>" +
+            '<div class="tt-row"><span>Escalados</span><b>' + fmtInt.format(d.escalado) + "</b></div>" +
+            '<div class="tt-row"><span>Trabalhados</span><b>' + fmtInt.format(d.trabalhado) + "</b></div>");
+        });
+        node.addEventListener("mouseleave", hideTip);
+      });
+      svg.appendChild(b1); svg.appendChild(b2);
+      var t1 = el("text", { x: cx - barW / 2 - 1, y: y1 - 4, class: "val-label", "text-anchor": "middle" });
+      t1.textContent = fmtInt.format(d.escalado); svg.appendChild(t1);
+      var t2 = el("text", { x: cx + barW / 2 + 1, y: y2 - 4, class: "val-label", "text-anchor": "middle" });
+      t2.textContent = fmtInt.format(d.trabalhado); svg.appendChild(t2);
+      var axisLbl = el("text", { x: cx, y: H - 8, class: "axis-label", "text-anchor": "middle" });
+      axisLbl.textContent = d.label; svg.appendChild(axisLbl);
+    });
+  }
+
+  // single bar per category, colored by its own % status, sorted by caller
+  function drawStatusBarChart(svgId, items) {
+    var svg = document.getElementById(svgId);
+    var H = 260, padL = 10, padR = 10, padT = 26, padB = 40;
+    var W = Math.max(640, items.length * 26);
+    if (!items.length) return emptyChart(svg, W, H);
+    var innerW = W - padL - padR, innerH = H - padT - padB;
+    var maxVal = 0; items.forEach(function (d) { maxVal = Math.max(maxVal, d.valor); });
+    maxVal = maxVal * 1.15 || 1;
+    var groupW = innerW / items.length, barW = Math.min(16, groupW * 0.6);
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.style.width = W + "px";
+    svg.innerHTML = "";
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + innerH - (innerH * g / 4);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
+    }
+    items.forEach(function (d, i) {
+      var cx = padL + groupW * i + groupW / 2;
+      var barH = (d.valor / maxVal) * innerH, by = padT + innerH - barH;
+      var color = cv(statusColorVar(d.pct));
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 2, fill: color, class: "bar" });
+      rect.addEventListener("mousemove", function (evt) {
+        showTip(evt, "<div><b>" + d.label + "</b></div>" +
+          '<div class="tt-row"><span>Realizado</span><b>' + fmtCompactBRL(d.valor) + "</b></div>" +
+          '<div class="tt-row"><span>Meta</span><b>' + fmtCompactBRL(d.meta) + "</b></div>" +
+          '<div class="tt-row"><span>% meta</span><b>' + fmtPct(d.pct) + "</b></div>");
+      });
+      rect.addEventListener("mouseleave", hideTip);
+      svg.appendChild(rect);
+      if (i % Math.ceil(items.length / 24 || 1) === 0) {
+        var lbl = el("text", { x: cx, y: by - 5, class: "val-label", "text-anchor": "middle" });
+        lbl.textContent = d.pct == null ? "—" : Math.round(d.pct * 100) + "%";
+        svg.appendChild(lbl);
+      }
+      var axisLbl = el("text", { x: cx, y: H - padB + 14, class: "axis-label", "text-anchor": "middle", transform: "rotate(60 " + cx + " " + (H - padB + 14) + ")" });
+      axisLbl.textContent = d.label;
+      svg.appendChild(axisLbl);
+    });
+  }
+
+  function monthlyBreakdown(group, idxs) {
+    var rows = GROUPS[group].rows, map = {};
+    idxs.forEach(function (i) {
+      var mk = rows.date[i].slice(0, 7);
+      if (!map[mk]) map[mk] = { valor: 0, meta: 0 };
+      map[mk].valor += rows.valor[i]; map[mk].meta += rows.meta[i];
+    });
+    return Object.keys(map).sort().map(function (mk) {
+      var mi = parseInt(mk.slice(5, 7), 10) - 1;
+      return { label: MONTH_FULL[mi], valor: map[mk].valor, meta: map[mk].meta };
+    });
+  }
+  function dimBreakdown(group, idxs, dimArrKey, dictKey) {
+    var rows = GROUPS[group].rows, map = {};
+    idxs.forEach(function (i) {
+      var code = rows[dimArrKey][i];
+      if (code < 0) return;
+      if (!map[code]) map[code] = { valor: 0, meta: 0, qtd: 0, prodDen: 0 };
+      map[code].valor += rows.valor[i]; map[code].meta += rows.meta[i]; map[code].qtd += rows.qtd[i];
+      if (isProdRow(group, rows, i)) map[code].prodDen++;
+    });
+    var dict = GROUPS[group].dicts[dictKey];
+    return Object.keys(map).map(function (code) {
+      var m = map[code];
+      return { label: dict[code], valor: m.valor, meta: m.meta, produtividade: m.prodDen ? m.qtd / m.prodDen : null };
+    }).sort(function (a, b) { return b.valor - a.valor; });
+  }
+
+  // ---------- tables ----------
+  function renderTable(elId, colHeaders, rowLabel, rows, cellFn, totalRow) {
+    var thead = "<thead><tr><th>" + rowLabel + "</th>" + colHeaders.map(function (h) { return "<th>" + h + "</th>"; }).join("") + "</tr></thead>";
+    var tbody = "<tbody>" + rows.map(function (r) {
+      return "<tr><td>" + r.label + "</td>" + r.cells.map(cellFn).join("") + "</tr>";
+    }).join("");
+    if (totalRow) tbody += '<tr class="total"><td>Total</td>' + totalRow.cells.map(cellFn).join("") + "</tr>";
+    tbody += "</tbody>";
+    document.getElementById(elId).innerHTML = thead + tbody;
+  }
+  function pctCell(v) { return '<td class="' + pctClass(v) + '">' + fmtPct(v) + "</td>"; }
+  function intCell(v) { return '<td class="cell-plain">' + fmtInt.format(v) + "</td>"; }
+
+  function renderCentroMesTable() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var centros = visibleValues("ec", "centro");
+    var months = Array.from(new Set(idxs.map(function (i) { return rows.date[i].slice(0, 7); }))).sort();
+    var out = months.map(function (mk) {
+      var mi = parseInt(mk.slice(5, 7), 10) - 1;
+      var cells = centros.map(function (c) {
+        var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk && rows.centro[i] === c.idx; });
+        return div(sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0), sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0));
+      });
+      return { label: MONTH_FULL[mi], cells: cells };
+    });
+    renderTable("tblCentroMes", centros.map(function (c) { return c.name; }), "Mês", out, pctCell);
+  }
+
+  function renderProcCentroTable() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var centros = visibleValues("ec", "centro");
+    var procCodes = Array.from(new Set(idxs.map(function (i) { return rows.proc[i]; }))).filter(function (c) { return c >= 0; });
+    var procs = procCodes.map(function (c) { return { idx: c, name: DATA.dicts.processo[c] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    var out = procs.map(function (p) {
+      var cells = centros.map(function (c) {
+        var sub = idxs.filter(function (i) { return rows.proc[i] === p.idx && rows.centro[i] === c.idx; });
+        if (!sub.length) return null;
+        return div(sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0), sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0));
+      });
+      return { label: p.name, cells: cells };
+    });
+    renderTable("tblProcCentro", centros.map(function (c) { return c.name; }), "Processo", out, pctCell);
+  }
+
+  function renderCentroResumoTable() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var centros = visibleValues("ec", "centro");
+    var out = centros.map(function (c) {
+      var sub = idxs.filter(function (i) { return rows.centro[i] === c.idx; });
+      var valor = sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0);
+      var meta = sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0);
+      var equipes = new Set(sub.map(function (i) { return rows.equipe[i]; }).filter(function (e) { return e >= 0; })).size;
+      var metaPorEquipe = div(meta, equipes), realizadoPorEquipe = div(valor, equipes);
+      var desvio = (metaPorEquipe != null && realizadoPorEquipe != null) ? div(realizadoPorEquipe, metaPorEquipe) - 1 : null;
+      return { label: c.name, cells: [equipes, metaPorEquipe, realizadoPorEquipe, desvio] };
+    });
+    var totalEquipes = new Set(idxs.map(function (i) { return rows.equipe[i]; }).filter(function (e) { return e >= 0; })).size;
+    var totalValor = idxs.reduce(function (s, i) { return s + rows.valor[i]; }, 0);
+    var totalMeta = idxs.reduce(function (s, i) { return s + rows.meta[i]; }, 0);
+    var totalMetaPE = div(totalMeta, totalEquipes), totalRealPE = div(totalValor, totalEquipes);
+    var totalDesvio = (totalMetaPE != null && totalRealPE != null) ? div(totalRealPE, totalMetaPE) - 1 : null;
+    var total = { cells: [totalEquipes, totalMetaPE, totalRealPE, totalDesvio] };
+
+    var thead = "<thead><tr><th>Centro de Serviço</th><th>Qtd Equipes</th><th>Meta por Equipe</th><th>Realizado por Equipe</th><th>Desvio %</th></tr></thead>";
+    function rowHtml(r, isTotal) {
+      var c = r.cells;
+      return "<tr" + (isTotal ? ' class="total"' : "") + "><td>" + (isTotal ? "Total" : r.label) + "</td><td>" + fmtInt.format(c[0]) +
+        "</td><td>" + fmtFullBRL(c[1]) + "</td><td>" + fmtFullBRL(c[2]) + "</td>" + pctCell(c[3]) + "</tr>";
+    }
+    document.getElementById("tblCentroResumo").innerHTML = thead + "<tbody>" + out.map(function (r) { return rowHtml(r, false); }).join("") + rowHtml(total, true) + "</tbody>";
+  }
+
+  function renderDiaSemanaTable() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var months = Array.from(new Set(idxs.map(function (i) { return rows.date[i].slice(0, 7); }))).sort();
+    var out = months.map(function (mk) {
+      var mi = parseInt(mk.slice(5, 7), 10) - 1;
+      var cells = WEEKDAY_PT.map(function (_, wIdx) {
+        var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk && weekdayIdx(rows.date[i]) === wIdx; });
+        if (!sub.length) return null;
+        return div(sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0), sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0));
+      });
+      return { label: MONTH_FULL[mi], cells: cells };
+    });
+    renderTable("tblDiaSemana", WEEKDAY_PT.map(function (w) { return w.replace("-feira", ""); }), "Mês", out, pctCell);
+  }
+
+  function buildProcTabs() {
+    var dict = GROUPS.ec.dicts.processo;
+    var items = dict.map(function (name, idx) { return { name: name, idx: idx }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    if (procTabSelection == null && items.length) procTabSelection = items[0].idx;
+    var container = document.getElementById("procTabs");
+    container.innerHTML = items.map(function (it) {
+      return '<button type="button" class="proc-tab' + (it.idx === procTabSelection ? " active" : "") + '" data-idx="' + it.idx + '">' + it.name + "</button>";
+    }).join("");
+    container.querySelectorAll(".proc-tab").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        procTabSelection = parseInt(btn.dataset.idx, 10);
+        container.querySelectorAll(".proc-tab").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        renderAll();
+      });
+    });
+  }
+
+  function procSupIdxs() {
+    var rows = GROUPS.ec.rows, f = filters.ec, out = [];
+    for (var i = 0; i < rows.date.length; i++) {
+      if (rows.proc[i] !== procTabSelection) continue;
+      if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
+      if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
+      if (f.mes && rows.date[i].slice(0, 7) !== f.mes) continue;
+      if (f.dia !== "" && String(weekdayIdx(rows.date[i])) !== f.dia) continue;
+      out.push(i);
+    }
+    return out;
+  }
+  function renderProcBreakdownTable(elId, rowLabel, dimArrKey, dictKey, idxs) {
+    var rows = GROUPS.ec.rows, map = {};
+    idxs.forEach(function (i) {
+      var code = rows[dimArrKey][i];
+      if (code < 0) return;
+      if (!map[code]) map[code] = { valor: 0, meta: 0, qtd: 0, prodDen: 0 };
+      map[code].valor += rows.valor[i]; map[code].meta += rows.meta[i]; map[code].qtd += rows.qtd[i];
+      if (isProdRow("ec", rows, i)) map[code].prodDen++;
+    });
+    var dict = GROUPS.ec.dicts[dictKey];
+    var items = Object.keys(map).map(function (code) {
+      var m = map[code];
+      return { label: dict[code], valor: m.valor, ticket: div(m.valor, m.qtd), prod: m.prodDen ? m.qtd / m.prodDen : null, pct: div(m.valor, m.meta) };
+    }).sort(function (a, b) { return b.valor - a.valor; });
+
+    var thead = "<thead><tr><th>" + rowLabel + "</th><th>Valor Realizado</th><th>Ticket Médio</th><th>Produtividade</th></tr></thead>";
+    var tbody = "<tbody>" + items.map(function (d) {
+      return "<tr><td>" + d.label + '</td><td class="' + pctClass(d.pct) + '">' + fmtFullBRL(d.valor) + "</td><td>" + fmtFullBRL(d.ticket) + "</td><td>" + fmtNum(d.prod, 2) + "</td></tr>";
+    }).join("") + "</tbody>";
+    document.getElementById(elId).innerHTML = thead + tbody;
+    if (!items.length) document.getElementById(elId).innerHTML = thead + '<tbody><tr><td colspan="4" class="cell-empty">Sem dados para esse processo com os filtros atuais</td></tr></tbody>';
+  }
+  function renderProcSupPage() {
+    buildProcTabs();
+    var idxs = procSupIdxs();
+    renderProcBreakdownTable("tblProcSupervisor", "Supervisor", "sup", "supervisor", idxs);
+    renderProcBreakdownTable("tblProcEquipe", "Equipe", "equipe", "equipe", idxs);
+  }
+
+  function isTrabalhou(group, rows, i) { return group === "ob" ? rows.status[i] === 0 : rows.qtd[i] > 0; }
+  function isFaltou(group, rows, i) { return group === "ob" ? rows.status[i] === 1 : (rows.metaQtd[i] > 0 && rows.qtd[i] === 0); }
+
+  function renderEscalado(group, chartId, tblEscId, tblTrabId) {
+    var idxs = currentIdxs(group), rows = GROUPS[group].rows;
+    var byDay = {};
+    idxs.forEach(function (i) {
+      var dt = rows.date[i];
+      if (!byDay[dt]) byDay[dt] = { escalado: 0, trabalhado: 0 };
+      var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
+      if (t) { byDay[dt].escalado++; byDay[dt].trabalhado++; }
+      else if (f) { byDay[dt].escalado++; }
+    });
+    var dates = Object.keys(byDay).sort();
+    var items = dates.map(function (dt) { return { label: String(parseInt(dt.slice(8, 10), 10)), escalado: byDay[dt].escalado, trabalhado: byDay[dt].trabalhado }; });
+    drawPairedBarChart(chartId, items);
+
+    var centros = visibleValues(group, "centro");
+    var days = Array.from(new Set(idxs.map(function (i) { return parseInt(rows.date[i].slice(8, 10), 10); }))).sort(function (a, b) { return a - b; });
+    function buildRows(kind) {
+      return centros.map(function (c) {
+        var cells = days.map(function (day) {
+          var sub = idxs.filter(function (i) { return rows.centro[i] === c.idx && parseInt(rows.date[i].slice(8, 10), 10) === day; });
+          return kind === "escalado"
+            ? sub.filter(function (i) { return isTrabalhou(group, rows, i) || isFaltou(group, rows, i); }).length
+            : sub.filter(function (i) { return isTrabalhou(group, rows, i); }).length;
+        });
+        var total = cells.reduce(function (s, v) { return s + v; }, 0);
+        return { label: c.name, cells: cells.concat([total]) };
+      });
+    }
+    var colHeaders = days.map(String).concat(["Total"]);
+    renderTable(tblEscId, colHeaders, "Centro", buildRows("escalado"), intCell);
+    renderTable(tblTrabId, colHeaders, "Centro", buildRows("trabalhado"), intCell);
+  }
+
+  function renderEquipesChart(group, chartId, tblId) {
+    var idxs = currentIdxs(group), rows = GROUPS[group].rows;
+    var map = {};
+    idxs.forEach(function (i) {
+      var e = rows.equipe[i]; if (e < 0) return;
+      if (!map[e]) map[e] = { valor: 0, meta: 0, qtd: 0 };
+      map[e].valor += rows.valor[i]; map[e].meta += rows.meta[i]; map[e].qtd += rows.qtd[i];
+    });
+    var dict = GROUPS[group].dicts.equipe;
+    var items = Object.keys(map).map(function (code) {
+      var m = map[code];
+      return { label: dict[code], valor: m.valor, meta: m.meta, qtd: m.qtd, pct: div(m.valor, m.meta) };
+    }).sort(function (a, b) { var pa = a.pct == null ? -1 : a.pct, pb = b.pct == null ? -1 : b.pct; return pb - pa; });
+
+    drawStatusBarChart(chartId, items);
+
+    var thead = "<thead><tr><th>Equipe</th><th>Valor Realizado</th><th>Meta</th><th>Qtd Serviços</th><th>% Meta</th></tr></thead>";
+    var tbody = "<tbody>" + items.map(function (d) {
+      return "<tr><td>" + d.label + "</td><td>" + fmtFullBRL(d.valor) + "</td><td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtInt.format(Math.round(d.qtd)) + "</td>" + pctCell(d.pct) + "</tr>";
+    }).join("") + "</tbody>";
+    document.getElementById(tblId).innerHTML = thead + tbody;
+  }
+
+  function renderAnaliseEquipes() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var map = {};
+    idxs.forEach(function (i) {
+      var e = rows.equipe[i]; if (e < 0) return;
+      if (!map[e]) map[e] = { valor: 0, meta: 0, qtd: 0, prodDen: 0 };
+      map[e].valor += rows.valor[i]; map[e].meta += rows.meta[i]; map[e].qtd += rows.qtd[i];
+      if (isProdRow("ec", rows, i)) map[e].prodDen++;
+    });
+    var dict = GROUPS.ec.dicts.equipe;
+    var items = Object.keys(map).map(function (code) {
+      var m = map[code];
+      return { label: dict[code], valor: m.valor, meta: m.meta, produtividade: m.prodDen ? m.qtd / m.prodDen : null, ticket: div(m.valor, m.qtd), pct: div(m.valor, m.meta) };
+    }).sort(function (a, b) { return b.valor - a.valor; });
+
+    var totalValor = items.reduce(function (s, d) { return s + d.valor; }, 0);
+    var totalMeta = items.reduce(function (s, d) { return s + d.meta; }, 0);
+    var totalQtd = idxs.reduce(function (s, i) { return s + rows.qtd[i]; }, 0);
+    var totalProdDen = idxs.filter(function (i) { return isProdRow("ec", rows, i); }).length;
+    var totalRow = { label: "Total", valor: totalValor, meta: totalMeta, produtividade: totalProdDen ? totalQtd / totalProdDen : null, ticket: div(totalValor, totalQtd), pct: div(totalValor, totalMeta) };
+
+    var thead = "<thead><tr><th>Equipe</th><th>Valor Realizado</th><th>Meta</th><th>Produtividade</th><th>Ticket Médio</th></tr></thead>";
+    function rowHtml(d, isTotal) {
+      return "<tr" + (isTotal ? ' class="total"' : "") + "><td>" + d.label + '</td><td class="' + pctClass(d.pct) + '">' + fmtFullBRL(d.valor) +
+        "</td><td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtNum(d.produtividade, 2) + "</td><td>" + fmtFullBRL(d.ticket) + "</td></tr>";
+    }
+    document.getElementById("tblAnaliseEquipes").innerHTML = thead + "<tbody>" + items.map(function (d) { return rowHtml(d, false); }).join("") + rowHtml(totalRow, true) + "</tbody>";
+  }
+
+  function renderProdutividadeMensalTable() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var months = Array.from(new Set(idxs.map(function (i) { return rows.date[i].slice(0, 7); }))).sort();
+    var equipeCodes = Array.from(new Set(idxs.map(function (i) { return rows.equipe[i]; }))).filter(function (e) { return e >= 0; });
+    var dict = GROUPS.ec.dicts.equipe;
+    var equipes = equipeCodes.map(function (c) { return { idx: c, name: dict[c] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    var out = equipes.map(function (eq) {
+      var cells = months.map(function (mk) {
+        var sub = idxs.filter(function (i) { return rows.equipe[i] === eq.idx && rows.date[i].slice(0, 7) === mk; });
+        if (!sub.length) return null;
+        var qtd = sub.reduce(function (s, i) { return s + rows.qtd[i]; }, 0);
+        var den = sub.filter(function (i) { return isProdRow("ec", rows, i); }).length;
+        return den ? qtd / den : null;
+      });
+      return { label: eq.name, cells: cells };
+    });
+    var totalCells = months.map(function (mk) {
+      var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk; });
+      var qtd = sub.reduce(function (s, i) { return s + rows.qtd[i]; }, 0);
+      var den = sub.filter(function (i) { return isProdRow("ec", rows, i); }).length;
+      return den ? qtd / den : null;
+    });
+    var colHeaders = months.map(function (mk) { var mi = parseInt(mk.slice(5, 7), 10) - 1; return MONTH_FULL[mi]; });
+    function numCell(v) { return '<td class="cell-plain">' + fmtNum(v, 2) + "</td>"; }
+    renderTable("tblProdutividadeMensal", colHeaders, "Equipe", out, numCell, { cells: totalCells });
+  }
+
+  // ---------- full render ----------
+  function renderAll() {
+    var activePage = document.querySelector(".page.active").id.replace("page-", "");
+    var group = PAGE_GROUP[activePage];
+    var idxs = activePage === "procSup" ? procSupIdxs() : currentIdxs(group);
+    document.getElementById("resultNote").textContent = fmtInt.format(idxs.length) + " linhas no filtro atual";
+
+    if (activePage === "geral") {
+      renderKpisInto("kpis", "ec");
+      drawBulletChart("chartMes", monthlyBreakdown("ec", idxs), cv("--accent"), 980);
+      drawProcChart("chartProc", dimBreakdown("ec", idxs, "proc", "processo"));
+      drawBulletChart("chartCentro", dimBreakdown("ec", idxs, "centro", "centro"), cv("--accent"), 480);
+    } else if (activePage === "fat") {
+      renderCentroMesTable();
+      renderProcCentroTable();
+      renderCentroResumoTable();
+      renderDiaSemanaTable();
+    } else if (activePage === "procSup") {
+      renderProcSupPage();
+    } else if (activePage === "analiseEquipes") {
+      renderAnaliseEquipes();
+    } else if (activePage === "fatGrafico") {
+      renderEquipesChart("ec", "chartFatGrafico", "tblFatGrafico");
+    } else if (activePage === "produtividadeMensal") {
+      renderProdutividadeMensalTable();
+    } else if (activePage === "escaladoFat") {
+      renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
+    } else if (activePage === "geralOb") {
+      renderKpisInto("kpisOb", "ob");
+      drawBulletChart("chartMesOb", monthlyBreakdown("ob", idxs), cv("--accent"), 980);
+      drawProcChart("chartProcOb", dimBreakdown("ob", idxs, "proc", "processo"));
+      drawBulletChart("chartCentroOb", dimBreakdown("ob", idxs, "centro", "centro"), cv("--accent"), 480);
+    } else if (activePage === "escaladoOb") {
+      renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
+    } else if (activePage === "equipesOb") {
+      renderEquipesChart("ob", "chartEquipesOb", "tblEquipesOb");
+    }
+  }
+
+  renderAll();
+  var resizeTimer;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderAll, 120); });
+})();
+</script>
