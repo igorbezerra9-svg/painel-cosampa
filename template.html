@@ -167,6 +167,8 @@
   .meta-line { fill: none; stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 3 3; }
   .prod-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
   .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 2; }
+  .line-series { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+  .line-series-dot { fill: var(--accent); stroke: var(--surface-1); stroke-width: 2; cursor: pointer; }
   .empty-note { fill: var(--text-muted); font-size: 12px; font-family: inherit; }
 
   .tooltip {
@@ -374,7 +376,7 @@
       <section class="page" id="page-escaladoFat">
         <div class="panel" style="margin-bottom:16px">
           <p class="panel-title">Turnos Escalados e Turnos Trabalhados por Dia</p>
-          <p class="panel-caption">Cinza = escalados (trabalhou + faltou) · verde = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
+          <p class="panel-caption">Linha dourada = escalados (trabalhou + faltou) · barra = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
           <div class="chart-scroll"><svg class="chart" id="chartDiaFat" viewBox="0 0 900 260"></svg></div>
         </div>
         <div class="stack-1">
@@ -417,7 +419,7 @@
       <section class="page" id="page-escaladoOb">
         <div class="panel" style="margin-bottom:16px">
           <p class="panel-title">Turnos Escalados e Turnos Trabalhados por Dia</p>
-          <p class="panel-caption">Cinza = escalados (trabalhou + faltou) · verde = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
+          <p class="panel-caption">Linha dourada = escalados (trabalhou + faltou) · barra = trabalhados · selecione um Mês para uma leitura por dia mais limpa</p>
           <div class="chart-scroll"><svg class="chart" id="chartDiaOb" viewBox="0 0 900 260"></svg></div>
         </div>
         <div class="stack-1">
@@ -904,15 +906,16 @@
   }
 
   // side-by-side pair of plain count bars (gray + accent), used for escalado/trabalhado by day
-  function drawPairedBarChart(svgId, items, color) {
+  // bars = trabalhados · line = escalados (with its value labeled above each point)
+  function drawEscaladoChart(svgId, items, color) {
     var svg = document.getElementById(svgId);
-    var H = 340, padL = 12, padR = 12, padT = 30, padB = 30;
-    var W = Math.max(760, items.length * 44);
+    var H = 340, padL = 14, padR = 14, padT = 42, padB = 30;
+    var W = Math.max(760, items.length * 38);
     if (!items.length) return emptyChart(svg, W, H);
     var innerW = W - padL - padR, innerH = H - padT - padB;
     var maxVal = 0; items.forEach(function (d) { maxVal = Math.max(maxVal, d.escalado, d.trabalhado); });
-    maxVal = maxVal * 1.18 || 1;
-    var groupW = innerW / items.length, barW = Math.min(16, groupW * 0.36), gap = 2;
+    maxVal = maxVal * 1.25 || 1;
+    var groupW = innerW / items.length, barW = Math.min(20, groupW * 0.5);
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     svg.style.width = W + "px";
     svg.innerHTML = "";
@@ -920,27 +923,40 @@
       var gy = padT + innerH - (innerH * g / 4);
       svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
     }
+    function tip(evt, d) {
+      showTip(evt, "<div><b>Dia " + d.label + "</b></div>" +
+        '<div class="tt-row"><span>Escalados</span><b>' + fmtInt.format(d.escalado) + "</b></div>" +
+        '<div class="tt-row"><span>Trabalhados</span><b>' + fmtInt.format(d.trabalhado) + "</b></div>");
+    }
+    var pts = [];
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
-      var h1 = (d.escalado / maxVal) * innerH, y1 = padT + innerH - h1;
-      var h2 = (d.trabalhado / maxVal) * innerH, y2 = padT + innerH - h2;
-      var b1 = el("rect", { x: cx - barW - gap, y: y1, width: barW, height: Math.max(h1, 1), rx: 3, fill: cv("--baseline"), class: "bar" });
-      var b2 = el("rect", { x: cx + gap, y: y2, width: barW, height: Math.max(h2, 1), rx: 3, fill: color, class: "bar" });
-      [b1, b2].forEach(function (node) {
-        node.addEventListener("mousemove", function (evt) {
-          showTip(evt, "<div><b>Dia " + d.label + "</b></div>" +
-            '<div class="tt-row"><span>Escalados</span><b>' + fmtInt.format(d.escalado) + "</b></div>" +
-            '<div class="tt-row"><span>Trabalhados</span><b>' + fmtInt.format(d.trabalhado) + "</b></div>");
-        });
-        node.addEventListener("mouseleave", hideTip);
-      });
-      svg.appendChild(b1); svg.appendChild(b2);
-      var t1 = el("text", { x: cx - barW / 2 - gap, y: y1 - 5, class: "val-label", "text-anchor": "middle" });
-      t1.textContent = fmtInt.format(d.escalado); svg.appendChild(t1);
-      var t2 = el("text", { x: cx + barW / 2 + gap, y: y2 - 5, class: "val-label", "text-anchor": "middle" });
-      t2.textContent = fmtInt.format(d.trabalhado); svg.appendChild(t2);
+      var barH = (d.trabalhado / maxVal) * innerH, by = padT + innerH - barH;
+      var bar = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
+      bar.addEventListener("mousemove", function (evt) { tip(evt, d); });
+      bar.addEventListener("mouseleave", hideTip);
+      svg.appendChild(bar);
+      var barLbl = el("text", { x: cx, y: by - 5, class: "val-label", "text-anchor": "middle" });
+      barLbl.textContent = fmtInt.format(d.trabalhado);
+      svg.appendChild(barLbl);
+
+      var ly = padT + innerH - (d.escalado / maxVal) * innerH;
+      pts.push([cx, ly, d]);
+
       var axisLbl = el("text", { x: cx, y: H - 10, class: "axis-label", "text-anchor": "middle" });
-      axisLbl.textContent = d.label; svg.appendChild(axisLbl);
+      axisLbl.textContent = d.label;
+      svg.appendChild(axisLbl);
+    });
+    var pathD = pts.map(function (p, i) { return (i === 0 ? "M" : "L") + p[0] + " " + p[1]; }).join(" ");
+    svg.appendChild(el("path", { d: pathD, class: "line-series" }));
+    pts.forEach(function (p) {
+      var dot = el("circle", { cx: p[0], cy: p[1], r: 3.5, class: "line-series-dot" });
+      dot.addEventListener("mousemove", function (evt) { tip(evt, p[2]); });
+      dot.addEventListener("mouseleave", hideTip);
+      svg.appendChild(dot);
+      var lbl = el("text", { x: p[0], y: p[1] - 9, class: "pct-label", "text-anchor": "middle" });
+      lbl.textContent = fmtInt.format(p[2].escalado);
+      svg.appendChild(lbl);
     });
   }
 
@@ -1212,7 +1228,7 @@
     });
     var dates = Object.keys(byDay).sort();
     var items = dates.map(function (dt) { return { label: String(parseInt(dt.slice(8, 10), 10)), escalado: byDay[dt].escalado, trabalhado: byDay[dt].trabalhado }; });
-    drawPairedBarChart(chartId, items, seriesColor(group));
+    drawEscaladoChart(chartId, items, seriesColor(group));
 
     var centros = visibleValues(group, "centro");
     var days = Array.from(new Set(idxs.map(function (i) { return parseInt(rows.date[i].slice(8, 10), 10); }))).sort(function (a, b) { return a - b; });
