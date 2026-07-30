@@ -2,7 +2,10 @@ name: Atualizar painel
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    # off the top of the hour on purpose — GitHub's own docs warn that
+    # "0 * * * *" runs are frequently delayed because every scheduled
+    # workflow on the platform tries to fire at :00
+    - cron: "17 * * * *"
   workflow_dispatch: {}
 
 permissions:
