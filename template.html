@@ -405,7 +405,7 @@
             <button type="button" class="seg-btn" data-metric="valor">Valor Realizado</button>
           </div>
           <p class="panel-title" id="comparativoMensalTitle">Evolução Mensal por Equipe — % da Meta</p>
-          <p class="panel-caption">Linhas = equipe · colunas = mês · compare a evolução de cada equipe mês a mês</p>
+          <p class="panel-caption">Linhas = equipe · colunas = mês · compare a evolução de cada equipe mês a mês · equipes sem nenhum valor real no período (tudo zerado) ficam ocultas</p>
           <div class="tablewrap"><table class="datatable sticky-col" id="tblComparativoMensal"></table></div>
         </div>
       </section>
@@ -1486,6 +1486,10 @@
         return sub.length ? metricFor(sub) : null;
       });
       return { label: eq.name, cells: cells };
+    }).filter(function (eq) {
+      // esconde equipes sem nenhum mês com valor real (tudo "—" ou zerado) — normalmente equipes
+      // administrativas/sem meta que só teriam ruído em uma tabela pensada pra comparar evolução
+      return eq.cells.some(function (v) { return v != null && v !== 0; });
     });
     var totalCells = months.map(function (mk) {
       var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk; });
