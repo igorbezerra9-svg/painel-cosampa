@@ -1290,8 +1290,22 @@
 
   function buildProcTabs() {
     var dict = GROUPS.ec.dicts.processo;
-    var items = dict.map(function (name, idx) { return { name: name, idx: idx }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
-    if (procTabSelection == null && items.length) procTabSelection = items[0].idx;
+    var rows = GROUPS.ec.rows, f = filters.ec;
+    var hasData = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      if (rows.valor[i] === 0) continue;
+      if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
+      if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
+      if (f.mes && rows.date[i].slice(0, 7) !== f.mes) continue;
+      if (f.dia && rows.date[i] !== f.dia) continue;
+      hasData[rows.proc[i]] = true;
+    }
+    // esconde processos sem nenhum valor real nos filtros atuais (ex.: "Linha Viva
+    // Leve" e "Obras" nunca aparecem em Emergencial_Comercial) em vez de mostrar uma aba vazia
+    var items = dict.map(function (name, idx) { return { name: name, idx: idx }; })
+      .filter(function (it) { return hasData[it.idx]; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    if ((procTabSelection == null || !hasData[procTabSelection]) && items.length) procTabSelection = items[0].idx;
     var container = document.getElementById("procTabs");
     container.innerHTML = items.map(function (it) {
       return '<button type="button" class="proc-tab' + (it.idx === procTabSelection ? " active" : "") + '" data-idx="' + it.idx + '">' + it.name + "</button>";
