@@ -1337,7 +1337,8 @@
     var items = Object.keys(map).map(function (code) {
       var m = map[code];
       return { label: dict[code], valor: m.valor, ticket: div(m.valor, m.qtd), prod: m.prodDen ? m.qtd / m.prodDen : null, pct: div(m.valor, m.meta) };
-    }).sort(function (a, b) { return b.valor - a.valor; });
+    }).filter(function (d) { return d.valor !== 0; }) // esconde quem não teve nenhum valor real (administrativo/sem meta)
+      .sort(function (a, b) { return b.valor - a.valor; });
 
     var thead = "<thead><tr><th>" + rowLabel + "</th><th>Valor Realizado</th><th>Ticket Médio</th><th>Produtividade</th></tr></thead>";
     var tbody = "<tbody>" + items.map(function (d) {
