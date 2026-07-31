@@ -256,7 +256,6 @@
     <span class="tab-sep"></span>
     <button class="tab-btn" data-page="geralOb" type="button">Painel Geral - Obras</button>
     <button class="tab-btn" data-page="escaladoOb" type="button">Requerido x Escalado - Obras</button>
-    <button class="tab-btn" data-page="equipesOb" type="button">Faturamento Equipes - Obras</button>
   </div>
 
   <div class="app">
@@ -468,18 +467,6 @@
         </div>
       </section>
 
-      <section class="page" id="page-equipesOb">
-        <div class="panel" style="margin-bottom:16px">
-          <p class="panel-title">Valor Realizado e Meta por Equipe</p>
-          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta · ▲ = fora da escala (passe o mouse pra ver o valor real) · arraste a barra de rolagem abaixo do gráfico pra ver todas as equipes →</p>
-          <div class="chart-scroll"><svg class="chart" id="chartEquipesOb" viewBox="0 0 900 260"></svg></div>
-        </div>
-        <div class="panel">
-          <p class="panel-title">Detalhe por Equipe</p>
-          <div class="tablewrap"><table class="datatable" id="tblEquipesOb"></table></div>
-        </div>
-      </section>
-
     </div>
   </div>
 
@@ -509,7 +496,7 @@
   };
   var PAGE_GROUP = {
     geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
-    geralOb: "ob", escaladoOb: "ob", equipesOb: "ob"
+    geralOb: "ob", escaladoOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
   var EQUIPE_PAGES = { analiseEquipes: true, comparativoMensal: true };
@@ -566,7 +553,6 @@
   function fmtNum(v, d) { return v == null ? "—" : v.toLocaleString("pt-BR", { maximumFractionDigits: d == null ? 0 : d, minimumFractionDigits: d == null ? 0 : d }); }
   function div(a, b) { return (!b || a == null) ? null : a / b; }
   function pctClass(pct) { if (pct == null) return "cell-empty"; if (pct >= 1) return "cell-good"; if (pct >= 0.9) return "cell-warn"; return "cell-crit"; }
-  function statusColorVar(pct) { if (pct == null) return "--text-muted"; if (pct >= 1) return "--status-good"; if (pct >= 0.9) return "--status-warn"; return "--status-crit"; }
 
   var MONTH_FULL = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
   var WEEKDAY_PT = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"];
@@ -1094,69 +1080,6 @@
     });
   }
 
-  // single bar per category, colored by its own % status, sorted by caller
-  function percentile(values, p) {
-    if (!values.length) return 0;
-    var s = values.slice().sort(function (a, b) { return a - b; });
-    return s[Math.min(s.length - 1, Math.floor(s.length * p))];
-  }
-
-  // single bar per category, colored by its own % status; a handful of outliers
-  // don't get to squash everyone else — the scale caps near the 85th percentile
-  // and outlier bars are flagged with a chevron instead of stretching the axis
-  function drawStatusBarChart(svgId, items) {
-    var svg = document.getElementById(svgId);
-    var H = 360, padL = 12, padR = 12, padT = 30, padB = 78;
-    var W = Math.max(760, items.length * 30);
-    if (!items.length) return emptyChart(svg, W, H);
-    var innerW = W - padL - padR, innerH = H - padT - padB;
-    var trueMax = 0; items.forEach(function (d) { trueMax = Math.max(trueMax, d.valor); });
-    var cap = percentile(items.map(function (d) { return d.valor; }), 0.85) * 1.5;
-    var ceiling = (trueMax > cap * 1.1 && cap > 0) ? cap : trueMax;
-    var maxVal = ceiling * 1.15 || 1;
-    var groupW = innerW / items.length, barW = Math.min(18, groupW * 0.58);
-    var step = Math.max(1, Math.ceil(items.length / 26));
-    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-    svg.style.width = W + "px";
-    svg.innerHTML = "";
-    for (var g = 0; g <= 4; g++) {
-      var gy = padT + innerH - (innerH * g / 4);
-      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: gy, y2: gy, class: "gridline" }));
-    }
-    items.forEach(function (d, i) {
-      var cx = padL + groupW * i + groupW / 2;
-      var clipped = d.valor > ceiling;
-      var shownVal = Math.min(d.valor, ceiling);
-      var barH = (shownVal / maxVal) * innerH, by = padT + innerH - barH;
-      var color = cv(statusColorVar(d.pct));
-      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
-      rect.addEventListener("mousemove", function (evt) {
-        showTip(evt, "<div><b>" + d.label + "</b></div>" +
-          '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
-          '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(d.meta) + "</b></div>" +
-          '<div class="tt-row"><span>% meta</span><b>' + fmtPct(d.pct) + "</b></div>");
-      });
-      rect.addEventListener("mouseleave", hideTip);
-      svg.appendChild(rect);
-      if (clipped) {
-        svg.appendChild(el("path", {
-          d: "M" + (cx - 5) + " " + (by + 6) + " L" + cx + " " + (by - 2) + " L" + (cx + 5) + " " + (by + 6),
-          fill: "none", stroke: cv("--surface-1"), "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round"
-        }));
-      }
-      if (clipped || i % step === 0) {
-        var lbl = el("text", { x: cx, y: by - 6, class: "val-label", "text-anchor": "middle" });
-        lbl.textContent = (d.pct == null ? "—" : Math.round(d.pct * 100) + "%") + (clipped ? " ▲" : "");
-        svg.appendChild(lbl);
-      }
-      if (i % step === 0) {
-        var axisLbl = el("text", { x: cx, y: padT + innerH + 12, class: "axis-label", "text-anchor": "end", transform: "rotate(-45 " + cx + " " + (padT + innerH + 12) + ")" });
-        axisLbl.textContent = d.label;
-        svg.appendChild(axisLbl);
-      }
-    });
-  }
-
   function monthlyBreakdown(group, idxs) {
     var rows = GROUPS[group].rows, map = {};
     idxs.forEach(function (i) {
@@ -1398,29 +1321,6 @@
     renderTable(tblTrabId, colHeaders, "Centro", buildRows("trabalhado"), intCell);
   }
 
-  function renderEquipesChart(group, chartId, tblId) {
-    var idxs = currentIdxs(group), rows = GROUPS[group].rows;
-    var map = {};
-    idxs.forEach(function (i) {
-      var e = rows.equipe[i]; if (e < 0) return;
-      if (!map[e]) map[e] = { valor: 0, meta: 0, qtd: 0 };
-      map[e].valor += rows.valor[i]; map[e].meta += rows.meta[i]; map[e].qtd += rows.qtd[i];
-    });
-    var dict = GROUPS[group].dicts.equipe;
-    var items = Object.keys(map).map(function (code) {
-      var m = map[code];
-      return { label: dict[code], valor: m.valor, meta: m.meta, qtd: m.qtd, pct: div(m.valor, m.meta) };
-    }).sort(function (a, b) { var pa = a.pct == null ? -1 : a.pct, pb = b.pct == null ? -1 : b.pct; return pb - pa; });
-
-    drawStatusBarChart(chartId, items);
-
-    var thead = "<thead><tr><th>Equipe</th><th>Valor Realizado</th><th>Meta</th><th>Qtd Serviços</th><th>% Meta</th></tr></thead>";
-    var tbody = "<tbody>" + items.map(function (d) {
-      return "<tr><td>" + d.label + "</td><td>" + fmtFullBRL(d.valor) + "</td><td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtInt.format(Math.round(d.qtd)) + "</td>" + pctCell(d.pct) + "</tr>";
-    }).join("") + "</tbody>";
-    document.getElementById(tblId).innerHTML = thead + tbody;
-  }
-
   function renderAnaliseEquipes() {
     var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
     var map = {};
@@ -1543,8 +1443,6 @@
       drawComboChart("chartCentroOb", dimBreakdown("ob", idxs, "centro", "centro"), seriesColor("ob"), seriesColorStrong("ob"), 480);
     } else if (activePage === "escaladoOb") {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
-    } else if (activePage === "equipesOb") {
-      renderEquipesChart("ob", "chartEquipesOb", "tblEquipesOb");
     }
   }
 
