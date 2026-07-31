@@ -250,7 +250,6 @@
     <button class="tab-btn" data-page="fat" type="button">Faturamento</button>
     <button class="tab-btn" data-page="procSup" type="button">Processo - Supervisor</button>
     <button class="tab-btn" data-page="analiseEquipes" type="button">Análise Equipes</button>
-    <button class="tab-btn" data-page="fatGrafico" type="button">Faturamento Gráfico</button>
     <button class="tab-btn" data-page="produtividadeMensal" type="button">Produtividade - Mensal</button>
     <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
@@ -375,18 +374,6 @@
           <p class="panel-title">Análise de Equipes</p>
           <p class="panel-caption">Valor Realizado, Meta, Produtividade e Ticket Médio por equipe · cor = status vs. meta</p>
           <div class="tablewrap"><table class="datatable" id="tblAnaliseEquipes"></table></div>
-        </div>
-      </section>
-
-      <section class="page" id="page-fatGrafico">
-        <div class="panel" style="margin-bottom:16px">
-          <p class="panel-title">Valor Realizado e Meta por Equipe</p>
-          <p class="panel-caption">Barra = valor realizado (R$) · cor = status vs. meta · ordenado por % da meta · ▲ = fora da escala (passe o mouse pra ver o valor real) · arraste a barra de rolagem abaixo do gráfico pra ver todas as equipes →</p>
-          <div class="chart-scroll"><svg class="chart" id="chartFatGrafico" viewBox="0 0 900 260"></svg></div>
-        </div>
-        <div class="panel">
-          <p class="panel-title">Detalhe por Equipe</p>
-          <div class="tablewrap"><table class="datatable" id="tblFatGrafico"></table></div>
         </div>
       </section>
 
@@ -521,7 +508,7 @@
     ob: { rows: DATA.ob, dicts: DATA.obDicts }
   };
   var PAGE_GROUP = {
-    geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", fatGrafico: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
+    geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
     geralOb: "ob", escaladoOb: "ob", equipesOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
@@ -1529,8 +1516,6 @@
       renderProcSupPage();
     } else if (activePage === "analiseEquipes") {
       renderAnaliseEquipes();
-    } else if (activePage === "fatGrafico") {
-      renderEquipesChart("ec", "chartFatGrafico", "tblFatGrafico");
     } else if (activePage === "produtividadeMensal") {
       renderProdutividadeMensalTable();
     } else if (activePage === "comparativoMensal") {
