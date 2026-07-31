@@ -156,6 +156,9 @@
   .kpi .copy-btn svg { width: 13px; height: 13px; }
 
   .seg-toggle { position: absolute; top: 14px; right: 14px; display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 2px; gap: 2px; }
+  /* panels that also get an auto copy-btn (top:14px;right:14px;width:30px) need the toggle shifted clear of it */
+  .seg-toggle[data-eq-mes-toggle] { right: 52px; }
+  #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 230px; }
   .seg-btn { font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
   .seg-btn:hover { color: var(--text-primary); }
   .seg-btn.active { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
@@ -249,6 +252,7 @@
     <button class="tab-btn" data-page="analiseEquipes" type="button">Análise Equipes</button>
     <button class="tab-btn" data-page="fatGrafico" type="button">Faturamento Gráfico</button>
     <button class="tab-btn" data-page="produtividadeMensal" type="button">Produtividade - Mensal</button>
+    <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
     <span class="tab-sep"></span>
     <button class="tab-btn" data-page="geralOb" type="button">Painel Geral - Obras</button>
@@ -394,6 +398,18 @@
         </div>
       </section>
 
+      <section class="page" id="page-comparativoMensal">
+        <div class="panel">
+          <div class="seg-toggle" data-eq-mes-toggle>
+            <button type="button" class="seg-btn active" data-metric="pct">% da Meta</button>
+            <button type="button" class="seg-btn" data-metric="valor">Valor Realizado</button>
+          </div>
+          <p class="panel-title" id="comparativoMensalTitle">Evolução Mensal por Equipe — % da Meta</p>
+          <p class="panel-caption">Linhas = equipe · colunas = mês · compare a evolução de cada equipe mês a mês</p>
+          <div class="tablewrap"><table class="datatable sticky-col" id="tblComparativoMensal"></table></div>
+        </div>
+      </section>
+
       <section class="page" id="page-escaladoFat">
         <div class="panel" style="margin-bottom:16px">
           <p class="panel-title">Turnos Escalados e Turnos Trabalhados por Dia</p>
@@ -505,18 +521,18 @@
     ob: { rows: DATA.ob, dicts: DATA.obDicts }
   };
   var PAGE_GROUP = {
-    geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", fatGrafico: "ec", produtividadeMensal: "ec", escaladoFat: "ec",
+    geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", fatGrafico: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
     geralOb: "ob", escaladoOb: "ob", equipesOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
-  var EQUIPE_PAGES = { analiseEquipes: true };
+  var EQUIPE_PAGES = { analiseEquipes: true, comparativoMensal: true };
   var procTabSelection = null;
   var chartMode = { ec: "month", ob: "month" };
   var CHART_TITLES = {
     ec: { month: "Realizado vs. Meta por Mês", week: "Realizado vs. Meta por Semana" },
     ob: { month: "Realizado vs. Meta por Mês — Obras", week: "Realizado vs. Meta por Semana — Obras" }
   };
-  document.querySelectorAll(".seg-toggle").forEach(function (toggle) {
+  document.querySelectorAll(".seg-toggle[data-chart-toggle]").forEach(function (toggle) {
     var g = toggle.dataset.chartToggle;
     toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -524,6 +540,20 @@
         btn.classList.add("active");
         chartMode[g] = btn.dataset.mode;
         document.getElementById("chartMesTitle-" + g).textContent = CHART_TITLES[g][chartMode[g]];
+        renderAll();
+      });
+    });
+  });
+
+  var equipeMesMetric = "pct";
+  var EQUIPE_MES_TITLES = { pct: "Evolução Mensal por Equipe — % da Meta", valor: "Evolução Mensal por Equipe — Valor Realizado" };
+  document.querySelectorAll(".seg-toggle[data-eq-mes-toggle]").forEach(function (toggle) {
+    toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        toggle.querySelectorAll(".seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        equipeMesMetric = btn.dataset.metric;
+        document.getElementById("comparativoMensalTitle").textContent = EQUIPE_MES_TITLES[equipeMesMetric];
         renderAll();
       });
     });
@@ -1438,6 +1468,34 @@
     renderTable("tblProdutividadeMensal", colHeaders, "Equipe", out, numCell, { cells: totalCells });
   }
 
+  function renderComparativoMensalTable() {
+    var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
+    var months = Array.from(new Set(idxs.map(function (i) { return rows.date[i].slice(0, 7); }))).sort();
+    var equipeCodes = Array.from(new Set(idxs.map(function (i) { return rows.equipe[i]; }))).filter(function (e) { return e >= 0; });
+    var dict = GROUPS.ec.dicts.equipe;
+    var equipes = equipeCodes.map(function (c) { return { idx: c, name: dict[c] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    function metricFor(sub) {
+      var valor = sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0);
+      if (equipeMesMetric === "valor") return valor;
+      var meta = sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0);
+      return div(valor, meta);
+    }
+    var out = equipes.map(function (eq) {
+      var cells = months.map(function (mk) {
+        var sub = idxs.filter(function (i) { return rows.equipe[i] === eq.idx && rows.date[i].slice(0, 7) === mk; });
+        return sub.length ? metricFor(sub) : null;
+      });
+      return { label: eq.name, cells: cells };
+    });
+    var totalCells = months.map(function (mk) {
+      var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk; });
+      return sub.length ? metricFor(sub) : null;
+    });
+    var colHeaders = months.map(function (mk) { var mi = parseInt(mk.slice(5, 7), 10) - 1; return MONTH_FULL[mi]; });
+    var cellFn = equipeMesMetric === "pct" ? pctCell : function (v) { return '<td class="cell-plain">' + fmtFullBRL(v) + "</td>"; };
+    renderTable("tblComparativoMensal", colHeaders, "Equipe", out, cellFn, { cells: totalCells });
+  }
+
   // ---------- full render ----------
   function renderAll() {
     var activePage = document.querySelector(".page.active").id.replace("page-", "");
@@ -1463,6 +1521,8 @@
       renderEquipesChart("ec", "chartFatGrafico", "tblFatGrafico");
     } else if (activePage === "produtividadeMensal") {
       renderProdutividadeMensalTable();
+    } else if (activePage === "comparativoMensal") {
+      renderComparativoMensalTable();
     } else if (activePage === "escaladoFat") {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "geralOb") {
