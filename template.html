@@ -617,6 +617,20 @@
     var panel = wrap.querySelector(".fg-panel");
     var items = dict.map(function (name, idx) { return { name: name, idx: idx }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
 
+    // a Equipe é a dimensão mais granular: sua lista acompanha o que os
+    // outros filtros (Supervisor, Centro, Processo) já deixaram visível,
+    // em vez de sempre mostrar todas as equipes que já existiram
+    if (dim === "equipe") {
+      var rows = GROUPS[activeGroup].rows;
+      var available = new Set();
+      for (var i = 0; i < rows.equipe.length; i++) {
+        var code = rows.equipe[i];
+        if (code >= 0 && matchDimsExcept(activeGroup, i, "equipe")) available.add(code);
+      }
+      items = items.filter(function (it) { return available.has(it.idx); });
+      sel.forEach(function (idx) { if (!available.has(idx)) sel.delete(idx); });
+    }
+
     panel.innerHTML = items.map(function (it) {
       return '<label class="fg-opt"><input type="checkbox" value="' + it.idx + '"' + (sel.has(it.idx) ? " checked" : "") + '> <span>' + it.name + "</span></label>";
     }).join("") + '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>';
@@ -636,16 +650,16 @@
         var idx = parseInt(cb.value, 10);
         var s = filters[activeGroup][dim];
         if (cb.checked) s.add(idx); else s.delete(idx);
-        updateFilterBtn(dim); renderAll();
+        updateFilterBtn(dim); if (dim !== "equipe") buildFilterUI("equipe"); renderAll();
       });
     });
     panel.querySelector('[data-act="all"]').addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; filters[activeGroup][dim].add(parseInt(cb.value, 10)); });
-      updateFilterBtn(dim); renderAll();
+      updateFilterBtn(dim); if (dim !== "equipe") buildFilterUI("equipe"); renderAll();
     });
     panel.querySelector('[data-act="none"]').addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
-      filters[activeGroup][dim].clear(); updateFilterBtn(dim); renderAll();
+      filters[activeGroup][dim].clear(); updateFilterBtn(dim); if (dim !== "equipe") buildFilterUI("equipe"); renderAll();
     });
     updateFilterBtn(dim);
   }
@@ -693,6 +707,14 @@
     if (f.centro.size && !f.centro.has(rows.centro[i])) return false;
     if (f.proc.size && !f.proc.has(rows.proc[i])) return false;
     if (f.equipe.size && !f.equipe.has(rows.equipe[i])) return false;
+    return true;
+  }
+  function matchDimsExcept(group, i, exceptDim) {
+    var rows = GROUPS[group].rows, f = filters[group];
+    if (exceptDim !== "sup" && f.sup.size && !f.sup.has(rows.sup[i])) return false;
+    if (exceptDim !== "centro" && f.centro.size && !f.centro.has(rows.centro[i])) return false;
+    if (exceptDim !== "proc" && f.proc.size && !f.proc.has(rows.proc[i])) return false;
+    if (exceptDim !== "equipe" && f.equipe.size && !f.equipe.has(rows.equipe[i])) return false;
     return true;
   }
   function matchAll(group, i) {
