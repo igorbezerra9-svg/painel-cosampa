@@ -593,6 +593,7 @@
   var activeGroup = "ec";
   var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
   var FILTER_DICT_KEY = { proc: "processo", sup: "supervisor", centro: "centro", equipe: "equipe" };
+  var CASCADE_DIMS = { sup: true, equipe: true };
 
   var selMes = document.getElementById("selMes");
   var selDia = document.getElementById("selDia");
@@ -639,6 +640,12 @@
     btn.classList.toggle("active", !!count);
     updateClearVisibility();
   }
+  function rebuildCascade(changedDim) {
+    // sup depende de proc/centro/equipe; equipe depende de proc/centro/sup —
+    // reconstrói sup primeiro pra equipe já refletir uma eventual poda no sup
+    if (changedDim !== "sup") buildFilterUI("sup");
+    if (changedDim !== "equipe") buildFilterUI("equipe");
+  }
   function buildFilterUI(dim) {
     var dict = GROUPS[activeGroup].dicts[FILTER_DICT_KEY[dim]];
     var sel = filters[activeGroup][dim];
@@ -647,15 +654,15 @@
     var panel = wrap.querySelector(".fg-panel");
     var items = dict.map(function (name, idx) { return { name: name, idx: idx }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
 
-    // a Equipe é a dimensão mais granular: sua lista acompanha o que os
-    // outros filtros (Supervisor, Centro, Processo) já deixaram visível,
-    // em vez de sempre mostrar todas as equipes que já existiram
-    if (dim === "equipe") {
+    // Supervisor e Equipe acompanham o que os outros filtros já deixaram
+    // visível (ex.: escolher um Processo já restringe quais supervisores e
+    // equipes aparecem), em vez de sempre listar tudo que já existiu
+    if (CASCADE_DIMS[dim]) {
       var rows = GROUPS[activeGroup].rows;
       var available = new Set();
-      for (var i = 0; i < rows.equipe.length; i++) {
-        var code = rows.equipe[i];
-        if (code >= 0 && matchDimsExcept(activeGroup, i, "equipe")) available.add(code);
+      for (var i = 0; i < rows[dim].length; i++) {
+        var code = rows[dim][i];
+        if (code >= 0 && matchDimsExcept(activeGroup, i, dim)) available.add(code);
       }
       items = items.filter(function (it) { return available.has(it.idx); });
       sel.forEach(function (idx) { if (!available.has(idx)) sel.delete(idx); });
@@ -680,16 +687,16 @@
         var idx = parseInt(cb.value, 10);
         var s = filters[activeGroup][dim];
         if (cb.checked) s.add(idx); else s.delete(idx);
-        updateFilterBtn(dim); if (dim !== "equipe") buildFilterUI("equipe"); renderAll();
+        updateFilterBtn(dim); rebuildCascade(dim); renderAll();
       });
     });
     panel.querySelector('[data-act="all"]').addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; filters[activeGroup][dim].add(parseInt(cb.value, 10)); });
-      updateFilterBtn(dim); if (dim !== "equipe") buildFilterUI("equipe"); renderAll();
+      updateFilterBtn(dim); rebuildCascade(dim); renderAll();
     });
     panel.querySelector('[data-act="none"]').addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
-      filters[activeGroup][dim].clear(); updateFilterBtn(dim); if (dim !== "equipe") buildFilterUI("equipe"); renderAll();
+      filters[activeGroup][dim].clear(); updateFilterBtn(dim); rebuildCascade(dim); renderAll();
     });
     updateFilterBtn(dim);
   }
