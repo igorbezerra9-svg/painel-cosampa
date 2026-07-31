@@ -2,9 +2,11 @@ name: Atualizar painel
 
 on:
   schedule:
-    # 5 minutes is the shortest interval GitHub Actions allows for
-    # scheduled workflows — runs can still be a few minutes late under load
-    - cron: "*/5 * * * *"
+    # this is now just a safety net — the Google Sheet triggers a workflow_dispatch
+    # instantly via the GitHub API right after each merge, since GitHub's own
+    # "schedule" trigger is documented to get delayed (sometimes by hours) under
+    # platform load, especially at very short intervals like */5
+    - cron: "*/20 * * * *"
   workflow_dispatch: {}
 
 permissions:
