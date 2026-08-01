@@ -157,8 +157,9 @@
 
   .seg-toggle { position: absolute; top: 14px; right: 14px; display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 2px; gap: 2px; }
   /* panels that also get an auto copy-btn (top:14px;right:14px;width:30px) need the toggle shifted clear of it */
-  .seg-toggle[data-eq-mes-toggle] { right: 52px; }
+  .seg-toggle[data-eq-mes-toggle], .seg-toggle[data-chart-toggle] { right: 52px; }
   #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 230px; }
+  #chartMesTitle-ec, #chartMesTitle-ob, #chartMesTitle-ec + .panel-caption, #chartMesTitle-ob + .panel-caption { margin-right: 200px; }
   .seg-btn { font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
   .seg-btn:hover { color: var(--text-primary); }
   .seg-btn.active { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
@@ -305,12 +306,14 @@
             <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec)"></span>Realizado</span>
             <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
           </div>
+          <div class="tablewrap"><table class="datatable" id="tblChartMes"></table></div>
         </div>
         <div class="grid-2">
           <div class="panel">
             <p class="panel-title">Faturamento × Produtividade por Processo</p>
             <p class="panel-caption">Barra = valor realizado (R$) · linha = produtividade média</p>
             <svg class="chart" id="chartProc" viewBox="0 0 480 260"></svg>
+            <div class="tablewrap"><table class="datatable" id="tblChartProc"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title">Realizado vs. Meta por Centro de Serviço</p>
@@ -321,6 +324,7 @@
               <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec)"></span>Realizado</span>
               <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
             </div>
+            <div class="tablewrap"><table class="datatable" id="tblChartCentro"></table></div>
           </div>
         </div>
       </section>
@@ -429,12 +433,14 @@
             <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob)"></span>Realizado</span>
             <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
           </div>
+          <div class="tablewrap"><table class="datatable" id="tblChartMesOb"></table></div>
         </div>
         <div class="grid-2">
           <div class="panel">
             <p class="panel-title">Valor × Produtividade por Processo</p>
             <p class="panel-caption">Barra = valor realizado (R$) · linha = produtividade média</p>
             <svg class="chart" id="chartProcOb" viewBox="0 0 480 260"></svg>
+            <div class="tablewrap"><table class="datatable" id="tblChartProcOb"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title">Realizado vs. Meta por Centro de Serviço</p>
@@ -445,6 +451,7 @@
               <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob)"></span>Realizado</span>
               <span class="legend-item"><span class="legend-line"></span>% da Meta</span>
             </div>
+            <div class="tablewrap"><table class="datatable" id="tblChartCentroOb"></table></div>
           </div>
         </div>
       </section>
@@ -1120,7 +1127,7 @@
     var dict = GROUPS[group].dicts[dictKey];
     return Object.keys(map).map(function (code) {
       var m = map[code];
-      return { label: dict[code], valor: m.valor, meta: m.meta, produtividade: m.prodDen ? m.qtd / m.prodDen : null };
+      return { label: dict[code], valor: m.valor, meta: m.meta, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null };
     }).sort(function (a, b) { return b.valor - a.valor; });
   }
 
@@ -1136,6 +1143,33 @@
   }
   function pctCell(v) { return '<td><span class="pill ' + pctClass(v) + '">' + fmtPct(v) + "</span></td>"; }
   function intCell(v) { return '<td class="cell-plain">' + fmtInt.format(v) + "</td>"; }
+  function brlCell(v) { return '<td class="cell-plain">' + fmtFullBRL(v) + "</td>"; }
+  function numCell2(v) { return '<td class="cell-plain">' + fmtNum(v, 2) + "</td>"; }
+
+  // tabela simples embaixo dos gráficos de barra (Meta/Realizado por mês ou por centro)
+  function renderChartMesCentroTable(elId, items) {
+    var thead = "<thead><tr><th></th><th>Meta</th><th>Realizado</th><th>% da Meta</th></tr></thead>";
+    var rowsHtml = items.map(function (d) {
+      return "<tr><td>" + d.label + "</td>" + brlCell(d.meta) + brlCell(d.valor) + pctCell(div(d.valor, d.meta)) + "</tr>";
+    }).join("");
+    var totalMeta = items.reduce(function (s, d) { return s + d.meta; }, 0);
+    var totalValor = items.reduce(function (s, d) { return s + d.valor; }, 0);
+    var totalHtml = '<tr class="total"><td>Total</td>' + brlCell(totalMeta) + brlCell(totalValor) + pctCell(div(totalValor, totalMeta)) + "</tr>";
+    document.getElementById(elId).innerHTML = thead + "<tbody>" + rowsHtml + totalHtml + "</tbody>";
+  }
+
+  // tabela simples embaixo do gráfico de Valor x Produtividade por Processo
+  function renderChartProcTable(elId, items) {
+    var thead = "<thead><tr><th>Processo</th><th>Valor Realizado</th><th>Produtividade</th></tr></thead>";
+    var rowsHtml = items.map(function (d) {
+      return "<tr><td>" + d.label + "</td>" + brlCell(d.valor) + numCell2(d.produtividade) + "</tr>";
+    }).join("");
+    var totalValor = items.reduce(function (s, d) { return s + d.valor; }, 0);
+    var totalQtd = items.reduce(function (s, d) { return s + (d.qtd || 0); }, 0);
+    var totalProdDen = items.reduce(function (s, d) { return s + (d.prodDen || 0); }, 0);
+    var totalHtml = '<tr class="total"><td>Total</td>' + brlCell(totalValor) + numCell2(totalProdDen ? totalQtd / totalProdDen : null) + "</tr>";
+    document.getElementById(elId).innerHTML = thead + "<tbody>" + rowsHtml + totalHtml + "</tbody>";
+  }
 
   function renderCentroMesTable() {
     var idxs = currentIdxs("ec"), rows = GROUPS.ec.rows;
@@ -1418,9 +1452,15 @@
 
     if (activePage === "geral") {
       renderKpisInto("kpis", "ec");
-      drawComboChart("chartMes", chartMode.ec === "week" ? weeklyBreakdown("ec", idxs) : monthlyBreakdown("ec", idxs), seriesColor("ec"), seriesColorStrong("ec"), 980);
-      drawProcChart("chartProc", dimBreakdown("ec", idxs, "proc", "processo"), seriesColor("ec"));
-      drawComboChart("chartCentro", dimBreakdown("ec", idxs, "centro", "centro"), seriesColor("ec"), seriesColorStrong("ec"), 480);
+      var mesItemsEc = chartMode.ec === "week" ? weeklyBreakdown("ec", idxs) : monthlyBreakdown("ec", idxs);
+      var procItemsEc = dimBreakdown("ec", idxs, "proc", "processo");
+      var centroItemsEc = dimBreakdown("ec", idxs, "centro", "centro");
+      drawComboChart("chartMes", mesItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 980);
+      drawProcChart("chartProc", procItemsEc, seriesColor("ec"));
+      drawComboChart("chartCentro", centroItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 480);
+      renderChartMesCentroTable("tblChartMes", mesItemsEc);
+      renderChartProcTable("tblChartProc", procItemsEc);
+      renderChartMesCentroTable("tblChartCentro", centroItemsEc);
     } else if (activePage === "fat") {
       renderCentroMesTable();
       renderProcCentroTable();
@@ -1438,9 +1478,15 @@
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "geralOb") {
       renderKpisInto("kpisOb", "ob");
-      drawComboChart("chartMesOb", chartMode.ob === "week" ? weeklyBreakdown("ob", idxs) : monthlyBreakdown("ob", idxs), seriesColor("ob"), seriesColorStrong("ob"), 980);
-      drawProcChart("chartProcOb", dimBreakdown("ob", idxs, "proc", "processo"), seriesColor("ob"));
-      drawComboChart("chartCentroOb", dimBreakdown("ob", idxs, "centro", "centro"), seriesColor("ob"), seriesColorStrong("ob"), 480);
+      var mesItemsOb = chartMode.ob === "week" ? weeklyBreakdown("ob", idxs) : monthlyBreakdown("ob", idxs);
+      var procItemsOb = dimBreakdown("ob", idxs, "proc", "processo");
+      var centroItemsOb = dimBreakdown("ob", idxs, "centro", "centro");
+      drawComboChart("chartMesOb", mesItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 980);
+      drawProcChart("chartProcOb", procItemsOb, seriesColor("ob"));
+      drawComboChart("chartCentroOb", centroItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 480);
+      renderChartMesCentroTable("tblChartMesOb", mesItemsOb);
+      renderChartProcTable("tblChartProcOb", procItemsOb);
+      renderChartMesCentroTable("tblChartCentroOb", centroItemsOb);
     } else if (activePage === "escaladoOb") {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
     }
