@@ -789,21 +789,21 @@
     try { document.execCommand("copy"); } catch (e) { /* clipboard unavailable */ }
     document.body.removeChild(ta);
   }
-  // números no formato brasileiro (ponto de milhar, vírgula decimal) confundem o
-  // Excel/Sheets quando colados — alguns chegam a quebrar o número em duas colunas
-  // na vírgula. Ao copiar, troca pro formato internacional (ponto decimal) só no
-  // que vai pro clipboard; a tela continua mostrando R$ 1.234,56 normalmente.
-  function normalizeNumberForClipboard(text) {
-    return text.replace(/-?\d{1,3}(?:\.\d{3})+,\d+|-?\d+,\d+/g, function (m) {
-      return m.replace(/\./g, "").replace(",", ".");
-    });
+  // números no formato brasileiro (vírgula decimal) dentro de um texto colado em
+  // tabela fazem alguns programas (Excel/Sheets) reinterpretar a vírgula como se
+  // fosse um novo campo, quebrando "R$ 510.680,23" em duas colunas. Encapsular o
+  // valor entre aspas é a convenção padrão de CSV/TSV pra dizer "isso aqui é um
+  // campo só, não separe nada dentro dele" — mantém R$ 510.680,23 do jeito certo.
+  function tsvEscape(text) {
+    if (/[",\t\n]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
+    return text;
   }
   function tableToTSV(table) {
     var lines = [];
     table.querySelectorAll("tr").forEach(function (tr) {
       var cells = tr.querySelectorAll("th,td");
       var vals = Array.prototype.map.call(cells, function (c) {
-        return normalizeNumberForClipboard(c.textContent.replace(/\s+/g, " ").trim());
+        return tsvEscape(c.textContent.replace(/\s+/g, " ").trim());
       });
       lines.push(vals.join("\t"));
     });
@@ -827,7 +827,7 @@
       var table = document.getElementById(btn.dataset.copyTable);
       if (table) copyToClipboard(tableToTSV(table), btn);
     } else if (btn.dataset.copyText != null) {
-      copyToClipboard(normalizeNumberForClipboard(btn.dataset.copyText), btn);
+      copyToClipboard(btn.dataset.copyText, btn);
     }
   });
 
