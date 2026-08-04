@@ -60,11 +60,19 @@
   .viz-root * { box-sizing: border-box; }
   .viz-root ::selection { background: var(--accent-soft); }
 
-  header.top { padding: 28px 0 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--accent-ink); background: var(--accent-soft); display: inline-flex; padding: 4px 10px; border-radius: 999px; margin: 0 0 12px; }
-  h1 { font-size: clamp(24px,3.2vw,32px); font-weight: 800; letter-spacing: -0.015em; margin: 0 0 7px; text-wrap: balance; }
-  .subtitle { font-size: 13.5px; color: var(--text-secondary); margin: 0; max-width: 46em; }
-  .subtitle b { color: var(--text-primary); font-weight: 700; }
+  header.top { padding: 28px 0 22px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .title-block { display: flex; flex-direction: column; gap: 7px; }
+  .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0; }
+  h1 { font-size: clamp(24px,3.2vw,32px); font-weight: 800; letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+  .updated-badge {
+    display: inline-flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px 8px 13px; box-shadow: var(--shadow); white-space: nowrap;
+  }
+  .updated-badge b { color: var(--text-primary); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .updated-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--status-good); flex: none; }
+  .updated-dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: var(--status-good); opacity: .4; animation: pulse-dot 2.2s ease-out infinite; }
+  @keyframes pulse-dot { 0% { transform: scale(.5); opacity: .5; } 100% { transform: scale(2.4); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .updated-dot::after { animation: none; } }
 
   .tabs { display: flex; gap: 2px; margin: 4px 0 26px; overflow-x: auto; padding-bottom: 2px; }
   .tab-btn {
@@ -241,9 +249,14 @@
 <div class="viz-root" id="root">
 
   <header class="top">
-    <p class="eyebrow">Cosampa · Google Sheets</p>
-    <h1>Faturamento &amp; Obras</h1>
-    <p class="subtitle">Recalculado automaticamente em <b id="genDate"></b>, a cada poucos minutos, direto da planilha no Google Sheets.</p>
+    <div class="title-block">
+      <p class="eyebrow">Cosampa</p>
+      <h1>Faturamento &amp; Obras</h1>
+    </div>
+    <div class="updated-badge" title="Atualizado automaticamente, direto da planilha">
+      <span class="updated-dot"></span>
+      Atualizado <b id="genDate"></b>
+    </div>
   </header>
 
   <div class="tabs">
@@ -544,7 +557,17 @@
   function cv(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
   function seriesColor(group) { return cv(group === "ob" ? "--series-ob" : "--series-ec"); }
   function seriesColorStrong(group) { return cv(group === "ob" ? "--series-ob-strong" : "--series-ec-strong"); }
-  document.getElementById("genDate").textContent = DATA.generated;
+  (function () {
+    var m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}:\d{2})$/.exec(DATA.generated);
+    var texto = DATA.generated;
+    if (m) {
+      var d = new Date(+m[3], +m[2] - 1, +m[1]);
+      var hoje = new Date();
+      var mesmoDia = d.getFullYear() === hoje.getFullYear() && d.getMonth() === hoje.getMonth() && d.getDate() === hoje.getDate();
+      texto = mesmoDia ? ("hoje às " + m[4]) : (m[1] + "/" + m[2] + " às " + m[4]);
+    }
+    document.getElementById("genDate").textContent = texto;
+  })();
 
   // ---------- formatting ----------
   var fmtInt = new Intl.NumberFormat("pt-BR");
