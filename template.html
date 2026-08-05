@@ -586,6 +586,22 @@
     agendar();
   })();
 
+  // salva filtros/aba atuais logo antes de sair da página — cobre tanto o
+  // reload automático acima quanto um F5 manual, já que os dois disparam
+  // beforeunload do mesmo jeito
+  function saveFilterState() {
+    try {
+      function serialize(f) { return { mes: f.mes, dia: f.dia, sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe) }; }
+      var activeTab = document.querySelector(".tab-btn.active");
+      sessionStorage.setItem(STATE_KEY, JSON.stringify({
+        activeGroup: activeGroup,
+        activePage: activeTab ? activeTab.dataset.page : "geral",
+        filters: { ec: serialize(filters.ec), ob: serialize(filters.ob) }
+      }));
+    } catch (e) {}
+  }
+  window.addEventListener("beforeunload", saveFilterState);
+
   // ---------- formatting ----------
   var fmtInt = new Intl.NumberFormat("pt-BR");
   function fmtPct(v) { return v == null ? "—" : (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; }
@@ -614,6 +630,30 @@
   var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
   var FILTER_DICT_KEY = { proc: "processo", sup: "supervisor", centro: "centro", equipe: "equipe" };
   var CASCADE_DIMS = { sup: true, equipe: true };
+
+  // Guarda filtros e aba ativa antes de qualquer reload (o automático ou um
+  // F5 manual) e restaura ao carregar de novo — sem isso, quem tava filtrando
+  // via aba aberta parada era jogado de volta pro início do nada.
+  var STATE_KEY = "painelCosampaState";
+  var restoredPage = null;
+  (function restoreFilterState() {
+    try {
+      var state = JSON.parse(sessionStorage.getItem(STATE_KEY) || "null");
+      if (!state || !state.filters) return;
+      ["ec", "ob"].forEach(function (g) {
+        var saved = state.filters[g];
+        if (!saved) return;
+        filters[g].mes = saved.mes || "";
+        filters[g].dia = saved.dia || "";
+        filters[g].sup = new Set(saved.sup || []);
+        filters[g].centro = new Set(saved.centro || []);
+        filters[g].proc = new Set(saved.proc || []);
+        filters[g].equipe = new Set(saved.equipe || []);
+      });
+      if (state.activeGroup === "ec" || state.activeGroup === "ob") activeGroup = state.activeGroup;
+      if (state.activePage) restoredPage = state.activePage;
+    } catch (e) {}
+  })();
 
   var selMes = document.getElementById("selMes");
   var selDia = document.getElementById("selDia");
@@ -756,6 +796,10 @@
     });
   });
   rebuildSidebar();
+  if (restoredPage && restoredPage !== "geral") {
+    var restoredTabBtn = document.querySelector('.tab-btn[data-page="' + restoredPage + '"]');
+    if (restoredTabBtn) restoredTabBtn.click();
+  }
 
   // ---------- filtering + aggregation (generic over group) ----------
   function matchDims(group, i) {
