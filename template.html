@@ -569,6 +569,23 @@
     document.getElementById("genDate").textContent = texto;
   })();
 
+  // ---------- atualização automática ----------
+  // Recarrega a página sozinha depois de um tempo sem ninguém mexer nela
+  // (clicar em filtro, aba, etc. adia o recarregamento) — assim quem deixa a
+  // aba aberta olhando sempre vê os dados mais recentes, sem precisar dar F5,
+  // e quem tá de fato filtrando/explorando não é interrompido no meio.
+  (function () {
+    var ESPERA_MS = 5 * 60 * 1000; // 5 minutos parado
+    var timer;
+    function agendar() {
+      clearTimeout(timer);
+      timer = setTimeout(function () { location.reload(); }, ESPERA_MS);
+    }
+    document.addEventListener("click", agendar, { passive: true });
+    document.addEventListener("change", agendar, { passive: true });
+    agendar();
+  })();
+
   // ---------- formatting ----------
   var fmtInt = new Intl.NumberFormat("pt-BR");
   function fmtPct(v) { return v == null ? "—" : (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; }
