@@ -12,6 +12,17 @@ on:
 permissions:
   contents: write
 
+# Sem isso, o cron e o dispatch da planilha rodavam ao mesmo tempo: os dois
+# recalculavam, os dois davam push, o segundo perdia a corrida, entrava no
+# retry (fetch/reset/recalcula) e dava push de novo. Resultado visível no
+# histórico: commits sempre aos pares, ~30s de diferença, com dados idênticos
+# (só o carimbo de hora mudava). Cada par disparava 2 publicações no Pages, e
+# a segunda cancelava a primeira no meio. cancel-in-progress: false porque
+# matar um run no meio de um push é pior que deixar ele terminar.
+concurrency:
+  group: atualizar-painel
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest

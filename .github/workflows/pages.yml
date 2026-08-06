@@ -14,9 +14,15 @@ name: Publicar no GitHub Pages
 # and deployment" > Source pra "GitHub Actions" pra esse workflow assumir
 # (enquanto a fonte continuar em "Deploy from a branch", é o mecanismo antigo
 # que roda, não esse arquivo).
+#
+# ESTADO ATUAL: desativado no automático (só roda manualmente). O Source em
+# Settings > Pages está em "Deploy from a branch" — que é o modo que sempre
+# funcionou historicamente — e nesse modo o actions/deploy-pages abaixo falha
+# de propósito, então deixar isso em "on: push" só geraria uma falha vermelha
+# a cada commit. Mantido no repositório porque é a saída pronta caso a gente
+# decida migrar: basta trocar o Source pra "GitHub Actions" e devolver o
+# gatilho "push" aqui.
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch: {}
 
 permissions:

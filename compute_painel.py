@@ -128,6 +128,31 @@ def transform_obras(df, sup, centro, proc, equipe):
     }
 
 
+_CARIMBO_RE = re.compile(r'"generated":"[^"]*","sourceModified":"[^"]*"')
+
+
+def mudou_alem_do_carimbo(html_novo):
+    """True se o index.html que já está no disco difere do recém-gerado em
+    algo que não seja o carimbo de hora.
+
+    O carimbo ("generated"/"sourceModified") recebe a hora da execução, então
+    o HTML gerado é SEMPRE diferente do anterior, mesmo sem nenhum dado novo.
+    Isso fazia o guard "Nada para publicar" do update.yml nunca disparar: cada
+    execução virava um commit e uma publicação no GitHub Pages -- ~72 por dia
+    sem dado novo. Como cada publicação leva 7-10min na fila do Pages, elas
+    passaram a se atropelar e a estourar o timeout (em 06/08 o site ficou das
+    07:42 até o meio-dia sem publicar nada).
+
+    Compara o HTML inteiro (não só os dados), então mudança no template.html
+    também republica normalmente.
+    """
+    if not os.path.exists(OUTPUT):
+        return True
+    with open(OUTPUT, "r", encoding="utf-8") as f:
+        atual = f.read()
+    return _CARIMBO_RE.sub("", atual) != _CARIMBO_RE.sub("", html_novo)
+
+
 def main():
     ec_raw = pd.read_csv(EC_CSV_URL)
     ob_raw = pd.read_csv(OBRAS_CSV_URL)
@@ -153,6 +178,10 @@ def main():
 
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     html = re.sub(r"/\*__DATA_JSON__\*/.*?/\*__END_DATA_JSON__\*/", lambda m: payload, html, flags=re.S)
+
+    if not mudou_alem_do_carimbo(html):
+        print("Sem mudança nos dados — index.html mantido, nada a publicar.")
+        return
 
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write(html)
