@@ -1,0 +1,51 @@
+name: Publicar no GitHub Pages
+
+# O método antigo (Settings > Pages > "Deploy from a branch") deixa o próprio
+# GitHub disparar uma publicação a cada push na main. Como o "Atualizar
+# painel" empurra commits com muita frequência (a cada 20min + toda vez que a
+# planilha é editada), essas publicações automáticas começaram a se acumular
+# numa fila e travar/falhar (visto em 06/08 — 5 tentativas seguidas falhando,
+# todas presas em "deployment_queued" por vários minutos até dar timeout).
+#
+# Esse workflow troca pro método oficial via Actions (actions/deploy-pages),
+# que enfileira as publicações de propósito (grupo de concorrência "pages",
+# sem cancelar a anterior) em vez de disparar várias em paralelo — resolve o
+# acúmulo na raiz. PRECISA trocar manualmente em Settings > Pages > "Build
+# and deployment" > Source pra "GitHub Actions" pra esse workflow assumir
+# (enquanto a fonte continuar em "Deploy from a branch", é o mecanismo antigo
+# que roda, não esse arquivo).
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar artefato do site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
