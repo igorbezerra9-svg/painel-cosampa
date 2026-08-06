@@ -39,15 +39,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # index.html é 100% gerado a partir do template.html + da planilha, então
-          # sempre que o push falhar (ex.: alguém commitou algo ao mesmo tempo),
-          # basta re-sincronizar com o main mais recente e recalcular de novo em
-          # cima dele — nunca há conflito de verdade para resolver.
+          # index.html e dados.json são 100% gerados a partir do template.html +
+          # da planilha, então sempre que o push falhar (ex.: alguém commitou algo
+          # ao mesmo tempo), basta re-sincronizar com o main mais recente e
+          # recalcular de novo em cima dele — nunca há conflito de verdade.
+          #
+          # No dia a dia só o dados.json muda; o index.html só aparece aqui
+          # quando o template muda (aí sim precisa de uma publicação no Pages).
           for i in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
             python compute_painel.py
-            git add index.html
+            git add index.html dados.json
             if git diff --staged --quiet; then
               echo "Nada para publicar."
               exit 0

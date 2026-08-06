@@ -16,6 +16,10 @@ BRASILIA = ZoneInfo("America/Sao_Paulo")
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "template.html")
 OUTPUT = os.path.join(HERE, "index.html")
+# Os dados saem num arquivo próprio, buscado pelo navegador em vez de embutido
+# no index.html. Assim publicar a página (etapa que trava no GitHub Pages) só é
+# necessário quando o template muda -- dado novo não depende de publicação.
+DADOS = os.path.join(HERE, "dados.json")
 
 # published "File > Share > Publish to web" CSV links, one per sheet tab
 _PUB_ID = "2PACX-1vQBw3K_VdQ7nlyT69EG_DTTKlBj4V_6RYGNPMIRmCA2pRVu9GbWGu8GPYbxT6cieuS1SvLu1hm5O7L7"
@@ -131,26 +135,22 @@ def transform_obras(df, sup, centro, proc, equipe):
 _CARIMBO_RE = re.compile(r'"generated":"[^"]*","sourceModified":"[^"]*"')
 
 
-def mudou_alem_do_carimbo(html_novo):
-    """True se o index.html que já está no disco difere do recém-gerado em
-    algo que não seja o carimbo de hora.
+def mudou(caminho, conteudo_novo, ignorar_carimbo=False):
+    """True se o arquivo no disco difere do conteúdo recém-gerado.
 
-    O carimbo ("generated"/"sourceModified") recebe a hora da execução, então
-    o HTML gerado é SEMPRE diferente do anterior, mesmo sem nenhum dado novo.
-    Isso fazia o guard "Nada para publicar" do update.yml nunca disparar: cada
-    execução virava um commit e uma publicação no GitHub Pages -- ~72 por dia
-    sem dado novo. Como cada publicação leva 7-10min na fila do Pages, elas
-    passaram a se atropelar e a estourar o timeout (em 06/08 o site ficou das
-    07:42 até o meio-dia sem publicar nada).
-
-    Compara o HTML inteiro (não só os dados), então mudança no template.html
-    também republica normalmente.
+    Com ignorar_carimbo=True, desconsidera "generated"/"sourceModified", que
+    recebem a hora da execução e portanto mudariam SEMPRE. Sem isso o guard
+    "Nada para publicar" do update.yml nunca disparava: cada execução virava um
+    commit mesmo sem dado novo -- ~72 publicações por dia à toa, que foi o que
+    saturou a fila do GitHub Pages em 06/08.
     """
-    if not os.path.exists(OUTPUT):
+    if not os.path.exists(caminho):
         return True
-    with open(OUTPUT, "r", encoding="utf-8") as f:
+    with open(caminho, "r", encoding="utf-8") as f:
         atual = f.read()
-    return _CARIMBO_RE.sub("", atual) != _CARIMBO_RE.sub("", html_novo)
+    if ignorar_carimbo:
+        return _CARIMBO_RE.sub("", atual) != _CARIMBO_RE.sub("", conteudo_novo)
+    return atual != conteudo_novo
 
 
 def main():
@@ -177,16 +177,27 @@ def main():
         html = f.read()
 
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    html = re.sub(r"/\*__DATA_JSON__\*/.*?/\*__END_DATA_JSON__\*/", lambda m: payload, html, flags=re.S)
 
-    if not mudou_alem_do_carimbo(html):
-        print("Sem mudança nos dados — index.html mantido, nada a publicar.")
+    escritos = []
+
+    # o index.html não carrega mais dado dentro, então só muda quando eu mexo
+    # no template -- por isso a comparação aqui é direta, sem carimbo nenhum
+    if mudou(OUTPUT, html):
+        with open(OUTPUT, "w", encoding="utf-8") as f:
+            f.write(html)
+        escritos.append("index.html")
+
+    # já o dados.json carrega o carimbo de hora, que muda a cada execução
+    if mudou(DADOS, payload, ignorar_carimbo=True):
+        with open(DADOS, "w", encoding="utf-8") as f:
+            f.write(payload)
+        escritos.append("dados.json")
+
+    if not escritos:
+        print("Sem mudança — nada a publicar.")
         return
 
-    with open(OUTPUT, "w", encoding="utf-8") as f:
-        f.write(html)
-
-    print("OK ->", OUTPUT)
+    print("OK -> " + ", ".join(escritos))
     print("rows: ec=%d ob=%d  bytes=%d" % (len(ec["date"]), len(ob["date"]), len(payload)))
     print("ec dims: supervisor=%d centro=%d processo=%d equipe=%d" % (
         len(sup.values), len(centro.values), len(proc.values), len(equipe.values)))
