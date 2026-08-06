@@ -1,0 +1,83 @@
+name: Republicar se o site ficar atrasado
+
+# Paliativo para as falhas de publicação do GitHub Pages (06/08/2026): o passo
+# final de publicar fica 7-10min preso na fila do Pages e estoura o timeout na
+# maioria das vezes, deixando o site mostrando dado velho por horas mesmo com o
+# dado novo já pronto e commitado (naquele dia o site travou em 07:42 e só
+# destravou depois das 11h, enquanto o robô rodava normal o tempo todo).
+#
+# As tentativas não falham SEMPRE — de vez em quando uma passa. Então aqui a
+# gente só reenfileira até uma passar, em vez de depender de alguém perceber o
+# atraso e reptar na mão.
+#
+# Isso NÃO deixa a publicação mais rápida; só evita que ela fique parada. A
+# correção de verdade é trocar quem publica (ex.: Cloudflare Pages), o que
+# mudaria o endereço do site.
+
+on:
+  schedule:
+    # 2x por hora, deslocado do */20 do "Atualizar painel" pra não disputar a
+    # fila com ele logo depois de um push
+    - cron: "10,40 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+
+concurrency:
+  group: republicar-se-atrasado
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comparar o site publicado com o repositório
+        id: check
+        run: |
+          set -euo pipefail
+
+          carimbo() { grep -o '"generated":"[^"]*"' "$1" | head -1; }
+
+          no_repo=$(carimbo index.html)
+
+          site="https://${GITHUB_REPOSITORY%%/*}.github.io/${GITHUB_REPOSITORY#*/}/"
+          # ?nocache= evita ler uma cópia velha do CDN e concluir errado que o
+          # site está atrasado (ou que está em dia)
+          curl -fsSL "${site}?nocache=$(date +%s)" -o publicado.html
+          no_site=$(carimbo publicado.html)
+
+          echo "repositório: $no_repo"
+          echo "site no ar:  $no_site"
+
+          if [ "$no_repo" = "$no_site" ]; then
+            echo "atrasado=nao" >> "$GITHUB_OUTPUT"
+            echo "Site em dia — nada a fazer."
+          else
+            echo "atrasado=sim" >> "$GITHUB_OUTPUT"
+            echo "Site atrasado — vou reenfileirar a publicação."
+          fi
+
+      - name: Reenfileirar a publicação
+        if: steps.check.outputs.atrasado == 'sim'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Se já tem publicação rodando, não empilha outra em cima — foi
+          # justamente o empilhamento (cada nova cancelando a anterior no meio)
+          # que travou tudo em 06/08.
+          estado=$(gh api "repos/$GITHUB_REPOSITORY/pages/builds/latest" --jq .status 2>/dev/null || echo desconhecido)
+          echo "publicação mais recente: $estado"
+
+          if [ "$estado" = "building" ] || [ "$estado" = "queued" ]; then
+            echo "Já tem uma publicação em andamento — não vou disparar outra."
+            exit 0
+          fi
+
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
+          echo "Publicação reenfileirada."
