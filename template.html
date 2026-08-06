@@ -280,7 +280,7 @@
       </div>
       <div class="fg" id="fgDia">
         <span class="fg-label">Dia</span>
-        <select class="fg-select" id="selDia"></select>
+        <div class="fg-wrap" data-dim="dia"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
       </div>
       <div class="fg" id="fgProc">
         <span class="fg-label">Processo</span>
@@ -591,7 +591,7 @@
   // beforeunload do mesmo jeito
   function saveFilterState() {
     try {
-      function serialize(f) { return { mes: f.mes, dia: f.dia, sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe) }; }
+      function serialize(f) { return { mes: f.mes, dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe) }; }
       var activeTab = document.querySelector(".tab-btn.active");
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
         activeGroup: activeGroup,
@@ -623,8 +623,8 @@
 
   // ---------- filters (independent per dataset group) ----------
   var filters = {
-    ec: { mes: "", dia: "", sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() },
-    ob: { mes: "", dia: "", sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() }
+    ec: { mes: "", dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() },
+    ob: { mes: "", dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() }
   };
   var activeGroup = "ec";
   var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
@@ -644,7 +644,7 @@
         var saved = state.filters[g];
         if (!saved) return;
         filters[g].mes = saved.mes || "";
-        filters[g].dia = saved.dia || "";
+        filters[g].dia = new Set(saved.dia || []);
         filters[g].sup = new Set(saved.sup || []);
         filters[g].centro = new Set(saved.centro || []);
         filters[g].proc = new Set(saved.proc || []);
@@ -656,8 +656,16 @@
   })();
 
   var selMes = document.getElementById("selMes");
-  var selDia = document.getElementById("selDia");
-  function rebuildDiaOptions() {
+  function updateDiaBtn() {
+    var wrap = document.querySelector('.fg-wrap[data-dim="dia"]');
+    var btn = wrap.querySelector(".fg-btn");
+    var count = filters[activeGroup].dia.size;
+    btn.innerHTML = "Dia" + (count ? ' <span class="fg-count">' + count + "</span>" : "") +
+      '<svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    btn.classList.toggle("active", !!count);
+    updateClearVisibility();
+  }
+  function buildDiaFilterUI() {
     var rows = GROUPS[activeGroup].rows;
     var mes = filters[activeGroup].mes;
     var datesSet = {};
@@ -666,29 +674,58 @@
       datesSet[rows.date[i]] = true;
     }
     var dates = Object.keys(datesSet).sort();
-    selDia.innerHTML = '<option value="">Todos</option>';
-    dates.forEach(function (d) {
-      var opt = document.createElement("option");
-      opt.value = d;
-      opt.textContent = d.slice(8, 10) + "/" + d.slice(5, 7);
-      selDia.appendChild(opt);
+    var sel = filters[activeGroup].dia;
+    // se o mês mudou e reduziu a lista, tira do filtro os dias que sumiram
+    sel.forEach(function (d) { if (!datesSet[d]) sel.delete(d); });
+
+    var wrap = document.querySelector('.fg-wrap[data-dim="dia"]');
+    var btn = wrap.querySelector(".fg-btn");
+    var panel = wrap.querySelector(".fg-panel");
+
+    panel.innerHTML = dates.map(function (d) {
+      var label = d.slice(8, 10) + "/" + d.slice(5, 7);
+      return '<label class="fg-opt"><input type="checkbox" value="' + d + '"' + (sel.has(d) ? " checked" : "") + '> <span>' + label + "</span></label>";
+    }).join("") + '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>';
+
+    var freshBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(freshBtn, btn);
+    btn = freshBtn;
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var isHidden = panel.hasAttribute("hidden");
+      closeAllPanels();
+      if (isHidden) panel.removeAttribute("hidden");
     });
-    selDia.value = filters[activeGroup].dia;
+    panel.addEventListener("click", function (e) { e.stopPropagation(); });
+    panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        if (cb.checked) sel.add(cb.value); else sel.delete(cb.value);
+        updateDiaBtn(); renderAll();
+      });
+    });
+    panel.querySelector('[data-act="all"]').addEventListener("click", function () {
+      panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; sel.add(cb.value); });
+      updateDiaBtn(); renderAll();
+    });
+    panel.querySelector('[data-act="none"]').addEventListener("click", function () {
+      panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+      sel.clear(); updateDiaBtn(); renderAll();
+    });
+    updateDiaBtn();
   }
   selMes.addEventListener("change", function () {
     filters[activeGroup].mes = selMes.value;
-    filters[activeGroup].dia = "";
-    rebuildDiaOptions();
+    filters[activeGroup].dia.clear();
+    buildDiaFilterUI();
     renderAll();
   });
-  selDia.addEventListener("change", function () { filters[activeGroup].dia = selDia.value; renderAll(); });
 
   function closeAllPanels() { document.querySelectorAll(".fg-panel").forEach(function (p) { p.setAttribute("hidden", ""); }); }
   document.addEventListener("click", closeAllPanels);
 
   function updateClearVisibility() {
     var f = filters[activeGroup];
-    var any = f.mes || f.dia || f.sup.size || f.centro.size || f.proc.size;
+    var any = f.mes || f.dia.size || f.sup.size || f.centro.size || f.proc.size;
     document.getElementById("btnClear").classList.toggle("show", !!any);
   }
   function updateFilterBtn(dim) {
@@ -770,13 +807,13 @@
       selMes.appendChild(opt);
     });
     selMes.value = filters[activeGroup].mes;
-    rebuildDiaOptions();
+    buildDiaFilterUI();
     ["proc", "sup", "centro", "equipe"].forEach(buildFilterUI);
   }
 
   document.getElementById("btnClear").addEventListener("click", function () {
     var f = filters[activeGroup];
-    f.mes = ""; f.dia = ""; f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear();
+    f.mes = ""; f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear();
     rebuildSidebar();
     renderAll();
   });
@@ -822,7 +859,7 @@
     if (!matchDims(group, i)) return false;
     var rows = GROUPS[group].rows, f = filters[group];
     if (f.mes && rows.date[i].slice(0, 7) !== f.mes) return false;
-    if (f.dia && rows.date[i] !== f.dia) return false;
+    if (f.dia.size && !f.dia.has(rows.date[i])) return false;
     return true;
   }
   function currentIdxs(group) {
@@ -1349,7 +1386,7 @@
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
       if (f.mes && rows.date[i].slice(0, 7) !== f.mes) continue;
-      if (f.dia && rows.date[i] !== f.dia) continue;
+      if (f.dia.size && !f.dia.has(rows.date[i])) continue;
       hasData[rows.proc[i]] = true;
     }
     // esconde processos sem nenhum valor real nos filtros atuais (ex.: "Linha Viva
@@ -1379,7 +1416,7 @@
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
       if (f.mes && rows.date[i].slice(0, 7) !== f.mes) continue;
-      if (f.dia && rows.date[i] !== f.dia) continue;
+      if (f.dia.size && !f.dia.has(rows.date[i])) continue;
       out.push(i);
     }
     return out;
