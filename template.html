@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Painel Cosampa — Faturamento & Obras</title>
 <style>
   .viz-root {
@@ -115,10 +116,6 @@
   }
   .fg { display: flex; flex-direction: column; gap: 6px; }
   .fg-label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; }
-  select.fg-select {
-    font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--border);
-    background: var(--surface-2); color: var(--text-primary); width: 100%; cursor: pointer;
-  }
   .fg-btn {
     font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; cursor: pointer; width: 100%;
@@ -314,7 +311,7 @@
     <aside class="sidebar">
       <div class="fg">
         <span class="fg-label">Mês</span>
-        <select class="fg-select" id="selMes"></select>
+        <div class="fg-wrap" data-dim="mes"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
       </div>
       <div class="fg" id="fgDia">
         <span class="fg-label">Dia</span>
@@ -348,6 +345,7 @@
           <div class="seg-toggle" data-chart-toggle="ec">
             <button type="button" class="seg-btn active" data-mode="month">Mensal</button>
             <button type="button" class="seg-btn" data-mode="week">Semanal</button>
+            <button type="button" class="seg-btn" data-mode="day">Diário</button>
           </div>
           <p class="panel-title" id="chartMesTitle-ec">Realizado vs. Meta por Mês</p>
           <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
@@ -475,6 +473,7 @@
           <div class="seg-toggle" data-chart-toggle="ob">
             <button type="button" class="seg-btn active" data-mode="month">Mensal</button>
             <button type="button" class="seg-btn" data-mode="week">Semanal</button>
+            <button type="button" class="seg-btn" data-mode="day">Diário</button>
           </div>
           <p class="panel-title" id="chartMesTitle-ob">Realizado vs. Meta por Mês — Obras</p>
           <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
@@ -567,8 +566,8 @@ function iniciarPainel(DATA) {
   var procTabSelection = null;
   var chartMode = { ec: "month", ob: "month" };
   var CHART_TITLES = {
-    ec: { month: "Realizado vs. Meta por Mês", week: "Realizado vs. Meta por Semana" },
-    ob: { month: "Realizado vs. Meta por Mês — Obras", week: "Realizado vs. Meta por Semana — Obras" }
+    ec: { month: "Realizado vs. Meta por Mês", week: "Realizado vs. Meta por Semana", day: "Realizado vs. Meta por Dia" },
+    ob: { month: "Realizado vs. Meta por Mês — Obras", week: "Realizado vs. Meta por Semana — Obras", day: "Realizado vs. Meta por Dia — Obras" }
   };
   document.querySelectorAll(".seg-toggle[data-chart-toggle]").forEach(function (toggle) {
     var g = toggle.dataset.chartToggle;
@@ -635,7 +634,7 @@ function iniciarPainel(DATA) {
   // beforeunload do mesmo jeito
   function saveFilterState() {
     try {
-      function serialize(f) { return { mes: f.mes, dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe) }; }
+      function serialize(f) { return { mes: Array.from(f.mes), dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe) }; }
       var activeTab = document.querySelector(".tab-btn.active");
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
         activeGroup: activeGroup,
@@ -667,8 +666,8 @@ function iniciarPainel(DATA) {
 
   // ---------- filters (independent per dataset group) ----------
   var filters = {
-    ec: { mes: "", dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() },
-    ob: { mes: "", dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() }
+    ec: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() },
+    ob: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() }
   };
   var activeGroup = "ec";
   var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
@@ -687,7 +686,8 @@ function iniciarPainel(DATA) {
       ["ec", "ob"].forEach(function (g) {
         var saved = state.filters[g];
         if (!saved) return;
-        filters[g].mes = saved.mes || "";
+        // sessão antiga guardava o mês como string única; converte pra Set
+        filters[g].mes = new Set(typeof saved.mes === "string" ? (saved.mes ? [saved.mes] : []) : (saved.mes || []));
         filters[g].dia = new Set(saved.dia || []);
         filters[g].sup = new Set(saved.sup || []);
         filters[g].centro = new Set(saved.centro || []);
@@ -699,36 +699,55 @@ function iniciarPainel(DATA) {
     } catch (e) {}
   })();
 
-  var selMes = document.getElementById("selMes");
-  function updateDiaBtn() {
-    var wrap = document.querySelector('.fg-wrap[data-dim="dia"]');
+  // Mês e Dia são filtros por data, ambos multi-seleção (mesmo componente das
+  // outras dimensões). Marcar meses reduz a lista de dias disponíveis.
+  var DATE_DIMS = {
+    mes: {
+      label: "Mês",
+      values: function (rows) {
+        return Array.from(new Set(rows.date.map(function (d) { return d.slice(0, 7); }))).sort()
+          .map(function (mk) { return { value: mk, label: MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1] }; });
+      }
+    },
+    dia: {
+      label: "Dia",
+      values: function (rows) {
+        var mes = filters[activeGroup].mes, set = {};
+        for (var i = 0; i < rows.date.length; i++) {
+          var d = rows.date[i];
+          if (mes.size && !mes.has(d.slice(0, 7))) continue;
+          set[d] = true;
+        }
+        return Object.keys(set).sort().map(function (d) {
+          return { value: d, label: d.slice(8, 10) + "/" + d.slice(5, 7) };
+        });
+      }
+    }
+  };
+  function updateDateBtn(dim) {
+    var wrap = document.querySelector('.fg-wrap[data-dim="' + dim + '"]');
     var btn = wrap.querySelector(".fg-btn");
-    var count = filters[activeGroup].dia.size;
-    btn.innerHTML = "Dia" + (count ? ' <span class="fg-count">' + count + "</span>" : "") +
+    var count = filters[activeGroup][dim].size;
+    btn.innerHTML = DATE_DIMS[dim].label + (count ? ' <span class="fg-count">' + count + "</span>" : "") +
       '<svg viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     btn.classList.toggle("active", !!count);
     updateClearVisibility();
   }
-  function buildDiaFilterUI() {
+  function buildDateFilterUI(dim) {
     var rows = GROUPS[activeGroup].rows;
-    var mes = filters[activeGroup].mes;
-    var datesSet = {};
-    for (var i = 0; i < rows.date.length; i++) {
-      if (mes && rows.date[i].slice(0, 7) !== mes) continue;
-      datesSet[rows.date[i]] = true;
-    }
-    var dates = Object.keys(datesSet).sort();
-    var sel = filters[activeGroup].dia;
-    // se o mês mudou e reduziu a lista, tira do filtro os dias que sumiram
-    sel.forEach(function (d) { if (!datesSet[d]) sel.delete(d); });
+    var opts = DATE_DIMS[dim].values(rows);
+    var valid = {};
+    opts.forEach(function (o) { valid[o.value] = true; });
+    var sel = filters[activeGroup][dim];
+    // se a lista encolheu (ex.: mudou o mês), tira do filtro o que sumiu
+    sel.forEach(function (v) { if (!valid[v]) sel.delete(v); });
 
-    var wrap = document.querySelector('.fg-wrap[data-dim="dia"]');
+    var wrap = document.querySelector('.fg-wrap[data-dim="' + dim + '"]');
     var btn = wrap.querySelector(".fg-btn");
     var panel = wrap.querySelector(".fg-panel");
 
-    panel.innerHTML = dates.map(function (d) {
-      var label = d.slice(8, 10) + "/" + d.slice(5, 7);
-      return '<label class="fg-opt"><input type="checkbox" value="' + d + '"' + (sel.has(d) ? " checked" : "") + '> <span>' + label + "</span></label>";
+    panel.innerHTML = opts.map(function (o) {
+      return '<label class="fg-opt"><input type="checkbox" value="' + o.value + '"' + (sel.has(o.value) ? " checked" : "") + '> <span>' + o.label + "</span></label>";
     }).join("") + '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>';
 
     var freshBtn = btn.cloneNode(true);
@@ -741,35 +760,35 @@ function iniciarPainel(DATA) {
       if (isHidden) panel.removeAttribute("hidden");
     });
     panel.addEventListener("click", function (e) { e.stopPropagation(); });
+    function afterChange() {
+      updateDateBtn(dim);
+      // trocar os meses redefine quais dias existem, então o painel de Dia é refeito
+      if (dim === "mes") buildDateFilterUI("dia");
+      renderAll();
+    }
     panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
       cb.addEventListener("change", function () {
         if (cb.checked) sel.add(cb.value); else sel.delete(cb.value);
-        updateDiaBtn(); renderAll();
+        afterChange();
       });
     });
     panel.querySelector('[data-act="all"]').addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; sel.add(cb.value); });
-      updateDiaBtn(); renderAll();
+      afterChange();
     });
     panel.querySelector('[data-act="none"]').addEventListener("click", function () {
       panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
-      sel.clear(); updateDiaBtn(); renderAll();
+      sel.clear(); afterChange();
     });
-    updateDiaBtn();
+    updateDateBtn(dim);
   }
-  selMes.addEventListener("change", function () {
-    filters[activeGroup].mes = selMes.value;
-    filters[activeGroup].dia.clear();
-    buildDiaFilterUI();
-    renderAll();
-  });
 
   function closeAllPanels() { document.querySelectorAll(".fg-panel").forEach(function (p) { p.setAttribute("hidden", ""); }); }
   document.addEventListener("click", closeAllPanels);
 
   function updateClearVisibility() {
     var f = filters[activeGroup];
-    var any = f.mes || f.dia.size || f.sup.size || f.centro.size || f.proc.size;
+    var any = f.mes.size || f.dia.size || f.sup.size || f.centro.size || f.proc.size;
     document.getElementById("btnClear").classList.toggle("show", !!any);
   }
   function updateFilterBtn(dim) {
@@ -842,22 +861,13 @@ function iniciarPainel(DATA) {
     updateFilterBtn(dim);
   }
   function rebuildSidebar() {
-    var rows = GROUPS[activeGroup].rows;
-    var monthsPresent = Array.from(new Set(rows.date.map(function (d) { return d.slice(0, 7); }))).sort();
-    selMes.innerHTML = '<option value="">Todos</option>';
-    monthsPresent.forEach(function (mk) {
-      var mi = parseInt(mk.slice(5, 7), 10) - 1;
-      var opt = document.createElement("option"); opt.value = mk; opt.textContent = MONTH_FULL[mi];
-      selMes.appendChild(opt);
-    });
-    selMes.value = filters[activeGroup].mes;
-    buildDiaFilterUI();
+    ["mes", "dia"].forEach(buildDateFilterUI);
     ["proc", "sup", "centro", "equipe"].forEach(buildFilterUI);
   }
 
   document.getElementById("btnClear").addEventListener("click", function () {
     var f = filters[activeGroup];
-    f.mes = ""; f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear();
+    f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear();
     rebuildSidebar();
     renderAll();
   });
@@ -902,7 +912,7 @@ function iniciarPainel(DATA) {
   function matchAll(group, i) {
     if (!matchDims(group, i)) return false;
     var rows = GROUPS[group].rows, f = filters[group];
-    if (f.mes && rows.date[i].slice(0, 7) !== f.mes) return false;
+    if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) return false;
     if (f.dia.size && !f.dia.has(rows.date[i])) return false;
     return true;
   }
@@ -1093,11 +1103,11 @@ function iniciarPainel(DATA) {
   }
 
   // grouped Meta/Realizado bars (own R$ axis, with ticks) + a % da meta line (own 0-100%+ band)
-  function drawComboChart(svgId, items, color, colorStrong, W) {
+  function drawComboChart(svgId, items, color, colorStrong, W, perItem) {
     var svg = document.getElementById(svgId);
     var H = 360, padL = 78, padR = 16, padT = 34, padB = 34;
     if (!items.length) return emptyChart(svg, W, H);
-    var needed = items.length * 200;
+    var needed = items.length * (perItem || 200);
     var wide = needed > W;
     var useW = wide ? needed : W;
     var innerW = useW - padL - padR, innerH = H - padT - padB;
@@ -1291,6 +1301,25 @@ function iniciarPainel(DATA) {
     });
     return Object.keys(map).sort().map(function (k) { return { label: map[k].label, valor: map[k].valor, meta: map[k].meta }; });
   }
+  function dailyBreakdown(group, idxs) {
+    var rows = GROUPS[group].rows, map = {};
+    idxs.forEach(function (i) {
+      var dk = rows.date[i];
+      if (!map[dk]) map[dk] = { valor: 0, meta: 0 };
+      map[dk].valor += rows.valor[i]; map[dk].meta += rows.meta[i];
+    });
+    return Object.keys(map).sort().map(function (dk) {
+      return { label: dk.slice(8, 10) + "/" + dk.slice(5, 7), valor: map[dk].valor, meta: map[dk].meta };
+    });
+  }
+  // no modo diário são muitas barras, então cada uma ocupa menos largura
+  function itemWidth(group) { return chartMode[group] === "day" ? 150 : 200; }
+  // mês / semana / dia, conforme o toggle do gráfico
+  function periodBreakdown(group, idxs) {
+    if (chartMode[group] === "day") return dailyBreakdown(group, idxs);
+    if (chartMode[group] === "week") return weeklyBreakdown(group, idxs);
+    return monthlyBreakdown(group, idxs);
+  }
   function dimBreakdown(group, idxs, dimArrKey, dictKey) {
     var rows = GROUPS[group].rows, map = {};
     idxs.forEach(function (i) {
@@ -1429,7 +1458,7 @@ function iniciarPainel(DATA) {
       if (rows.valor[i] === 0) continue;
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
-      if (f.mes && rows.date[i].slice(0, 7) !== f.mes) continue;
+      if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) continue;
       if (f.dia.size && !f.dia.has(rows.date[i])) continue;
       hasData[rows.proc[i]] = true;
     }
@@ -1459,7 +1488,7 @@ function iniciarPainel(DATA) {
       if (rows.proc[i] !== procTabSelection) continue;
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
-      if (f.mes && rows.date[i].slice(0, 7) !== f.mes) continue;
+      if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) continue;
       if (f.dia.size && !f.dia.has(rows.date[i])) continue;
       out.push(i);
     }
@@ -1628,10 +1657,10 @@ function iniciarPainel(DATA) {
 
     if (activePage === "geral") {
       renderKpisInto("kpis", "ec");
-      var mesItemsEc = chartMode.ec === "week" ? weeklyBreakdown("ec", idxs) : monthlyBreakdown("ec", idxs);
+      var mesItemsEc = periodBreakdown("ec", idxs);
       var procItemsEc = dimBreakdown("ec", idxs, "proc", "processo");
       var centroItemsEc = dimBreakdown("ec", idxs, "centro", "centro");
-      drawComboChart("chartMes", mesItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 980);
+      drawComboChart("chartMes", mesItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 980, itemWidth("ec"));
       drawProcChart("chartProc", procItemsEc, seriesColor("ec"));
       drawComboChart("chartCentro", centroItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 480);
       renderChartMesCentroTable("tblChartMes", mesItemsEc);
@@ -1654,10 +1683,10 @@ function iniciarPainel(DATA) {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "geralOb") {
       renderKpisInto("kpisOb", "ob");
-      var mesItemsOb = chartMode.ob === "week" ? weeklyBreakdown("ob", idxs) : monthlyBreakdown("ob", idxs);
+      var mesItemsOb = periodBreakdown("ob", idxs);
       var procItemsOb = dimBreakdown("ob", idxs, "proc", "processo");
       var centroItemsOb = dimBreakdown("ob", idxs, "centro", "centro");
-      drawComboChart("chartMesOb", mesItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 980);
+      drawComboChart("chartMesOb", mesItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 980, itemWidth("ob"));
       drawProcChart("chartProcOb", procItemsOb, seriesColor("ob"));
       drawComboChart("chartCentroOb", centroItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 480);
       renderChartMesCentroTable("tblChartMesOb", mesItemsOb);
