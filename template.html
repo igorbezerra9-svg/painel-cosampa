@@ -1727,14 +1727,23 @@ function iniciarPainel(DATA) {
     titulo.textContent = "Carregando dados…";
     sub.textContent = "Buscando os números mais recentes";
 
-    // cache "no-store": não reaproveita a cópia guardada pelo navegador, então
-    // recarregar a página sempre pega o mais novo que o GitHub já tiver. O CDN
-    // deles ainda segura por até 5min — esse é o atraso máximo esperado.
+    // cache "no-cache": o navegador SEMPRE pergunta ao servidor se mudou, mas só
+    // baixa se tiver mudado de fato -- quando não mudou, a resposta é um "304 Not
+    // Modified" de corpo vazio e ele reusa a cópia que já tem. Ou seja, continua
+    // mostrando o dado mais novo a cada F5, sem rebaixar o arquivo inteiro.
+    //
+    // Medido em 17/08 contra o raw: pedido normal 1.628.149 bytes, pedido
+    // condicional 0 bytes. Era "no-store" antes, que proíbe reusar e portanto
+    // rebaixava os 1,6MB em toda abertura.
+    //
+    // Atenção: isso corta bytes, não a CONTAGEM de requisições -- o 304 ainda é
+    // uma requisição. Se um 429 por excesso de pedidos voltar a aparecer, a saída
+    // é tirar o dados.json do GitHub, não mexer mais aqui.
     //
     // tenta as origens em ordem; só desiste quando todas falharem, guardando o
     // erro da primeira (a principal) pra mostrar na tela
     function buscar(i, primeiroErro) {
-      return fetch(DADOS_URLS[i], { cache: "no-store" })
+      return fetch(DADOS_URLS[i], { cache: "no-cache" })
         .then(function (r) {
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
