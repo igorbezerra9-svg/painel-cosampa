@@ -545,16 +545,20 @@
 // Buscando de fora, publicar a página só é necessário quando o CÓDIGO do
 // painel muda. Dado novo aparece sozinho, sem depender de publicação.
 //
-// Vem da mesma origem que serve o painel: o dados.json é commitado no repo, e
-// todo push republica a página, então o Pages sempre tem a versão do dia -- sem
-// perder a propriedade de "dado novo aparece sozinho".
+// PRINCIPAL: o raw do GitHub, que entrega o arquivo direto do repositório. É de
+// propósito -- assim o dado novo aparece assim que o robô commita (a cada 20min,
+// ou na hora, quando a planilha é editada), sem depender de republicar o site.
+// Republicar aqui é justamente o passo que emperra: fica 7-10min preso na fila
+// do Pages e às vezes deixa o site com dado velho por horas (ver republicar.yml).
 //
-// Antes buscava no raw.githubusercontent, que limita requisições por IP e passou
-// a devolver 429 numa sequência de recarregamentos. O raw fica como reserva, pro
-// caso de a página ser aberta fora do Pages (arquivo local, outro host).
+// RESERVA: a cópia servida pelo próprio Pages, mesma origem. O raw limita
+// requisições por IP e devolve 429 numa rajada de recarregamentos; quando isso
+// acontece, o painel abre com essa cópia em vez de só mostrar erro. Ela pode
+// estar mais atrasada que o raw -- o carimbo "Atualizado" no topo vem de dentro
+// do arquivo, então um dado velho fica visível na tela, não passa por novo.
 var DADOS_URLS = [
-  "dados.json",
-  "https://raw.githubusercontent.com/igorbezerra9-svg/painel-cosampa/main/dados.json"
+  "https://raw.githubusercontent.com/igorbezerra9-svg/painel-cosampa/main/dados.json",
+  "dados.json"
 ];
 
 function iniciarPainel(DATA) {
@@ -1725,7 +1729,7 @@ function iniciarPainel(DATA) {
 
     // cache "no-store": não reaproveita a cópia guardada pelo navegador, então
     // recarregar a página sempre pega o mais novo que o GitHub já tiver. O CDN
-    // deles ainda segura por até 10min — esse é o atraso máximo esperado.
+    // deles ainda segura por até 5min — esse é o atraso máximo esperado.
     //
     // tenta as origens em ordem; só desiste quando todas falharem, guardando o
     // erro da primeira (a principal) pra mostrar na tela
