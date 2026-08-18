@@ -1098,19 +1098,30 @@ function iniciarPainel(DATA) {
     var step = niceNum(maxVal / (ticks - 1), true);
     return { max: Math.ceil(maxVal / step) * step, step: step };
   }
+  var PILL_PAD_X = 4;
   // measures the rendered text and draws a rounded dark pill behind it
   function drawPill(svg, cx, cy, text, cls) {
     var t = el("text", { x: cx, y: cy, class: cls || "pill-label-text", "text-anchor": "middle" });
     t.textContent = text;
     svg.appendChild(t);
     var box = t.getBBox();
-    var padX = 6, padY = 3;
+    var padY = 3;
     var rect = el("rect", {
-      x: box.x - padX, y: box.y - padY, width: box.width + padX * 2, height: box.height + padY * 2,
+      x: box.x - PILL_PAD_X, y: box.y - padY, width: box.width + PILL_PAD_X * 2, height: box.height + padY * 2,
       rx: (box.height + padY * 2) / 2, fill: "var(--pill-bg)"
     });
     svg.insertBefore(rect, t);
     return t;
+  }
+  // largura real do texto, sem desenhar nada visível -- usado pra calcular o
+  // menor espaçamento entre barras que ainda cabe as etiquetas sem sobrepor
+  function measureTextWidth(svg, text, cls) {
+    var t = el("text", { x: -9999, y: -9999, class: cls || "pill-label-text" });
+    t.textContent = text;
+    svg.appendChild(t);
+    var w = t.getBBox().width;
+    svg.removeChild(t);
+    return w;
   }
 
   // grouped Meta/Realizado bars (own R$ axis, with ticks) + a % da meta line (own 0-100%+ band)
@@ -1134,12 +1145,35 @@ function iniciarPainel(DATA) {
     items.forEach(function (d) { rawMax = Math.max(rawMax, d.valor, d.meta); maxPct = Math.max(maxPct, div(d.valor, d.meta) || 0); });
     var scale = niceScale(rawMax * 1.6, 6);
     var pctCeil = Math.max(1, Math.ceil(maxPct * 1.06 * 10) / 10);
-    // gap padrão (32) fica reservado pros modos semanal/diário, que têm
-    // muito mais barras e menos folga -- testado e confirmado que reduzir
-    // esse valor lá causa sobreposição de etiqueta em alguns dias/semanas
-    // com valores maiores. Só o modo mensal (no máximo 12 barras, sempre
-    // testado sem sobreposição) recebe um valor menor via barGap.
-    var groupW = innerW / n, barW = Math.min(38, groupW * 0.24), gap = barGap || 32;
+    // mede a etiqueta mais larga de verdade em vez de supor um gap fixo --
+    // um valor em R$ com mais dígitos (ex.: virou "R$ 12,3 mi") alarga o
+    // texto e um gap fixo que era seguro ontem passa a sobrepor hoje. barGap
+    // é só a preferência (o quanto queremos aproximar); o gap final nunca
+    // fica menor do que o necessário pra etiqueta caber, nem aperta a ponto
+    // de invadir o grupo vizinho -- e se não houver espaço nem no mínimo, a
+    // própria largura do gráfico cresce (ativando rolagem) até caber.
+    var maxPillW = 0;
+    items.forEach(function (d) {
+      maxPillW = Math.max(maxPillW, measureTextWidth(svg, fmtCompactBRL(d.valor)), measureTextWidth(svg, fmtCompactBRL(d.meta)));
+    });
+    maxPillW += PILL_PAD_X * 2 + 2; // +2px de folga p/ arredondamento sub-pixel do getBBox
+    var preferredGap = barGap || 32;
+    var n_ = n, innerW_ = innerW, groupW, barW, gap;
+    for (var attempt = 0; attempt < 6; attempt++) {
+      groupW = innerW_ / n_;
+      barW = Math.min(38, groupW * 0.24);
+      var minGap = Math.max(10, maxPillW - barW);
+      var maxGapForFit = groupW - barW - maxPillW;
+      if (maxGapForFit >= minGap) {
+        gap = Math.max(minGap, Math.min(preferredGap, maxGapForFit));
+        break;
+      }
+      gap = minGap;
+      useW = useW * 1.25;
+      wide = true;
+      innerW_ = useW - padL - padR;
+    }
+    innerW = innerW_;
     svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
     svg.style.width = wide ? useW + "px" : "100%";
     svg.innerHTML = "";
@@ -1348,10 +1382,12 @@ function iniciarPainel(DATA) {
     return 200;
   }
   function barGapFor(group) {
-    // barras mais próximas só no mensal (testado sem sobreposição de
-    // etiqueta com no máximo 12 barras); semanal/diário ficam no padrão
-    // (32) da função, que é o valor testado e seguro pra esses volumes.
-    return chartMode[group] === "month" ? 28 : undefined;
+    // isto é só a preferência de partida -- o gap de verdade é calculado em
+    // cima da largura medida da etiqueta (ver drawComboChart), então pedir
+    // um valor bem apertado aqui é seguro: ele só cresce além disso se os
+    // dados do mês exigirem mais espaço. Semanal/diário têm mais barras e
+    // menos folga, então ficam com uma preferência maior por padrão.
+    return chartMode[group] === "month" ? 12 : undefined;
   }
   // mês / semana / dia, conforme o toggle do gráfico
   function periodBreakdown(group, idxs) {
