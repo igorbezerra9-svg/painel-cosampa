@@ -1114,10 +1114,18 @@ function iniciarPainel(DATA) {
   }
 
   // grouped Meta/Realizado bars (own R$ axis, with ticks) + a % da meta line (own 0-100%+ band)
-  function drawComboChart(svgId, items, color, colorStrong, W, perItem) {
+  function drawComboChart(svgId, items, color, colorStrong, W, perItem, barGap) {
     var svg = document.getElementById(svgId);
     var H = 360, padL = 78, padR = 16, padT = 34, padB = 34;
     if (!items.length) return emptyChart(svg, W, H);
+    // usa a largura real do painel quando disponível (svg.style.width fica
+    // "100%" no modo não-wide, então o container quase sempre é bem mais
+    // largo que os 980 fixos de antes — medir de verdade evita rolagem
+    // horizontal desnecessária em telas largas, tipo os 8-12 meses do
+    // gráfico mensal, que antes sempre acionavam o modo wide)
+    var container = svg.parentElement;
+    var realW = container ? container.clientWidth : 0;
+    if (realW > W) W = realW;
     var needed = items.length * (perItem || 200);
     var wide = needed > W;
     var useW = wide ? needed : W;
@@ -1126,7 +1134,12 @@ function iniciarPainel(DATA) {
     items.forEach(function (d) { rawMax = Math.max(rawMax, d.valor, d.meta); maxPct = Math.max(maxPct, div(d.valor, d.meta) || 0); });
     var scale = niceScale(rawMax * 1.6, 6);
     var pctCeil = Math.max(1, Math.ceil(maxPct * 1.06 * 10) / 10);
-    var groupW = innerW / n, barW = Math.min(38, groupW * 0.24), gap = 32;
+    // gap padrão (32) fica reservado pros modos semanal/diário, que têm
+    // muito mais barras e menos folga -- testado e confirmado que reduzir
+    // esse valor lá causa sobreposição de etiqueta em alguns dias/semanas
+    // com valores maiores. Só o modo mensal (no máximo 12 barras, sempre
+    // testado sem sobreposição) recebe um valor menor via barGap.
+    var groupW = innerW / n, barW = Math.min(38, groupW * 0.24), gap = barGap || 32;
     svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
     svg.style.width = wide ? useW + "px" : "100%";
     svg.innerHTML = "";
@@ -1324,7 +1337,22 @@ function iniciarPainel(DATA) {
     });
   }
   // no modo diário são muitas barras, então cada uma ocupa menos largura
-  function itemWidth(group) { return chartMode[group] === "day" ? 150 : 200; }
+  function itemWidth(group) {
+    var mode = chartMode[group];
+    // "month" tem no máximo 12 barras (um ano) -- reservar 100px por mês já
+    // é suficiente pra caber sem rolagem na maioria das telas largas, sem
+    // apertar demais as etiquetas de valor. "week"/"day" mantêm o espaço
+    // maior de antes porque podem ter muito mais itens.
+    if (mode === "day") return 150;
+    if (mode === "month") return 100;
+    return 200;
+  }
+  function barGapFor(group) {
+    // barras mais próximas só no mensal (testado sem sobreposição de
+    // etiqueta com no máximo 12 barras); semanal/diário ficam no padrão
+    // (32) da função, que é o valor testado e seguro pra esses volumes.
+    return chartMode[group] === "month" ? 28 : undefined;
+  }
   // mês / semana / dia, conforme o toggle do gráfico
   function periodBreakdown(group, idxs) {
     if (chartMode[group] === "day") return dailyBreakdown(group, idxs);
@@ -1671,7 +1699,7 @@ function iniciarPainel(DATA) {
       var mesItemsEc = periodBreakdown("ec", idxs);
       var procItemsEc = dimBreakdown("ec", idxs, "proc", "processo");
       var centroItemsEc = dimBreakdown("ec", idxs, "centro", "centro");
-      drawComboChart("chartMes", mesItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 980, itemWidth("ec"));
+      drawComboChart("chartMes", mesItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 980, itemWidth("ec"), barGapFor("ec"));
       drawProcChart("chartProc", procItemsEc, seriesColor("ec"));
       drawComboChart("chartCentro", centroItemsEc, seriesColor("ec"), seriesColorStrong("ec"), 480);
       renderChartMesCentroTable("tblChartMes", mesItemsEc);
@@ -1697,7 +1725,7 @@ function iniciarPainel(DATA) {
       var mesItemsOb = periodBreakdown("ob", idxs);
       var procItemsOb = dimBreakdown("ob", idxs, "proc", "processo");
       var centroItemsOb = dimBreakdown("ob", idxs, "centro", "centro");
-      drawComboChart("chartMesOb", mesItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 980, itemWidth("ob"));
+      drawComboChart("chartMesOb", mesItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 980, itemWidth("ob"), barGapFor("ob"));
       drawProcChart("chartProcOb", procItemsOb, seriesColor("ob"));
       drawComboChart("chartCentroOb", centroItemsOb, seriesColor("ob"), seriesColorStrong("ob"), 480);
       renderChartMesCentroTable("tblChartMesOb", mesItemsOb);
