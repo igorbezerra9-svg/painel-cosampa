@@ -302,6 +302,7 @@
     <button class="tab-btn" data-page="produtividadeMensal" type="button">Produtividade - Mensal</button>
     <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
+    <button class="tab-btn" data-page="consolidadoCentro" type="button">Consolidado por Centro</button>
     <span class="tab-sep"></span>
     <button class="tab-btn" data-page="geralOb" type="button">Painel Geral - Obras</button>
     <button class="tab-btn" data-page="escaladoOb" type="button">Requerido x Escalado - Obras</button>
@@ -467,6 +468,37 @@
         </div>
       </section>
 
+      <section class="page" id="page-consolidadoCentro">
+        <div class="panel" style="margin-bottom:14px">
+          <div class="seg-toggle" data-centro-mes-toggle>
+            <button type="button" class="seg-btn active" data-metric="faturamento">Faturamento</button>
+            <button type="button" class="seg-btn" data-metric="produtividade">Produtividade</button>
+          </div>
+          <p class="panel-title" id="consolidadoCentroTitle">Faturamento — Consolidado Mês a Mês por Centro de Serviço</p>
+          <p class="panel-caption" id="consolidadoCentroCaption">Sul = soma dos três centros · passe o mouse pra ver os valores exatos</p>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Campos Sales</p>
+            <div class="chart-scroll"><svg class="chart" id="chartCentroMesCS" viewBox="0 0 480 240"></svg></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Juazeiro do Norte</p>
+            <div class="chart-scroll"><svg class="chart" id="chartCentroMesJN" viewBox="0 0 480 240"></svg></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Milagres</p>
+            <div class="chart-scroll"><svg class="chart" id="chartCentroMesMI" viewBox="0 0 480 240"></svg></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Sul</p>
+            <div class="chart-scroll"><svg class="chart" id="chartCentroMesSUL" viewBox="0 0 480 240"></svg></div>
+          </div>
+        </div>
+      </section>
+
       <section class="page" id="page-geralOb">
         <div class="kpi-grid" id="kpisOb"></div>
         <div class="panel" style="margin-bottom:16px">
@@ -570,6 +602,7 @@ function iniciarPainel(DATA) {
   };
   var PAGE_GROUP = {
     geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
+    consolidadoCentro: "ec",
     geralOb: "ob", escaladoOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
@@ -602,6 +635,28 @@ function iniciarPainel(DATA) {
         btn.classList.add("active");
         equipeMesMetric = btn.dataset.metric;
         document.getElementById("comparativoMensalTitle").textContent = EQUIPE_MES_TITLES[equipeMesMetric];
+        renderAll();
+      });
+    });
+  });
+
+  var centroMesMetric = "faturamento";
+  var CENTRO_MES_TITLES = {
+    faturamento: "Faturamento — Consolidado Mês a Mês por Centro de Serviço",
+    produtividade: "Produtividade — Consolidado Mês a Mês por Centro de Serviço"
+  };
+  var CENTRO_MES_CAPTIONS = {
+    faturamento: "Sul = soma dos três centros · passe o mouse pra ver os valores exatos",
+    produtividade: "Serviços realizados ÷ linhas produtivas do mês · Sul = soma dos três centros"
+  };
+  document.querySelectorAll(".seg-toggle[data-centro-mes-toggle]").forEach(function (toggle) {
+    toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        toggle.querySelectorAll(".seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        centroMesMetric = btn.dataset.metric;
+        document.getElementById("consolidadoCentroTitle").textContent = CENTRO_MES_TITLES[centroMesMetric];
+        document.getElementById("consolidadoCentroCaption").textContent = CENTRO_MES_CAPTIONS[centroMesMetric];
         renderAll();
       });
     });
@@ -931,6 +986,15 @@ function iniciarPainel(DATA) {
     var rows = GROUPS[group].rows, out = [];
     for (var i = 0; i < rows.date.length; i++) if (matchAll(group, i)) out.push(i);
     return out;
+  }
+  // como matchAll, mas ignora o filtro de Centro de Serviço -- usado pelos
+  // gráficos "por centro", que já quebram os dados por centro sozinhos
+  function matchAllExceptCentro(group, i) {
+    if (!matchDimsExcept(group, i, "centro")) return false;
+    var rows = GROUPS[group].rows, f = filters[group];
+    if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) return false;
+    if (f.dia.size && !f.dia.has(rows.date[i])) return false;
+    return true;
   }
   function isProdRow(group, rows, i) {
     return group === "ec" ? rows.prod[i] === 1 : (rows.status[i] === 0 || rows.status[i] === 1);
@@ -1272,6 +1336,61 @@ function iniciarPainel(DATA) {
     });
   }
 
+  // uma barra por mês + etiqueta de valor sempre acima -- usado nos 4 quadros
+  // "Consolidado por Centro" (um painel por centro, trocando a métrica)
+  function drawMiniMonthChart(svgId, items, color, valueKey, fmtLabel, fmtTip) {
+    var svg = document.getElementById(svgId);
+    var H = 240, padL = 10, padR = 10, padT = 30, padB = 26;
+    if (!items.length) return emptyChart(svg, 480, H);
+    var container = svg.parentElement;
+    var W = Math.max(280, container ? container.clientWidth : 480);
+    var n = items.length, maxVal = 0;
+    items.forEach(function (d) { maxVal = Math.max(maxVal, d[valueKey] || 0); });
+    maxVal = maxVal * 1.22 || 1;
+    // mede a etiqueta mais larga de verdade em vez de supor que ela cabe --
+    // mesmo problema (e mesma solução) do gráfico mensal principal: um valor
+    // com mais dígitos alarga o texto e um layout fixo que cabia ontem passa
+    // a sobrepor hoje. Se não couber nem alargando a barra, ativa rolagem.
+    var maxLabelW = 0;
+    items.forEach(function (d) {
+      if (d[valueKey] == null) return;
+      maxLabelW = Math.max(maxLabelW, measureTextWidth(svg, fmtLabel(d[valueKey]), "val-label"));
+    });
+    maxLabelW += 8;
+    var useW = W, innerW, groupW;
+    for (var attempt = 0; attempt < 6; attempt++) {
+      innerW = useW - padL - padR;
+      groupW = innerW / n;
+      if (groupW >= maxLabelW) break;
+      useW = useW * 1.25;
+    }
+    var barW = Math.min(34, groupW * 0.5);
+    var wide = useW > W + 0.5;
+    var innerH = H - padT - padB;
+    svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
+    svg.style.width = wide ? useW + "px" : "100%";
+    svg.innerHTML = "";
+    items.forEach(function (d, i) {
+      var cx = padL + groupW * i + groupW / 2;
+      var v = d[valueKey] || 0;
+      var barH = (v / maxVal) * innerH, by = padT + innerH - barH;
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
+      rect.addEventListener("mousemove", function (evt) {
+        showTip(evt, "<div><b>" + d.label + "</b></div>" + '<div class="tt-row"><span>Valor</span><b>' + fmtTip(v) + "</b></div>");
+      });
+      rect.addEventListener("mouseleave", hideTip);
+      svg.appendChild(rect);
+      if (d[valueKey] != null) {
+        var lbl = el("text", { x: cx, y: by - 8, class: "val-label", "text-anchor": "middle" });
+        lbl.textContent = fmtLabel(v);
+        svg.appendChild(lbl);
+      }
+      var axisLbl = el("text", { x: cx, y: H - padB + 15, class: "axis-label", "text-anchor": "middle" });
+      axisLbl.textContent = d.label;
+      svg.appendChild(axisLbl);
+    });
+  }
+
   // side-by-side pair of plain count bars (gray + accent), used for escalado/trabalhado by day
   // bars = trabalhados · line = escalados (with its value labeled above each point)
   function drawEscaladoChart(svgId, items, color) {
@@ -1409,6 +1528,35 @@ function iniciarPainel(DATA) {
       var m = map[code];
       return { label: dict[code], valor: m.valor, meta: m.meta, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null };
     }).sort(function (a, b) { return b.valor - a.valor; });
+  }
+
+  // quebra mensal por Centro de Serviço + um "Sul" virtual (soma dos três,
+  // igual ao modelo do Power BI -- inclui linhas sem centro, que só aparecem
+  // no total geral e somem assim que um centro específico é filtrado)
+  function centroMonthBreakdown(group) {
+    var rows = GROUPS[group].rows, dict = GROUPS[group].dicts.centro;
+    var buckets = { Sul: {} };
+    dict.forEach(function (name) { buckets[name] = {}; });
+    function add(map, mk, i) {
+      if (!map[mk]) map[mk] = { valor: 0, qtd: 0, prodDen: 0 };
+      map[mk].valor += rows.valor[i]; map[mk].qtd += rows.qtd[i];
+      if (isProdRow(group, rows, i)) map[mk].prodDen++;
+    }
+    for (var i = 0; i < rows.date.length; i++) {
+      if (!matchAllExceptCentro(group, i)) continue;
+      var mk = rows.date[i].slice(0, 7);
+      add(buckets.Sul, mk, i);
+      var label = rows.centro[i] >= 0 ? dict[rows.centro[i]] : null;
+      if (label && buckets[label]) add(buckets[label], mk, i);
+    }
+    var out = {};
+    Object.keys(buckets).forEach(function (name) {
+      out[name] = Object.keys(buckets[name]).sort().map(function (mk) {
+        var mi = parseInt(mk.slice(5, 7), 10) - 1, m = buckets[name][mk];
+        return { label: MONTH_FULL[mi], valor: m.valor, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null };
+      });
+    });
+    return out;
   }
 
   // ---------- tables ----------
@@ -1724,6 +1872,17 @@ function iniciarPainel(DATA) {
   }
 
   // ---------- full render ----------
+  var CENTRO_MES_SVGS = { "Campos Sales": "chartCentroMesCS", "Juazeiro do Norte": "chartCentroMesJN", "Milagres": "chartCentroMesMI", "Sul": "chartCentroMesSUL" };
+  function renderConsolidadoCentro() {
+    var byCentro = centroMonthBreakdown("ec");
+    var color = seriesColor("ec");
+    var valueKey = centroMesMetric === "produtividade" ? "produtividade" : "valor";
+    var fmtLabel = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtCompactBRL;
+    var fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
+    Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
+      drawMiniMonthChart(CENTRO_MES_SVGS[name], byCentro[name] || [], color, valueKey, fmtLabel, fmtTip);
+    });
+  }
   function renderAll() {
     var activePage = document.querySelector(".page.active").id.replace("page-", "");
     var group = PAGE_GROUP[activePage];
@@ -1756,6 +1915,8 @@ function iniciarPainel(DATA) {
       renderComparativoMensalTable();
     } else if (activePage === "escaladoFat") {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
+    } else if (activePage === "consolidadoCentro") {
+      renderConsolidadoCentro();
     } else if (activePage === "geralOb") {
       renderKpisInto("kpisOb", "ob");
       var mesItemsOb = periodBreakdown("ob", idxs);
