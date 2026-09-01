@@ -472,6 +472,7 @@
         <div class="panel" style="margin-bottom:14px">
           <div class="seg-toggle" data-centro-mes-toggle>
             <button type="button" class="seg-btn active" data-metric="faturamento">Faturamento</button>
+            <button type="button" class="seg-btn" data-metric="ticket">Ticket Médio</button>
             <button type="button" class="seg-btn" data-metric="produtividade">Produtividade</button>
           </div>
           <p class="panel-title" id="consolidadoCentroTitle">Faturamento — Consolidado Mês a Mês por Centro de Serviço</p>
@@ -643,10 +644,12 @@ function iniciarPainel(DATA) {
   var centroMesMetric = "faturamento";
   var CENTRO_MES_TITLES = {
     faturamento: "Faturamento — Consolidado Mês a Mês por Centro de Serviço",
+    ticket: "Ticket Médio — Consolidado Mês a Mês por Centro de Serviço",
     produtividade: "Produtividade — Consolidado Mês a Mês por Centro de Serviço"
   };
   var CENTRO_MES_CAPTIONS = {
     faturamento: "Sul = soma dos três centros · passe o mouse pra ver os valores exatos",
+    ticket: "Valor realizado ÷ qtd. de serviços do mês · Sul = soma dos três centros",
     produtividade: "Serviços realizados ÷ linhas produtivas do mês · Sul = soma dos três centros"
   };
   document.querySelectorAll(".seg-toggle[data-centro-mes-toggle]").forEach(function (toggle) {
@@ -1553,7 +1556,7 @@ function iniciarPainel(DATA) {
     Object.keys(buckets).forEach(function (name) {
       out[name] = Object.keys(buckets[name]).sort().map(function (mk) {
         var mi = parseInt(mk.slice(5, 7), 10) - 1, m = buckets[name][mk];
-        return { label: MONTH_FULL[mi], valor: m.valor, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null };
+        return { label: MONTH_FULL[mi], valor: m.valor, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null, ticket: div(m.valor, m.qtd) };
       });
     });
     return out;
@@ -1876,8 +1879,8 @@ function iniciarPainel(DATA) {
   function renderConsolidadoCentro() {
     var byCentro = centroMonthBreakdown("ec");
     var color = seriesColor("ec");
-    var valueKey = centroMesMetric === "produtividade" ? "produtividade" : "valor";
-    var fmtLabel = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtCompactBRL;
+    var valueKey = centroMesMetric === "produtividade" ? "produtividade" : centroMesMetric === "ticket" ? "ticket" : "valor";
+    var fmtLabel = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : centroMesMetric === "ticket" ? fmtFullBRL : fmtCompactBRL;
     var fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
     Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
       drawMiniMonthChart(CENTRO_MES_SVGS[name], byCentro[name] || [], color, valueKey, fmtLabel, fmtTip);
