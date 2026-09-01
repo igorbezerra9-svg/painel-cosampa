@@ -1924,7 +1924,8 @@ function iniciarPainel(DATA) {
     if (centroMesMetric === "turnos") {
       byCentro = centroMonthTurnos("ec");
       valueKey = "turnos";
-      fmtLabel = fmtTip = function (v) { return fmtNum(v, 1); };
+      fmtLabel = function (v) { return fmtNum(v, 0); };
+      fmtTip = function (v) { return fmtNum(v, 1); };
     } else {
       byCentro = centroMonthBreakdown("ec");
       valueKey = centroMesMetric === "produtividade" ? "produtividade" : centroMesMetric === "ticket" ? "ticket" : "valor";
