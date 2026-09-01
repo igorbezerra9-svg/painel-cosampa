@@ -143,6 +143,8 @@
   .fg-actions button { font-family: inherit; font-size: 11px; font-weight: 800; color: var(--accent-ink); background: none; border: none; cursor: pointer; }
   .btn-clear { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--status-crit); background: var(--status-crit-soft); border: none; border-radius: 9px; padding: 8px 10px; cursor: pointer; display: none; }
   .btn-clear.show { display: block; }
+  .btn-toggle-values { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 9px; padding: 7px 12px; cursor: pointer; margin-top: 10px; }
+  .btn-toggle-values:hover { opacity: .85; }
   .result-note { font-size: 11px; color: var(--text-muted); padding-top: 2px; border-top: 1px solid var(--border); }
 
   .proc-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -482,29 +484,30 @@
           </div>
           <p class="panel-title" id="consolidadoCentroTitle">Faturamento — Consolidado Mês a Mês por Centro de Serviço</p>
           <p class="panel-caption" id="consolidadoCentroCaption">Sul = soma dos três centros · passe o mouse pra ver os valores exatos</p>
+          <button type="button" class="btn-toggle-values" id="btnToggleValoresCentro">Mostrar valores</button>
         </div>
         <div class="grid-2">
           <div class="panel">
             <p class="panel-title">Campos Sales</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesCS" viewBox="0 0 480 240"></svg></div>
-            <div class="tablewrap"><table class="datatable" id="tblCentroMesCS"></table></div>
+            <div class="tablewrap" hidden><table class="datatable" id="tblCentroMesCS"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title">Juazeiro do Norte</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesJN" viewBox="0 0 480 240"></svg></div>
-            <div class="tablewrap"><table class="datatable" id="tblCentroMesJN"></table></div>
+            <div class="tablewrap" hidden><table class="datatable" id="tblCentroMesJN"></table></div>
           </div>
         </div>
         <div class="grid-2">
           <div class="panel">
             <p class="panel-title">Milagres</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesMI" viewBox="0 0 480 240"></svg></div>
-            <div class="tablewrap"><table class="datatable" id="tblCentroMesMI"></table></div>
+            <div class="tablewrap" hidden><table class="datatable" id="tblCentroMesMI"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title">Sul</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesSUL" viewBox="0 0 480 240"></svg></div>
-            <div class="tablewrap"><table class="datatable" id="tblCentroMesSUL"></table></div>
+            <div class="tablewrap" hidden><table class="datatable" id="tblCentroMesSUL"></table></div>
           </div>
         </div>
       </section>
@@ -674,6 +677,15 @@ function iniciarPainel(DATA) {
         renderAll();
       });
     });
+  });
+
+  // valores escondidos por padrão nesta aba, pra ficar limpo na hora de tirar
+  // print -- um botão só revela as 4 tabelas (e seus botões de copiar) de vez
+  document.getElementById("btnToggleValoresCentro").addEventListener("click", function () {
+    var mostrando = this.textContent === "Ocultar valores";
+    this.textContent = mostrando ? "Mostrar valores" : "Ocultar valores";
+    document.querySelectorAll("#page-consolidadoCentro .tablewrap").forEach(function (el) { el.hidden = mostrando; });
+    document.querySelectorAll("#page-consolidadoCentro .copy-btn").forEach(function (el) { el.hidden = mostrando; });
   });
 
   var root = document.getElementById("root");
@@ -1081,6 +1093,7 @@ function iniciarPainel(DATA) {
       btn.type = "button"; btn.className = "copy-btn"; btn.title = "Copiar tabela";
       btn.dataset.copyTable = table.id;
       btn.innerHTML = COPY_ICON;
+      if (table.closest("#page-consolidadoCentro")) btn.hidden = true; // valores começam ocultos nessa aba
       panel.appendChild(btn);
     });
   }
