@@ -22,6 +22,8 @@
     --series-ec:      #eb6834;
     --series-ec-soft: #fbe2d5;
     --series-ec-strong: #a8471c;
+    --series-centro-mi:  #3f9142;
+    --series-centro-sul: #8355c9;
     --pill-bg:        rgba(15,13,8,.82);
     --status-good:    #0ca30c;
     --status-warn:    #b8790f;
@@ -37,7 +39,8 @@
       --text-muted: #8f8570; --grid: #322b1b; --baseline: #4a4028; --border: rgba(247,242,230,0.11);
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -14px rgba(0,0,0,.55);
       --accent: #eda100; --accent-ink: #2b1d00; --accent-soft: #3a2a08;
-      --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ob-strong: #6ba6ec; --series-ec: #d95926; --series-ec-soft: #3a2013; --series-ec-strong: #e88a5c; --pill-bg: rgba(10,9,6,.85);
+      --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ob-strong: #6ba6ec; --series-ec: #d95926; --series-ec-soft: #3a2013; --series-ec-strong: #e88a5c;
+      --series-centro-mi: #57b25a; --series-centro-sul: #a687e0; --pill-bg: rgba(10,9,6,.85);
       --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
       --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
     }
@@ -49,6 +52,7 @@
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -14px rgba(0,0,0,.55);
     --accent: #eda100; --accent-ink: #2b1d00; --accent-soft: #3a2a08;
     --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ec: #d95926; --series-ec-soft: #3a2013;
+    --series-centro-mi: #57b25a; --series-centro-sul: #a687e0;
     --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
     --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
   }
@@ -1918,8 +1922,11 @@ function iniciarPainel(DATA) {
 
   // ---------- full render ----------
   var CENTRO_MES_SVGS = { "Campos Sales": "chartCentroMesCS", "Juazeiro do Norte": "chartCentroMesJN", "Milagres": "chartCentroMesMI", "Sul": "chartCentroMesSUL" };
+  function centroColors() {
+    return { "Campos Sales": seriesColor("ec"), "Juazeiro do Norte": seriesColor("ob"), "Milagres": cv("--series-centro-mi"), "Sul": cv("--series-centro-sul") };
+  }
   function renderConsolidadoCentro() {
-    var color = seriesColor("ec");
+    var colors = centroColors();
     var byCentro, valueKey, fmtLabel, fmtTip;
     if (centroMesMetric === "turnos") {
       byCentro = centroMonthTurnos("ec");
@@ -1933,7 +1940,7 @@ function iniciarPainel(DATA) {
       fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
     }
     Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
-      drawMiniMonthChart(CENTRO_MES_SVGS[name], byCentro[name] || [], color, valueKey, fmtLabel, fmtTip);
+      drawMiniMonthChart(CENTRO_MES_SVGS[name], byCentro[name] || [], colors[name], valueKey, fmtLabel, fmtTip);
     });
   }
   function renderAll() {
