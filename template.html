@@ -487,20 +487,24 @@
           <div class="panel">
             <p class="panel-title">Campos Sales</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesCS" viewBox="0 0 480 240"></svg></div>
+            <div class="tablewrap"><table class="datatable" id="tblCentroMesCS"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title">Juazeiro do Norte</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesJN" viewBox="0 0 480 240"></svg></div>
+            <div class="tablewrap"><table class="datatable" id="tblCentroMesJN"></table></div>
           </div>
         </div>
         <div class="grid-2">
           <div class="panel">
             <p class="panel-title">Milagres</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesMI" viewBox="0 0 480 240"></svg></div>
+            <div class="tablewrap"><table class="datatable" id="tblCentroMesMI"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title">Sul</p>
             <div class="chart-scroll"><svg class="chart" id="chartCentroMesSUL" viewBox="0 0 480 240"></svg></div>
+            <div class="tablewrap"><table class="datatable" id="tblCentroMesSUL"></table></div>
           </div>
         </div>
       </section>
@@ -1922,8 +1926,16 @@ function iniciarPainel(DATA) {
 
   // ---------- full render ----------
   var CENTRO_MES_SVGS = { "Campos Sales": "chartCentroMesCS", "Juazeiro do Norte": "chartCentroMesJN", "Milagres": "chartCentroMesMI", "Sul": "chartCentroMesSUL" };
+  var CENTRO_MES_TABLES = { "Campos Sales": "tblCentroMesCS", "Juazeiro do Norte": "tblCentroMesJN", "Milagres": "tblCentroMesMI", "Sul": "tblCentroMesSUL" };
   function centroColors() {
     return { "Campos Sales": seriesColor("ec"), "Juazeiro do Norte": seriesColor("ob"), "Milagres": cv("--series-centro-mi"), "Sul": cv("--series-centro-sul") };
+  }
+  function renderCentroMesTable(elId, items, valueKey, fmtCell) {
+    var thead = "<thead><tr><th>Mês</th><th>Valor</th></tr></thead>";
+    var rowsHtml = items.map(function (d) {
+      return "<tr><td>" + d.label + "</td><td class=\"cell-plain\">" + fmtCell(d[valueKey]) + "</td></tr>";
+    }).join("");
+    document.getElementById(elId).innerHTML = thead + "<tbody>" + rowsHtml + "</tbody>";
   }
   function renderConsolidadoCentro() {
     var colors = centroColors();
@@ -1940,7 +1952,9 @@ function iniciarPainel(DATA) {
       fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
     }
     Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
-      drawMiniMonthChart(CENTRO_MES_SVGS[name], byCentro[name] || [], colors[name], valueKey, fmtLabel, fmtTip);
+      var items = byCentro[name] || [];
+      drawMiniMonthChart(CENTRO_MES_SVGS[name], items, colors[name], valueKey, fmtLabel, fmtTip);
+      renderCentroMesTable(CENTRO_MES_TABLES[name], items, valueKey, fmtTip);
     });
   }
   function renderAll() {
