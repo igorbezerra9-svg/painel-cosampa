@@ -474,6 +474,7 @@
             <button type="button" class="seg-btn active" data-metric="faturamento">Faturamento</button>
             <button type="button" class="seg-btn" data-metric="ticket">Ticket Médio</button>
             <button type="button" class="seg-btn" data-metric="produtividade">Produtividade</button>
+            <button type="button" class="seg-btn" data-metric="turnos">Turnos</button>
           </div>
           <p class="panel-title" id="consolidadoCentroTitle">Faturamento — Consolidado Mês a Mês por Centro de Serviço</p>
           <p class="panel-caption" id="consolidadoCentroCaption">Sul = soma dos três centros · passe o mouse pra ver os valores exatos</p>
@@ -645,12 +646,14 @@ function iniciarPainel(DATA) {
   var CENTRO_MES_TITLES = {
     faturamento: "Faturamento — Consolidado Mês a Mês por Centro de Serviço",
     ticket: "Ticket Médio — Consolidado Mês a Mês por Centro de Serviço",
-    produtividade: "Produtividade — Consolidado Mês a Mês por Centro de Serviço"
+    produtividade: "Produtividade — Consolidado Mês a Mês por Centro de Serviço",
+    turnos: "Turnos — Consolidado Mês a Mês por Centro de Serviço"
   };
   var CENTRO_MES_CAPTIONS = {
     faturamento: "Sul = soma dos três centros · passe o mouse pra ver os valores exatos",
     ticket: "Valor realizado ÷ qtd. de serviços do mês · Sul = soma dos três centros",
-    produtividade: "Serviços realizados ÷ linhas produtivas do mês · Sul = soma dos três centros"
+    produtividade: "Serviços realizados ÷ linhas produtivas do mês · Sul = soma dos três centros",
+    turnos: "Média de turnos trabalhados por dia escalado, só Processo Emergencial · Sul = soma dos três centros"
   };
   document.querySelectorAll(".seg-toggle[data-centro-mes-toggle]").forEach(function (toggle) {
     toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
@@ -1562,6 +1565,45 @@ function iniciarPainel(DATA) {
     return out;
   }
 
+  // média de turnos trabalhados por dia, só Processo = Emergencial (é o
+  // recorte usado na visual original do Power BI que este quadro reproduz;
+  // por isso ignora tanto o filtro de Centro quanto o de Processo da barra
+  // lateral -- essa métrica é sempre sobre Emergencial, não é ajustável)
+  function centroMonthTurnos(group) {
+    var rows = GROUPS[group].rows, dict = GROUPS[group].dicts.centro;
+    var f = filters[group];
+    var emergCode = GROUPS[group].dicts.processo.indexOf("Emergencial");
+    var buckets = { Sul: {} };
+    dict.forEach(function (name) { buckets[name] = {}; });
+    function add(map, mk, i) {
+      if (!map[mk]) map[mk] = { trabalhouNum: 0, escaladoDias: new Set() };
+      if (isTrabalhou(group, rows, i)) map[mk].trabalhouNum++;
+      if (rows.metaQtd[i] > 0) map[mk].escaladoDias.add(rows.date[i]);
+    }
+    if (emergCode >= 0) {
+      for (var i = 0; i < rows.date.length; i++) {
+        if (rows.proc[i] !== emergCode) continue;
+        if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
+        if (f.equipe.size && !f.equipe.has(rows.equipe[i])) continue;
+        if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) continue;
+        if (f.dia.size && !f.dia.has(rows.date[i])) continue;
+        var mk = rows.date[i].slice(0, 7);
+        add(buckets.Sul, mk, i);
+        var label = rows.centro[i] >= 0 ? dict[rows.centro[i]] : null;
+        if (label && buckets[label]) add(buckets[label], mk, i);
+      }
+    }
+    var out = {};
+    Object.keys(buckets).forEach(function (name) {
+      out[name] = Object.keys(buckets[name]).sort().map(function (mk) {
+        var mi = parseInt(mk.slice(5, 7), 10) - 1, m = buckets[name][mk];
+        var dias = m.escaladoDias.size;
+        return { label: MONTH_FULL[mi], turnos: dias ? m.trabalhouNum / dias : null };
+      });
+    });
+    return out;
+  }
+
   // ---------- tables ----------
   function renderTable(elId, colHeaders, rowLabel, rows, cellFn, totalRow) {
     var thead = "<thead><tr><th>" + rowLabel + "</th>" + colHeaders.map(function (h) { return "<th>" + h + "</th>"; }).join("") + "</tr></thead>";
@@ -1877,11 +1919,18 @@ function iniciarPainel(DATA) {
   // ---------- full render ----------
   var CENTRO_MES_SVGS = { "Campos Sales": "chartCentroMesCS", "Juazeiro do Norte": "chartCentroMesJN", "Milagres": "chartCentroMesMI", "Sul": "chartCentroMesSUL" };
   function renderConsolidadoCentro() {
-    var byCentro = centroMonthBreakdown("ec");
     var color = seriesColor("ec");
-    var valueKey = centroMesMetric === "produtividade" ? "produtividade" : centroMesMetric === "ticket" ? "ticket" : "valor";
-    var fmtLabel = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : centroMesMetric === "ticket" ? fmtFullBRL : fmtCompactBRL;
-    var fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
+    var byCentro, valueKey, fmtLabel, fmtTip;
+    if (centroMesMetric === "turnos") {
+      byCentro = centroMonthTurnos("ec");
+      valueKey = "turnos";
+      fmtLabel = fmtTip = function (v) { return fmtNum(v, 1); };
+    } else {
+      byCentro = centroMonthBreakdown("ec");
+      valueKey = centroMesMetric === "produtividade" ? "produtividade" : centroMesMetric === "ticket" ? "ticket" : "valor";
+      fmtLabel = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : centroMesMetric === "ticket" ? fmtFullBRL : fmtCompactBRL;
+      fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
+    }
     Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
       drawMiniMonthChart(CENTRO_MES_SVGS[name], byCentro[name] || [], color, valueKey, fmtLabel, fmtTip);
     });
