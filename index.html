@@ -225,6 +225,13 @@
   .val-label { fill: var(--text-secondary); font-size: 11px; font-weight: 700; font-family: inherit; }
   .meta-line { fill: none; stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 3 3; }
   .ranking-meta-line { fill: none; stroke: var(--status-crit); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  /* a linha tracejada passa na altura de quem está perto de 100% e cortava os
+     números ao meio. O contorno da cor do quadro abre uma folga em volta do
+     texto, e paint-order manda desenhar esse contorno ANTES do preenchimento --
+     sem ele o texto sairia com as letras vazadas em vez de realçadas. */
+  #page-rankingProdutividade .val-label {
+    paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; stroke-linejoin: round;
+  }
   .ranking-axis-label { fill: var(--text-muted); font-size: 9.5px; font-family: inherit; font-weight: 600; }
   .prod-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
   .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 2; }
@@ -1176,9 +1183,12 @@ function iniciarPainel(DATA) {
   // .val-label e .axis-label ficariam sem cor e sem fonte, e o grafico sairia
   // todo preto. Por isso, antes de virar PNG, o estilo ja calculado de cada
   // elemento e "assado" como atributo inline no clone.
+  // paint-order entra na lista porque o realce do texto do ranking depende dele:
+  // sem copiar, o contorno seria pintado por cima do preenchimento e os números
+  // sairiam vazados na imagem, mesmo aparecendo certos na tela.
   var SVG_STYLE_PROPS = ["fill", "fill-opacity", "stroke", "stroke-width", "stroke-linecap",
     "stroke-linejoin", "stroke-dasharray", "opacity", "font-family", "font-size",
-    "font-weight", "text-anchor", "letter-spacing"];
+    "font-weight", "text-anchor", "letter-spacing", "paint-order"];
 
   function inlineSvgStyles(orig, clone) {
     var cs = getComputedStyle(orig), decl = "";
@@ -1828,7 +1838,7 @@ function iniciarPainel(DATA) {
   // média, ou "Meta" quando é uma meta de verdade por equipe)
   function drawAtingimentoChart(svgId, items, metaLabelText) {
     var svg = document.getElementById(svgId);
-    var H = 320, padL = 8, padR = 44, padT = 30, padB = 66;
+    var H = 320, padL = 8, padT = 30, padB = 66;
     if (!items.length) return emptyChart(svg, 480, H);
     var container = svg.parentElement;
     var W = Math.max(320, container ? container.clientWidth : 480);
@@ -1844,6 +1854,10 @@ function iniciarPainel(DATA) {
       maxLabelW = Math.max(maxLabelW, measureTextWidth(svg, fmtPct(d.pct), "val-label"));
     });
     maxLabelW += 6;
+    // a margem direita era fixa em 44px, e a etiqueta da linha tracejada não
+    // cabia: "R$ 468,4" transbordava o viewBox e o .chart-scroll cortava o fim
+    // dela. Agora ela é medida e a margem se ajusta ao que a etiqueta precisa.
+    var padR = Math.max(44, Math.ceil(measureTextWidth(svg, metaLabelText || "", "axis-label")) + 14);
     var useW = W, innerW, groupW;
     for (var attempt = 0; attempt < 6; attempt++) {
       innerW = useW - padL - padR;
@@ -2450,14 +2464,13 @@ function iniciarPainel(DATA) {
   }
   var RANKING_SVGS = { "Juazeiro do Norte": "chartRankJN", "Milagres": "chartRankMI", "Campos Sales": "chartRankCS" };
   var RANKING_CAPTIONS = {
-    produtividade: function (mesNome) { return "Processo Emergencial · cada equipe comparada à média de produtividade do centro em " + mesNome + " · linha tracejada = 100% da média"; },
-    ticket: function (mesNome) { return "Processo Emergencial · cada equipe comparada à média de ticket médio do centro em " + mesNome + " · linha tracejada = 100% da média"; },
-    faturamento: function (mesNome) { return "Processo Emergencial · cada equipe comparada à própria meta de faturamento em " + mesNome + " · linha tracejada = 100% da meta"; }
+    produtividade: function (mesNome) { return "Cada equipe comparada à produtividade do centro em " + mesNome + " · linha tracejada = 100% · segue o filtro de Processo"; },
+    ticket: function (mesNome) { return "Cada equipe comparada ao ticket médio do centro em " + mesNome + " · linha tracejada = 100% · segue o filtro de Processo"; },
+    faturamento: function (mesNome) { return "Cada equipe comparada à própria meta de faturamento em " + mesNome + " · linha tracejada = 100% da meta · segue o filtro de Processo"; }
   };
   function renderRankingProdutividade() {
     var caption = document.getElementById("rankingProdutividadeCaption");
     var f = filters.ec, rows = GROUPS.ec.rows, centroDict = GROUPS.ec.dicts.centro, equipeDict = GROUPS.ec.dicts.equipe;
-    var emergCode = GROUPS.ec.dicts.processo.indexOf("Emergencial");
     // a "meta" (linha tracejada) é a média do próprio mês (produtividade e
     // ticket médio não têm meta de verdade na planilha) -- só faz sentido
     // comparando dentro de um único mês, por isso exige a seleção de
@@ -2475,21 +2488,23 @@ function iniciarPainel(DATA) {
     var mi = parseInt(mesKey.slice(5, 7), 10) - 1;
     caption.textContent = RANKING_CAPTIONS[rankingMetric](MONTH_FULL[mi]);
 
-    // fixo em Processo = Emergencial (é o recorte da visual original que este
-    // ranking reproduz -- times de outro processo, tipo Manutenção, têm uma
-    // escala completamente diferente e não são comparáveis na mesma régua).
-    // Por isso ignora tanto o filtro de Centro quanto o de Processo da barra
-    // lateral, igual ao Consolidado por Centro > Turnos.
+    // O Processo era fixo em "Emergencial" aqui, então mudar o filtro lateral
+    // não trocava as equipes do ranking. Agora ele vale, como nas outras abas:
+    // sem filtro entram todos os processos, e pra ter o recorte antigo basta
+    // escolher Emergencial. O filtro de Centro continua de fora porque cada
+    // centro já tem o seu próprio quadro.
+    //
+    // Ao misturar, atenção: processos diferentes (Emergencial x Manutenção, por
+    // exemplo) têm escalas bem diferentes, e ranking só compara bem quem está na
+    // mesma régua -- normalmente se escolhe um processo antes de olhar.
     var idxs = [];
-    if (emergCode >= 0) {
-      for (var i = 0; i < rows.date.length; i++) {
-        if (rows.proc[i] !== emergCode) continue;
-        if (rows.date[i].slice(0, 7) !== mesKey) continue;
-        if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
-        if (f.equipe.size && !f.equipe.has(rows.equipe[i])) continue;
-        if (f.dia.size && !f.dia.has(rows.date[i])) continue;
-        idxs.push(i);
-      }
+    for (var i = 0; i < rows.date.length; i++) {
+      if (rows.date[i].slice(0, 7) !== mesKey) continue;
+      if (f.proc.size && !f.proc.has(rows.proc[i])) continue;
+      if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
+      if (f.equipe.size && !f.equipe.has(rows.equipe[i])) continue;
+      if (f.dia.size && !f.dia.has(rows.date[i])) continue;
+      idxs.push(i);
     }
     Object.keys(RANKING_SVGS).forEach(function (name) {
       var centroCode = centroDict.indexOf(name);
@@ -2518,7 +2533,10 @@ function iniciarPainel(DATA) {
             pctLabel: "% da meta"
           };
         }).filter(function (t) { return t.pct != null; });
-        metaLabelText = "Meta";
+        // aqui a linha não é um valor único: cada equipe é comparada à META DELA,
+        // então 100% quer dizer "bateu a própria meta". Pôr um R$ ali seria
+        // inventar um número que a linha não representa.
+        metaLabelText = "100% da meta";
       } else {
         // produtividade e ticket médio não têm meta -- a "meta" da linha
         // tracejada é a média do centro no mês, calculada em cima das
@@ -2530,7 +2548,22 @@ function iniciarPainel(DATA) {
           }
           return { label: equipeDict[code], raw: m.prodDen ? m.qtd / m.prodDen : null };
         }).filter(function (t) { return t.raw != null; });
-        var media = teams.length ? teams.reduce(function (s, t) { return s + t.raw; }, 0) / teams.length : 0;
+        // A "média do centro" era a média SIMPLES dos tickets das equipes, e por
+        // isso não batia com o que o Consolidado por Centro mostra pro mesmo mês
+        // (Juazeiro/agosto/Emergencial: R$ 468,41 aqui contra R$ 459,96 lá).
+        // Média simples pesa igual uma equipe de 10 serviços e uma de 500; o
+        // certo é somar tudo e dividir uma vez só, que é a conta usada no resto
+        // do painel. Agora as duas telas dão o mesmo número.
+        var tot = { valor: 0, qtd: 0, prodDen: 0 };
+        idxs.forEach(function (i) {
+          if (rows.centro[i] !== centroCode) return;
+          tot.valor += rows.valor[i];
+          tot.qtd += rows.qtd[i];
+          if (isProdRow("ec", rows, i)) tot.prodDen++;
+        });
+        var media = rankingMetric === "ticket"
+          ? (div(tot.valor, tot.qtd) || 0)
+          : (tot.prodDen ? tot.qtd / tot.prodDen : 0);
         var tipLabel = rankingMetric === "ticket" ? "Ticket Médio" : "Produtividade";
         var tipFmt = rankingMetric === "ticket" ? fmtFullBRL : function (v) { return fmtNum(v, 2); };
         teams.forEach(function (t) {
