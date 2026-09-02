@@ -194,16 +194,19 @@
   .copy-btn svg { width: 15px; height: 15px; pointer-events: none; }
   .kpi .copy-btn { top: 12px; right: 12px; width: 25px; height: 25px; }
   .kpi .copy-btn svg { width: 13px; height: 13px; }
-  /* no Consolidado por Centro cada quadro tem dois botoes: imagem (no canto,
-     sempre visivel) e tabela (ao lado, so aparece com "Mostrar valores") */
-  #page-consolidadoCentro .copy-btn[data-copy-table] { right: 50px; }
-  #page-consolidadoCentro .panel-title { margin-right: 82px; }
+  /* quadro com tabela tem DOIS botoes: imagem no canto e tabela ao lado. A
+     classe .dois-botoes e posta pelo initCopyButtons em quem recebeu os dois,
+     pra so esses reservarem o espaco extra no titulo e no seg-toggle */
+  .copy-btn[data-copy-table] { right: 50px; }
+  .panel.dois-botoes > .panel-title { margin-right: 82px; }
+  .panel.dois-botoes > .panel-caption { margin-right: 82px; }
 
   .seg-toggle { position: absolute; top: 14px; right: 14px; display: flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 2px; gap: 2px; }
   /* panels that also get an auto copy-btn (top:14px;right:14px;width:30px) need the toggle shifted clear of it */
   .seg-toggle[data-eq-mes-toggle], .seg-toggle[data-chart-toggle] { right: 52px; }
-  #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 230px; }
-  #chartMesTitle-ec, #chartMesTitle-ob, #chartMesTitle-ec + .panel-caption, #chartMesTitle-ob + .panel-caption { margin-right: 200px; }
+  .panel.dois-botoes .seg-toggle[data-eq-mes-toggle], .panel.dois-botoes .seg-toggle[data-chart-toggle] { right: 88px; }
+  #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 266px; }
+  #chartMesTitle-ec, #chartMesTitle-ob, #chartMesTitle-ec + .panel-caption, #chartMesTitle-ob + .panel-caption { margin-right: 236px; }
   .seg-btn { font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
   .seg-btn:hover { color: var(--text-primary); }
   .seg-btn.active { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
@@ -1204,6 +1207,107 @@ function iniciarPainel(DATA) {
     });
   }
 
+  // ---- uma tabela vira imagem ----
+  // Tabela nao e SVG, entao nao da pra reaproveitar o caminho do grafico. Em vez
+  // de remontar o layout na mao (larguras de coluna, alinhamento, quebra), o
+  // desenho copia a GEOMETRIA JA CALCULADA pelo navegador: cada celula informa
+  // onde esta na tela e a imagem reproduz exatamente aquilo. Assim a PNG nunca
+  // "escorrega" em relacao ao que se ve.
+  function transparente(cor) {
+    return !cor || cor === "transparent" || /rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(cor);
+  }
+  function fonteDe(cs) {
+    return cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+  }
+  function textoDe(el, cs) {
+    var t = (el.textContent || "").replace(/\s+/g, " ").trim();
+    return cs.textTransform === "uppercase" ? t.toUpperCase() : t;
+  }
+  function linha(ctx, x1, y, x2, cor, esp) {
+    ctx.strokeStyle = cor; ctx.lineWidth = esp;
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+  }
+
+  function tabelaParaPngBlob(table, titulo, subtitulo) {
+    // coluna fixa (sticky) se desloca quando a tabela esta rolada de lado, e ai
+    // a posicao lida seria a "grudada", nao a real -- zera a rolagem pra medir
+    var wraps = [], no = table.parentElement;
+    while (no && no !== document.body) {
+      if (no.scrollLeft) { wraps.push([no, no.scrollLeft]); no.scrollLeft = 0; }
+      no = no.parentElement;
+    }
+    try {
+      var tr0 = table.getBoundingClientRect();
+      var w = Math.ceil(tr0.width), h = Math.ceil(tr0.height);
+      if (!w || !h) return Promise.reject(new Error("tabela sem tamanho na tela"));
+      var cab = titulo ? (subtitulo ? 44 : 28) : 0;
+      var lw = w + IMG_PAD * 2, lh = h + IMG_PAD * 2 + cab;
+      var t = novaTela(lw, lh), ctx = t.ctx;
+      desenhaTitulo(ctx, titulo, subtitulo, IMG_PAD, IMG_PAD);
+      var ox = IMG_PAD - tr0.left, oy = IMG_PAD + cab - tr0.top;
+
+      Array.prototype.forEach.call(table.querySelectorAll("tr"), function (tr) {
+        Array.prototype.forEach.call(tr.children, function (cel) {
+          var r = cel.getBoundingClientRect(), cs = getComputedStyle(cel);
+          var x = r.left + ox, y = r.top + oy;
+
+          var espB = parseFloat(cs.borderBottomWidth) || 0;
+          if (espB > 0 && !transparente(cs.borderBottomColor)) {
+            linha(ctx, x, y + r.height - espB / 2, x + r.width, cs.borderBottomColor, espB);
+          }
+          var espT = parseFloat(cs.borderTopWidth) || 0;
+          if (espT > 0 && !transparente(cs.borderTopColor)) {
+            linha(ctx, x, y + espT / 2, x + r.width, cs.borderTopColor, espT);
+          }
+
+          // a "pilha" colorida (.pill) carrega significado pela cor, entao o
+          // fundo dela e desenhado mesmo com o resto da imagem transparente
+          var pill = cel.querySelector(".pill");
+          if (pill) {
+            var pr = pill.getBoundingClientRect(), ps = getComputedStyle(pill);
+            var px = pr.left + ox, py = pr.top + oy;
+            if (!transparente(ps.backgroundColor)) {
+              ctx.fillStyle = ps.backgroundColor;
+              ctx.beginPath();
+              var raio = Math.min(pr.height / 2, pr.width / 2);
+              if (ctx.roundRect) ctx.roundRect(px, py, pr.width, pr.height, raio);
+              else ctx.rect(px, py, pr.width, pr.height);
+              ctx.fill();
+            }
+            ctx.fillStyle = ps.color;
+            ctx.font = fonteDe(ps);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(textoDe(pill, ps), px + pr.width / 2, py + pr.height / 2);
+            return;
+          }
+
+          var txt = textoDe(cel, cs);
+          if (!txt) return;
+          ctx.fillStyle = cs.color;
+          ctx.font = fonteDe(cs);
+          if ("letterSpacing" in ctx) ctx.letterSpacing = cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
+          ctx.textBaseline = "middle";
+          var meio = y + r.height / 2;
+          if (cs.textAlign === "right" || cs.textAlign === "end") {
+            ctx.textAlign = "right";
+            ctx.fillText(txt, x + r.width - (parseFloat(cs.paddingRight) || 0), meio);
+          } else if (cs.textAlign === "center") {
+            ctx.textAlign = "center";
+            ctx.fillText(txt, x + r.width / 2, meio);
+          } else {
+            ctx.textAlign = "left";
+            ctx.fillText(txt, x + (parseFloat(cs.paddingLeft) || 0), meio);
+          }
+          if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+        });
+      });
+      return paraBlob(t.canvas);
+    } finally {
+      wraps.forEach(function (par) { par[0].scrollLeft = par[1]; });
+    }
+  }
+
   // ---- os 4 gráficos numa imagem só, no mesmo 2x2 da tela ----
   // cada gráfico tem a largura que precisa (rótulo maior = barra mais larga), então
   // a célula usa a MAIOR delas e os menores entram centralizados: assim as barras
@@ -1269,37 +1373,61 @@ function iniciarPainel(DATA) {
     baixar();
   }
 
-  function copyChartImage(svgId, titulo, subtitulo, btn) {
-    var svg = document.getElementById(svgId);
-    if (!svg) return;
-    copiarImagem(chartToPngBlob(svg, titulo, subtitulo), titulo, function () { flashCopied(btn); });
+  // legenda da imagem: o próprio subtítulo do quadro quando existe; no
+  // Consolidado por Centro, que não tem um, entra a métrica em exibição --
+  // senão no slide fica "Campos Sales" sem dizer de quê
+  function legendaDoQuadro(panel) {
+    var cap = panel.querySelector(".panel-caption");
+    if (cap && cap.textContent.trim()) return cap.textContent.trim();
+    if (panel.closest("#page-consolidadoCentro")) {
+      var m = document.querySelector("[data-centro-mes-toggle] .seg-btn.active");
+      if (m) return m.textContent;
+    }
+    return "";
+  }
+
+  function copiarComoImagem(btn) {
+    var alvo = document.getElementById(btn.dataset.copyImage);
+    var panel = btn.closest(".panel");
+    if (!alvo || !panel) return;
+    var tit = panel.querySelector(".panel-title");
+    var titulo = tit ? tit.textContent.trim() : "";
+    var sub = legendaDoQuadro(panel);
+    var pendente = alvo.tagName.toLowerCase() === "svg"
+      ? chartToPngBlob(alvo, titulo, sub)
+      : tabelaParaPngBlob(alvo, titulo, sub);
+    copiarImagem(pendente, titulo, function () { flashCopied(btn); });
   }
 
 
   function initCopyButtons() {
     document.querySelectorAll(".panel").forEach(function (panel) {
       var table = panel.querySelector("table.datatable");
-      if (!table || !table.id) return;
-      var btn = document.createElement("button");
-      btn.type = "button"; btn.className = "copy-btn"; btn.title = "Copiar tabela";
-      btn.dataset.copyTable = table.id;
-      btn.innerHTML = COPY_ICON;
-      if (table.closest("#page-consolidadoCentro")) btn.hidden = true; // valores começam ocultos nessa aba
-      panel.appendChild(btn);
-    });
-    // nessa aba cada gráfico ganha também um botão que copia a IMAGEM do gráfico,
-    // pra colar direto no PowerPoint sem precisar recortar print de tela
-    document.querySelectorAll("#page-consolidadoCentro .panel").forEach(function (panel) {
       var svg = panel.querySelector("svg.chart");
-      if (!svg || !svg.id) return;
-      var titulo = panel.querySelector(".panel-title");
-      var btn = document.createElement("button");
-      btn.type = "button"; btn.className = "copy-btn copy-img";
-      btn.title = "Copiar gráfico como imagem (colar no PowerPoint)";
-      btn.dataset.copyImage = svg.id;
-      if (titulo) btn.dataset.copyImageTitle = titulo.textContent;
-      btn.innerHTML = IMAGE_ICON;
-      panel.appendChild(btn);
+      var temTabela = !!(table && table.id);
+
+      if (temTabela) {
+        var btnTab = document.createElement("button");
+        btnTab.type = "button"; btnTab.className = "copy-btn"; btnTab.title = "Copiar tabela";
+        btnTab.dataset.copyTable = table.id;
+        btnTab.innerHTML = COPY_ICON;
+        if (table.closest("#page-consolidadoCentro")) btnTab.hidden = true; // valores começam ocultos nessa aba
+        panel.appendChild(btnTab);
+      }
+
+      // botão de imagem: quando o quadro tem gráfico, é o gráfico que interessa
+      // copiar; quando é só tabela, copia a tabela. Nos dois casos vira PNG.
+      var alvo = (svg && svg.id) ? svg : (temTabela ? table : null);
+      if (!alvo) return;
+      var btnImg = document.createElement("button");
+      btnImg.type = "button"; btnImg.className = "copy-btn copy-img";
+      btnImg.title = (alvo === svg ? "Copiar gráfico" : "Copiar tabela") + " como imagem (colar no PowerPoint)";
+      btnImg.dataset.copyImage = alvo.id;
+      btnImg.innerHTML = IMAGE_ICON;
+      panel.appendChild(btnImg);
+
+      // só quem ficou com os dois botões reserva o espaço extra no canto
+      if (temTabela) panel.classList.add("dois-botoes");
     });
   }
   document.addEventListener("click", function (e) {
@@ -1309,11 +1437,7 @@ function iniciarPainel(DATA) {
       var table = document.getElementById(btn.dataset.copyTable);
       if (table) copyToClipboard(tableToTSV(table), btn);
     } else if (btn.dataset.copyImage) {
-      // a métrica em exibição (Faturamento / Ticket Médio / ...) vira o subtítulo da
-      // imagem, senão no slide fica "Campos Sales" sem dizer de quê
-      var metrica = document.querySelector("[data-centro-mes-toggle] .seg-btn.active");
-      copyChartImage(btn.dataset.copyImage, btn.dataset.copyImageTitle,
-        metrica ? metrica.textContent : "", btn);
+      copiarComoImagem(btn);
     } else if (btn.dataset.copyText != null) {
       copyToClipboard(btn.dataset.copyText, btn);
     }
