@@ -221,6 +221,8 @@
   .pct-label { fill: var(--text-primary); font-size: 11px; font-weight: 800; font-family: inherit; }
   .val-label { fill: var(--text-secondary); font-size: 11px; font-weight: 700; font-family: inherit; }
   .meta-line { fill: none; stroke: var(--baseline); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .ranking-meta-line { fill: none; stroke: var(--status-crit); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .ranking-axis-label { fill: var(--text-muted); font-size: 9.5px; font-family: inherit; font-weight: 600; }
   .prod-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
   .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 2; }
   .line-series { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
@@ -314,6 +316,7 @@
     <button class="tab-btn" data-page="procSup" type="button">Processo - Supervisor</button>
     <button class="tab-btn" data-page="analiseEquipes" type="button">Análise Equipes</button>
     <button class="tab-btn" data-page="produtividadeMensal" type="button">Produtividade - Mensal</button>
+    <button class="tab-btn" data-page="rankingProdutividade" type="button">Ranking de Produtividade</button>
     <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
     <button class="tab-btn" data-page="consolidadoCentro" type="button">Consolidado por Centro</button>
@@ -449,6 +452,27 @@
           <p class="panel-title">Produtividade de Equipes — Mensal</p>
           <p class="panel-caption">Linhas = equipe · colunas = mês</p>
           <div class="tablewrap"><table class="datatable" id="tblProdutividadeMensal"></table></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-rankingProdutividade">
+        <div class="panel" style="margin-bottom:14px">
+          <p class="panel-title">Ranking de Produtividade por Equipe</p>
+          <p class="panel-caption" id="rankingProdutividadeCaption">Processo Emergencial · cada equipe comparada à média do centro no mês · linha tracejada = 100% da média · selecione um único Mês no filtro lateral</p>
+        </div>
+        <div class="panel" style="margin-bottom:14px">
+          <p class="panel-title">Juazeiro do Norte — Atingimento de Produtividade</p>
+          <div class="chart-scroll"><svg class="chart" id="chartRankJN" viewBox="0 0 900 320"></svg></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <p class="panel-title">Milagres — Atingimento de Produtividade</p>
+            <div class="chart-scroll"><svg class="chart" id="chartRankMI" viewBox="0 0 480 320"></svg></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Campos Sales — Atingimento de Produtividade</p>
+            <div class="chart-scroll"><svg class="chart" id="chartRankCS" viewBox="0 0 480 320"></svg></div>
+          </div>
         </div>
       </section>
 
@@ -625,7 +649,7 @@ function iniciarPainel(DATA) {
   };
   var PAGE_GROUP = {
     geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
-    consolidadoCentro: "ec",
+    consolidadoCentro: "ec", rankingProdutividade: "ec",
     geralOb: "ob", escaladoOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
@@ -1767,6 +1791,75 @@ function iniciarPainel(DATA) {
     });
   }
 
+  // ranking de equipes por % de atingimento da produtividade média do centro
+  // no mês -- uma barra por equipe, ordenada da maior pra menor, cor por
+  // faixa (verde ≥100%, amarelo ≥85%, vermelho abaixo), linha tracejada e
+  // rótulo mostrando o valor absoluto da média (a "meta" da linha)
+  function drawAtingimentoChart(svgId, items, metaAbs) {
+    var svg = document.getElementById(svgId);
+    var H = 320, padL = 8, padR = 44, padT = 30, padB = 66;
+    if (!items.length) return emptyChart(svg, 480, H);
+    var container = svg.parentElement;
+    var W = Math.max(320, container ? container.clientWidth : 480);
+    var n = items.length;
+    var maxPct = 0;
+    items.forEach(function (d) { maxPct = Math.max(maxPct, d.pct || 0); });
+    maxPct = Math.max(maxPct * 1.12, 1.15);
+    // mede a etiqueta de % mais larga de verdade, mesmo princípio dos outros
+    // gráficos: largura fixa arriscada estourar quando os valores crescem
+    var maxLabelW = 0;
+    items.forEach(function (d) {
+      if (d.pct == null) return;
+      maxLabelW = Math.max(maxLabelW, measureTextWidth(svg, fmtPct(d.pct), "val-label"));
+    });
+    maxLabelW += 6;
+    var useW = W, innerW, groupW;
+    for (var attempt = 0; attempt < 6; attempt++) {
+      innerW = useW - padL - padR;
+      groupW = innerW / n;
+      if (groupW >= maxLabelW && groupW >= 30) break;
+      useW = useW * 1.2;
+    }
+    var barW = Math.min(30, groupW * 0.55);
+    var wide = useW > W + 0.5;
+    var innerH = H - padT - padB;
+    svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
+    svg.style.width = wide ? useW + "px" : "100%";
+    svg.innerHTML = "";
+
+    var y100 = padT + innerH - (1 / maxPct) * innerH;
+    svg.appendChild(el("line", { x1: padL, x2: padL + innerW, y1: y100, y2: y100, class: "ranking-meta-line" }));
+    var metaLbl = el("text", { x: padL + innerW + 6, y: y100 + 4, class: "axis-label" });
+    metaLbl.textContent = fmtNum(metaAbs, 2);
+    svg.appendChild(metaLbl);
+
+    items.forEach(function (d, i) {
+      var cx = padL + groupW * i + groupW / 2;
+      var v = d.pct || 0;
+      var barH = (v / maxPct) * innerH, by = padT + innerH - barH;
+      var cls = d.pct >= 1 ? "good" : d.pct >= 0.85 ? "warn" : "crit";
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: "var(--status-" + cls + ")", class: "bar" });
+      rect.addEventListener("mousemove", function (evt) {
+        showTip(evt, "<div><b>" + d.label + "</b></div>" +
+          '<div class="tt-row"><span>Produtividade</span><b>' + fmtNum(d.produtividade, 2) + "</b></div>" +
+          '<div class="tt-row"><span>% da média do centro</span><b>' + fmtPct(d.pct) + "</b></div>");
+      });
+      rect.addEventListener("mouseleave", hideTip);
+      svg.appendChild(rect);
+      if (d.pct != null) {
+        var lbl = el("text", { x: cx, y: by - 8, class: "val-label", "text-anchor": "middle" });
+        lbl.textContent = fmtPct(d.pct);
+        svg.appendChild(lbl);
+      }
+      var axisLbl = el("text", {
+        x: cx, y: H - padB + 14, class: "ranking-axis-label", "text-anchor": "end",
+        transform: "rotate(-50 " + cx + " " + (H - padB + 14) + ")"
+      });
+      axisLbl.textContent = d.label;
+      svg.appendChild(axisLbl);
+    });
+  }
+
   // side-by-side pair of plain count bars (gray + accent), used for escalado/trabalhado by day
   // bars = trabalhados · line = escalados (with its value labeled above each point)
   function drawEscaladoChart(svgId, items, color) {
@@ -2325,6 +2418,62 @@ function iniciarPainel(DATA) {
     }).join("");
     document.getElementById(elId).innerHTML = thead + "<tbody>" + rowsHtml + "</tbody>";
   }
+  var RANKING_SVGS = { "Juazeiro do Norte": "chartRankJN", "Milagres": "chartRankMI", "Campos Sales": "chartRankCS" };
+  function renderRankingProdutividade() {
+    var caption = document.getElementById("rankingProdutividadeCaption");
+    var f = filters.ec, rows = GROUPS.ec.rows, centroDict = GROUPS.ec.dicts.centro, equipeDict = GROUPS.ec.dicts.equipe;
+    var emergCode = GROUPS.ec.dicts.processo.indexOf("Emergencial");
+    // a "meta" (linha tracejada) é a média de produtividade do próprio mês --
+    // só faz sentido comparando dentro de um único mês, por isso exige a
+    // seleção de exatamente um no filtro lateral (em vez de inventar um
+    // seletor de mês novo só pra essa aba)
+    if (f.mes.size !== 1) {
+      caption.textContent = f.mes.size === 0
+        ? "Selecione um único Mês no filtro lateral pra ver o ranking (nenhum selecionado agora)."
+        : "Selecione um único Mês no filtro lateral pra ver o ranking (" + f.mes.size + " selecionados agora).";
+      Object.keys(RANKING_SVGS).forEach(function (name) { drawAtingimentoChart(RANKING_SVGS[name], [], 0); });
+      return;
+    }
+    var mesKey = Array.from(f.mes)[0];
+    var mi = parseInt(mesKey.slice(5, 7), 10) - 1;
+    caption.textContent = "Processo Emergencial · cada equipe comparada à média do centro em " + MONTH_FULL[mi] + " · linha tracejada = 100% da média";
+
+    // fixo em Processo = Emergencial (é o recorte da visual original que este
+    // ranking reproduz -- times de outro processo, tipo Manutenção, têm uma
+    // escala de produtividade completamente diferente e não são comparáveis
+    // na mesma régua). Por isso ignora tanto o filtro de Centro quanto o de
+    // Processo da barra lateral, igual ao Consolidado por Centro > Turnos.
+    var idxs = [];
+    if (emergCode >= 0) {
+      for (var i = 0; i < rows.date.length; i++) {
+        if (rows.proc[i] !== emergCode) continue;
+        if (rows.date[i].slice(0, 7) !== mesKey) continue;
+        if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
+        if (f.equipe.size && !f.equipe.has(rows.equipe[i])) continue;
+        if (f.dia.size && !f.dia.has(rows.date[i])) continue;
+        idxs.push(i);
+      }
+    }
+    Object.keys(RANKING_SVGS).forEach(function (name) {
+      var centroCode = centroDict.indexOf(name);
+      var byEquipe = {};
+      idxs.forEach(function (i) {
+        if (rows.centro[i] !== centroCode) return;
+        var e = rows.equipe[i]; if (e < 0) return;
+        if (!byEquipe[e]) byEquipe[e] = { qtd: 0, prodDen: 0 };
+        byEquipe[e].qtd += rows.qtd[i];
+        if (isProdRow("ec", rows, i)) byEquipe[e].prodDen++;
+      });
+      var teams = Object.keys(byEquipe).map(function (code) {
+        var m = byEquipe[code];
+        return { label: equipeDict[code], produtividade: m.prodDen ? m.qtd / m.prodDen : null };
+      }).filter(function (t) { return t.produtividade != null; });
+      var media = teams.length ? teams.reduce(function (s, t) { return s + t.produtividade; }, 0) / teams.length : 0;
+      teams.forEach(function (t) { t.pct = media ? t.produtividade / media : null; });
+      teams.sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); });
+      drawAtingimentoChart(RANKING_SVGS[name], teams, media);
+    });
+  }
   function renderConsolidadoCentro() {
     var colors = centroColors();
     var byCentro, valueKey, fmtLabel, fmtTip;
@@ -2379,6 +2528,8 @@ function iniciarPainel(DATA) {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "consolidadoCentro") {
       renderConsolidadoCentro();
+    } else if (activePage === "rankingProdutividade") {
+      renderRankingProdutividade();
     } else if (activePage === "geralOb") {
       renderKpisInto("kpisOb", "ob");
       var mesItemsOb = periodBreakdown("ob", idxs);
