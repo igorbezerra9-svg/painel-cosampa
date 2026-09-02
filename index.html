@@ -205,7 +205,9 @@
   /* panels that also get an auto copy-btn (top:14px;right:14px;width:30px) need the toggle shifted clear of it */
   .seg-toggle[data-eq-mes-toggle], .seg-toggle[data-chart-toggle] { right: 52px; }
   .panel.dois-botoes .seg-toggle[data-eq-mes-toggle], .panel.dois-botoes .seg-toggle[data-chart-toggle] { right: 88px; }
-  #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 266px; }
+  /* Comparativo Mensal tem um botão a mais no seletor (%AAT) que os outros
+     dois-botoes, por isso precisa de mais folga que o padrão de 266px */
+  #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 355px; }
   #chartMesTitle-ec, #chartMesTitle-ob, #chartMesTitle-ec + .panel-caption, #chartMesTitle-ob + .panel-caption { margin-right: 236px; }
   .seg-btn { font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
   .seg-btn:hover { color: var(--text-primary); }
@@ -437,7 +439,7 @@
       <section class="page" id="page-analiseEquipes">
         <div class="panel">
           <p class="panel-title">Análise de Equipes</p>
-          <p class="panel-caption">Valor Realizado, Meta, Produtividade e Ticket Médio por equipe · cor = status vs. meta</p>
+          <p class="panel-caption">Valor Realizado, Meta, Produtividade, Ticket Médio e %AAT por equipe · %AAT = turnos trabalhados ÷ turnos escalados</p>
           <div class="tablewrap"><table class="datatable" id="tblAnaliseEquipes"></table></div>
         </div>
       </section>
@@ -455,6 +457,7 @@
           <div class="seg-toggle" data-eq-mes-toggle>
             <button type="button" class="seg-btn active" data-metric="pct">% da Meta</button>
             <button type="button" class="seg-btn" data-metric="valor">Valor Realizado</button>
+            <button type="button" class="seg-btn" data-metric="aat">%AAT</button>
           </div>
           <p class="panel-title" id="comparativoMensalTitle">Evolução Mensal por Equipe — % da Meta</p>
           <p class="panel-caption">Linhas = equipe · colunas = mês · compare a evolução de cada equipe mês a mês · equipes sem nenhum valor real no período (tudo zerado) ficam ocultas</p>
@@ -647,7 +650,7 @@ function iniciarPainel(DATA) {
   });
 
   var equipeMesMetric = "pct";
-  var EQUIPE_MES_TITLES = { pct: "Evolução Mensal por Equipe — % da Meta", valor: "Evolução Mensal por Equipe — Valor Realizado" };
+  var EQUIPE_MES_TITLES = { pct: "Evolução Mensal por Equipe — % da Meta", valor: "Evolução Mensal por Equipe — Valor Realizado", aat: "Evolução Mensal por Equipe — %AAT (Abertura de Turno)" };
   document.querySelectorAll(".seg-toggle[data-eq-mes-toggle]").forEach(function (toggle) {
     toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -1982,6 +1985,11 @@ function iniciarPainel(DATA) {
   // colorido de 7px, que era fácil de não enxergar -- e assim fica igual às
   // outras tabelas, que já mostram o status como pílula
   function brlPillCell(valor, pct) { return '<td><span class="pill ' + pctClass(pct) + '">' + fmtFullBRL(valor) + "</span></td>"; }
+  // %AAT (turnos trabalhados ÷ escalados) não é comparável a %meta -- não
+  // costuma passar de 100%, então usa limites próprios (senão quase toda
+  // equipe apareceria em amarelo/vermelho mesmo com presença muito boa)
+  function aatClass(v) { if (v == null) return "cell-empty"; if (v >= 0.95) return "cell-good"; if (v >= 0.85) return "cell-warn"; return "cell-crit"; }
+  function aatCell(v) { return '<td><span class="pill ' + aatClass(v) + '">' + fmtPct(v) + "</span></td>"; }
   function intCell(v) { return '<td class="cell-plain">' + fmtInt.format(v) + "</td>"; }
   function brlCell(v) { return '<td class="cell-plain">' + fmtFullBRL(v) + "</td>"; }
   function numCell2(v) { return '<td class="cell-plain">' + fmtNum(v, 2) + "</td>"; }
@@ -2200,26 +2208,33 @@ function iniciarPainel(DATA) {
     var map = {};
     idxs.forEach(function (i) {
       var e = rows.equipe[i]; if (e < 0) return;
-      if (!map[e]) map[e] = { valor: 0, meta: 0, qtd: 0, prodDen: 0 };
+      if (!map[e]) map[e] = { valor: 0, meta: 0, qtd: 0, prodDen: 0, trabalhou: 0, escalado: 0 };
       map[e].valor += rows.valor[i]; map[e].meta += rows.meta[i]; map[e].qtd += rows.qtd[i];
       if (isProdRow("ec", rows, i)) map[e].prodDen++;
+      // %AAT (abertura de turno): turnos trabalhados ÷ turnos escalados
+      // (trabalhou + faltou) -- deixa claro se um faturamento baixo é falta
+      // de produtividade quando a equipe trabalha, ou falta de gente aparecer
+      if (isTrabalhou("ec", rows, i)) { map[e].trabalhou++; map[e].escalado++; }
+      else if (isFaltou("ec", rows, i)) { map[e].escalado++; }
     });
     var dict = GROUPS.ec.dicts.equipe;
     var items = Object.keys(map).map(function (code) {
       var m = map[code];
-      return { label: dict[code], valor: m.valor, meta: m.meta, produtividade: m.prodDen ? m.qtd / m.prodDen : null, ticket: div(m.valor, m.qtd), pct: div(m.valor, m.meta) };
+      return { label: dict[code], valor: m.valor, meta: m.meta, produtividade: m.prodDen ? m.qtd / m.prodDen : null, ticket: div(m.valor, m.qtd), pct: div(m.valor, m.meta), aat: m.escalado ? m.trabalhou / m.escalado : null };
     }).sort(function (a, b) { return b.valor - a.valor; });
 
     var totalValor = items.reduce(function (s, d) { return s + d.valor; }, 0);
     var totalMeta = items.reduce(function (s, d) { return s + d.meta; }, 0);
     var totalQtd = idxs.reduce(function (s, i) { return s + rows.qtd[i]; }, 0);
     var totalProdDen = idxs.filter(function (i) { return isProdRow("ec", rows, i); }).length;
-    var totalRow = { label: "Total", valor: totalValor, meta: totalMeta, produtividade: totalProdDen ? totalQtd / totalProdDen : null, ticket: div(totalValor, totalQtd), pct: div(totalValor, totalMeta) };
+    var totalTrabalhou = idxs.filter(function (i) { return isTrabalhou("ec", rows, i); }).length;
+    var totalEscalado = idxs.filter(function (i) { return isTrabalhou("ec", rows, i) || isFaltou("ec", rows, i); }).length;
+    var totalRow = { label: "Total", valor: totalValor, meta: totalMeta, produtividade: totalProdDen ? totalQtd / totalProdDen : null, ticket: div(totalValor, totalQtd), pct: div(totalValor, totalMeta), aat: totalEscalado ? totalTrabalhou / totalEscalado : null };
 
-    var thead = "<thead><tr><th>Equipe</th><th>Valor Realizado</th><th>Meta</th><th>Produtividade</th><th>Ticket Médio</th></tr></thead>";
+    var thead = "<thead><tr><th>Equipe</th><th>Valor Realizado</th><th>Meta</th><th>Produtividade</th><th>Ticket Médio</th><th>%AAT</th></tr></thead>";
     function rowHtml(d, isTotal) {
       return "<tr" + (isTotal ? ' class="total"' : "") + "><td>" + d.label + "</td>" + brlPillCell(d.valor, d.pct) +
-        "<td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtNum(d.produtividade, 2) + "</td><td>" + fmtFullBRL(d.ticket) + "</td></tr>";
+        "<td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtNum(d.produtividade, 2) + "</td><td>" + fmtFullBRL(d.ticket) + "</td>" + aatCell(d.aat) + "</tr>";
     }
     document.getElementById("tblAnaliseEquipes").innerHTML = thead + "<tbody>" + items.map(function (d) { return rowHtml(d, false); }).join("") + rowHtml(totalRow, true) + "</tbody>";
   }
@@ -2257,13 +2272,17 @@ function iniciarPainel(DATA) {
     var equipeCodes = Array.from(new Set(idxs.map(function (i) { return rows.equipe[i]; }))).filter(function (e) { return e >= 0; });
     var dict = GROUPS.ec.dicts.equipe;
     var equipes = equipeCodes.map(function (c) { return { idx: c, name: dict[c] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
-    // devolve sempre os dois: em "Valor Realizado" o número exibido é o valor,
-    // mas a cor continua saindo do % da meta -- sem isso a aba ficava sem cor
-    // nenhuma nesse modo, que era a única das tabelas assim
+    // devolve sempre os três (valor/pct/aat) juntos: em "Valor Realizado" o
+    // número exibido é o valor, mas a cor continua saindo do % da meta --
+    // sem isso a aba ficava sem cor nenhuma nesse modo, que era a única das
+    // tabelas assim. Calcular os três de uma vez também evita ter formatos
+    // diferentes de retorno por métrica, que é frágil de manter.
     function metricFor(sub) {
       var valor = sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0);
       var meta = sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0);
-      return { valor: valor, pct: div(valor, meta) };
+      var trabalhou = sub.filter(function (i) { return isTrabalhou("ec", rows, i); }).length;
+      var escalado = trabalhou + sub.filter(function (i) { return isFaltou("ec", rows, i); }).length;
+      return { valor: valor, pct: div(valor, meta), aat: escalado ? trabalhou / escalado : null };
     }
     var out = equipes.map(function (eq) {
       var cells = months.map(function (mk) {
@@ -2283,6 +2302,8 @@ function iniciarPainel(DATA) {
     var colHeaders = months.map(function (mk) { var mi = parseInt(mk.slice(5, 7), 10) - 1; return MONTH_FULL[mi]; });
     var cellFn = equipeMesMetric === "pct"
       ? function (c) { return pctCell(c == null ? null : c.pct); }
+      : equipeMesMetric === "aat"
+      ? function (c) { return aatCell(c == null ? null : c.aat); }
       : function (c) { return c == null ? brlPillCell(null, null) : brlPillCell(c.valor, c.pct); };
     renderTable("tblComparativoMensal", colHeaders, "Equipe", out, cellFn, { cells: totalCells });
   }
