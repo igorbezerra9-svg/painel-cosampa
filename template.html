@@ -474,19 +474,23 @@
           </div>
           <p class="panel-title" id="rankingProdutividadeTitle">Ranking de Produtividade</p>
           <p class="panel-caption" id="rankingProdutividadeCaption">Processo Emergencial · cada equipe comparada à média do centro no mês · linha tracejada = 100% da média · selecione um único Mês no filtro lateral</p>
+          <button type="button" class="btn-toggle-values" id="btnToggleValoresRanking">Mostrar valores</button>
         </div>
         <div class="panel" style="margin-bottom:14px">
           <p class="panel-title" id="rankingTitleJN">Juazeiro do Norte — Atingimento de Produtividade</p>
           <div class="chart-scroll"><svg class="chart" id="chartRankJN" viewBox="0 0 900 320"></svg></div>
+          <div class="tablewrap" hidden><table class="datatable" id="tblRankJN"></table></div>
         </div>
         <div class="grid-2">
           <div class="panel">
             <p class="panel-title" id="rankingTitleMI">Milagres — Atingimento de Produtividade</p>
             <div class="chart-scroll"><svg class="chart" id="chartRankMI" viewBox="0 0 480 320"></svg></div>
+            <div class="tablewrap" hidden><table class="datatable" id="tblRankMI"></table></div>
           </div>
           <div class="panel">
             <p class="panel-title" id="rankingTitleCS">Campos Sales — Atingimento de Produtividade</p>
             <div class="chart-scroll"><svg class="chart" id="chartRankCS" viewBox="0 0 480 320"></svg></div>
+            <div class="tablewrap" hidden><table class="datatable" id="tblRankCS"></table></div>
           </div>
         </div>
       </section>
@@ -750,14 +754,18 @@ function iniciarPainel(DATA) {
     });
   });
 
-  // valores escondidos por padrão nesta aba, pra ficar limpo na hora de tirar
-  // print -- um botão só revela as 4 tabelas (e seus botões de copiar) de vez
-  document.getElementById("btnToggleValoresCentro").addEventListener("click", function () {
-    var mostrando = this.textContent === "Ocultar valores";
-    this.textContent = mostrando ? "Mostrar valores" : "Ocultar valores";
-    document.querySelectorAll("#page-consolidadoCentro .tablewrap").forEach(function (el) { el.hidden = mostrando; });
-    document.querySelectorAll("#page-consolidadoCentro .copy-btn[data-copy-table]").forEach(function (el) { el.hidden = mostrando; });
-  });
+  // valores escondidos por padrão nessas abas, pra ficar limpo na hora de tirar
+  // print -- um botão só revela as tabelas (e seus botões de copiar) de vez
+  function ligaToggleDeValores(btnId, pageId) {
+    document.getElementById(btnId).addEventListener("click", function () {
+      var mostrando = this.textContent === "Ocultar valores";
+      this.textContent = mostrando ? "Mostrar valores" : "Ocultar valores";
+      document.querySelectorAll("#" + pageId + " .tablewrap").forEach(function (el) { el.hidden = mostrando; });
+      document.querySelectorAll("#" + pageId + " .copy-btn[data-copy-table]").forEach(function (el) { el.hidden = mostrando; });
+    });
+  }
+  ligaToggleDeValores("btnToggleValoresCentro", "page-consolidadoCentro");
+  ligaToggleDeValores("btnToggleValoresRanking", "page-rankingProdutividade");
 
   // copia os quatro quadros numa imagem só, no mesmo 2x2 da tela -- é o print
   // que eu fazia na mão pra jogar no PowerPoint, só que já recortado e nítido
@@ -1489,7 +1497,8 @@ function iniciarPainel(DATA) {
         btnTab.type = "button"; btnTab.className = "copy-btn"; btnTab.title = "Copiar tabela";
         btnTab.dataset.copyTable = table.id;
         btnTab.innerHTML = COPY_ICON;
-        if (table.closest("#page-consolidadoCentro")) btnTab.hidden = true; // valores começam ocultos nessa aba
+        // nessas duas abas os valores começam ocultos, atrás do "Mostrar valores"
+        if (table.closest("#page-consolidadoCentro") || table.closest("#page-rankingProdutividade")) btnTab.hidden = true;
         panel.appendChild(btnTab);
       }
 
@@ -1784,6 +1793,7 @@ function iniciarPainel(DATA) {
     if (!items.length) return emptyChart(svg, 480, H);
     var container = svg.parentElement;
     var W = Math.max(280, container ? container.clientWidth : 480);
+    svg.dataset.caixaMedida = Math.round(W); // ver reconferirEscala()
     var n = items.length, maxVal = 0;
     items.forEach(function (d) { maxVal = Math.max(maxVal, d[valueKey] || 0); });
     maxVal = maxVal * 1.22 || 1;
@@ -1842,6 +1852,7 @@ function iniciarPainel(DATA) {
     if (!items.length) return emptyChart(svg, 480, H);
     var container = svg.parentElement;
     var W = Math.max(320, container ? container.clientWidth : 480);
+    svg.dataset.caixaMedida = Math.round(W); // ver reconferirEscala()
     var n = items.length;
     var maxPct = 0;
     items.forEach(function (d) { maxPct = Math.max(maxPct, d.pct || 0); });
@@ -1857,7 +1868,11 @@ function iniciarPainel(DATA) {
     // a margem direita era fixa em 44px, e a etiqueta da linha tracejada não
     // cabia: "R$ 468,4" transbordava o viewBox e o .chart-scroll cortava o fim
     // dela. Agora ela é medida e a margem se ajusta ao que a etiqueta precisa.
-    var padR = Math.max(44, Math.ceil(measureTextWidth(svg, metaLabelText || "", "axis-label")) + 14);
+    var metaLinhas = [].concat(metaLabelText || []).filter(function (t) { return t; });
+    var padR = 44;
+    metaLinhas.forEach(function (t) {
+      padR = Math.max(padR, Math.ceil(measureTextWidth(svg, t, "axis-label")) + 14);
+    });
     var useW = W, innerW, groupW;
     for (var attempt = 0; attempt < 6; attempt++) {
       innerW = useW - padL - padR;
@@ -1874,9 +1889,14 @@ function iniciarPainel(DATA) {
 
     var y100 = padT + innerH - (1 / maxPct) * innerH;
     svg.appendChild(el("line", { x1: padL, x2: padL + innerW, y1: y100, y2: y100, class: "ranking-meta-line" }));
-    var metaLbl = el("text", { x: padL + innerW + 6, y: y100 + 4, class: "axis-label" });
-    metaLbl.textContent = metaLabelText;
-    svg.appendChild(metaLbl);
+    // a etiqueta pode vir em duas linhas ("100% da meta" + quanto isso dá em R$),
+    // então elas ficam centradas na altura da tracejada em vez de coladas nela
+    var primeiraY = metaLinhas.length > 1 ? y100 - 2 : y100 + 4;
+    metaLinhas.forEach(function (texto, li) {
+      var lbl = el("text", { x: padL + innerW + 6, y: primeiraY + li * 12, class: "axis-label" });
+      lbl.textContent = texto;
+      svg.appendChild(lbl);
+    });
 
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
@@ -2463,6 +2483,7 @@ function iniciarPainel(DATA) {
     document.getElementById(elId).innerHTML = thead + "<tbody>" + rowsHtml + "</tbody>";
   }
   var RANKING_SVGS = { "Juazeiro do Norte": "chartRankJN", "Milagres": "chartRankMI", "Campos Sales": "chartRankCS" };
+  var RANKING_TABLES = { "Juazeiro do Norte": "tblRankJN", "Milagres": "tblRankMI", "Campos Sales": "tblRankCS" };
   var RANKING_CAPTIONS = {
     produtividade: function (mesNome) { return "Cada equipe comparada à produtividade do centro em " + mesNome + " · linha tracejada = 100% · segue o filtro de Processo"; },
     ticket: function (mesNome) { return "Cada equipe comparada ao ticket médio do centro em " + mesNome + " · linha tracejada = 100% · segue o filtro de Processo"; },
@@ -2481,7 +2502,10 @@ function iniciarPainel(DATA) {
       caption.textContent = f.mes.size === 0
         ? "Selecione um único Mês no filtro lateral pra ver o ranking (nenhum selecionado agora)."
         : "Selecione um único Mês no filtro lateral pra ver o ranking (" + f.mes.size + " selecionados agora).";
-      Object.keys(RANKING_SVGS).forEach(function (name) { drawAtingimentoChart(RANKING_SVGS[name], [], ""); });
+      Object.keys(RANKING_SVGS).forEach(function (name) {
+        drawAtingimentoChart(RANKING_SVGS[name], [], "");
+        renderRankingTable(RANKING_TABLES[name], [], rankingMetric);
+      });
       return;
     }
     var mesKey = Array.from(f.mes)[0];
@@ -2528,15 +2552,19 @@ function iniciarPainel(DATA) {
           var m = byEquipe[code];
           return {
             label: equipeDict[code], pct: div(m.valor, m.meta),
+            valor: m.valor, meta: m.meta,
             tip: '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(m.valor) + "</b></div>" +
               '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(m.meta) + "</b></div>",
             pctLabel: "% da meta"
           };
         }).filter(function (t) { return t.pct != null; });
-        // aqui a linha não é um valor único: cada equipe é comparada à META DELA,
-        // então 100% quer dizer "bateu a própria meta". Pôr um R$ ali seria
-        // inventar um número que a linha não representa.
-        metaLabelText = "100% da meta";
+        // A linha aqui não é um valor único: cada equipe é comparada à META DELA,
+        // então 100% quer dizer "bateu a própria meta". Mas dá pra responder
+        // "100% seria quanto?" somando as metas das equipes mostradas -- é o
+        // faturamento que o centro faria se todas batessem. Vai na segunda linha
+        // pra não confundir com o valor exato de nenhuma equipe.
+        var metaTotal = Object.keys(byEquipe).reduce(function (s, code) { return s + byEquipe[code].meta; }, 0);
+        metaLabelText = ["100% da meta", metaTotal ? fmtCompactBRL(metaTotal) : ""];
       } else {
         // produtividade e ticket médio não têm meta -- a "meta" da linha
         // tracejada é a média do centro no mês, calculada em cima das
@@ -2575,7 +2603,34 @@ function iniciarPainel(DATA) {
       }
       teams.sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); });
       drawAtingimentoChart(RANKING_SVGS[name], teams, metaLabelText);
+      renderRankingTable(RANKING_TABLES[name], teams, rankingMetric);
     });
+  }
+
+  // mesma ideia do Consolidado por Centro: a tabela embaixo do gráfico existe
+  // pra quem quer o número exato ou colar em outro lugar, e fica escondida atrás
+  // do "Mostrar valores" pra não poluir o print
+  function renderRankingTable(elId, teams, metric) {
+    var alvo = document.getElementById(elId);
+    if (!alvo) return;
+    var thead, linhas, colunas;
+    if (metric === "faturamento") {
+      colunas = 4;
+      thead = "<thead><tr><th>Equipe</th><th>Realizado</th><th>Meta</th><th>% da meta</th></tr></thead>";
+      linhas = teams.map(function (t) {
+        return "<tr><td>" + t.label + "</td>" + brlCell(t.valor) + brlCell(t.meta) + pctCell(t.pct) + "</tr>";
+      });
+    } else {
+      colunas = 3;
+      var cab = metric === "ticket" ? "Ticket Médio" : "Produtividade";
+      thead = "<thead><tr><th>Equipe</th><th>" + cab + "</th><th>% da média</th></tr></thead>";
+      linhas = teams.map(function (t) {
+        return "<tr><td>" + t.label + "</td>" +
+          (metric === "ticket" ? brlCell(t.raw) : numCell2(t.raw)) + pctCell(t.pct) + "</tr>";
+      });
+    }
+    alvo.innerHTML = thead + "<tbody>" + (linhas.length ? linhas.join("")
+      : '<tr><td colspan="' + colunas + '" class="cell-empty">Sem dados com os filtros atuais</td></tr>') + "</tbody>";
   }
   function renderConsolidadoCentro() {
     var colors = centroColors();
@@ -2597,6 +2652,32 @@ function iniciarPainel(DATA) {
       renderCentroMesChartTable(CENTRO_MES_TABLES[name], items, valueKey, fmtTip);
     });
   }
+  // Segunda rede, independente do ResizeObserver: um quadro depois de montar,
+  // confere se a caixa de cada gráfico ainda tem a largura que ele mediu na hora
+  // de desenhar. Se mudou no meio do caminho -- o caso clássico é o grid só
+  // assentar depois do primeiro desenho -- o desenho ficou com a medida errada e
+  // remontamos uma vez.
+  //
+  // Só entram os gráficos que se dimensionam pela caixa (marcados com
+  // data-caixa-medida). Os do Painel Geral têm viewBox fixo e encolhem de
+  // propósito pra caber: comparar viewBox com caixa acusaria todos eles como
+  // errados e provocaria um redesenho extra a cada render.
+  var reconferindo = false;
+  function reconferirEscala() {
+    if (reconferindo) return;
+    requestAnimationFrame(function () {
+      var precisa = false;
+      document.querySelectorAll(".page.active svg.chart[data-caixa-medida]").forEach(function (svg) {
+        var medida = parseFloat(svg.dataset.caixaMedida);
+        var caixa = svg.parentElement ? svg.parentElement.clientWidth : 0;
+        if (medida && caixa && Math.abs(medida - caixa) > 2) precisa = true;
+      });
+      if (!precisa) return;
+      reconferindo = true;
+      try { renderAll(); } finally { reconferindo = false; }
+    });
+  }
+
   function renderAll() {
     var activePage = document.querySelector(".page.active").id.replace("page-", "");
     var group = PAGE_GROUP[activePage];
@@ -2647,12 +2728,41 @@ function iniciarPainel(DATA) {
     } else if (activePage === "escaladoOb") {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
     }
+    reconferirEscala();
   }
 
   initCopyButtons();
   renderAll();
   var resizeTimer;
   window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderAll, 120); });
+
+  // Cada gráfico grava no viewBox a largura em pixels que mediu na hora de
+  // desenhar, e o SVG estica ou encolhe pra caber na caixa. Enquanto a medida
+  // bate com a caixa, escala 1 e tudo certo; quando a caixa muda DEPOIS do
+  // desenho, o mesmo desenho é espremido ou inflado -- foi o que deixou o
+  // quadro do Milagres com letra minúscula e barras achatadas.
+  //
+  // O "resize" da janela sozinho não cobre: a caixa também muda quando o grid
+  // assenta depois da primeira pintura, quando a aba sai de display:none, e com
+  // zoom. O ResizeObserver olha a caixa de cada gráfico e remonta quando ela
+  // realmente mudar de largura. Observa o container, não o SVG, senão o próprio
+  // redesenho realimentaria o observador.
+  if (window.ResizeObserver) {
+    var larguraUsada = new WeakMap(), roTimer;
+    var ro = new ResizeObserver(function (entradas) {
+      var mudou = entradas.some(function (e) {
+        var w = Math.round(e.contentRect.width);
+        if (!w) return false; // caixa escondida não conta
+        var antes = larguraUsada.get(e.target);
+        larguraUsada.set(e.target, w);
+        return antes != null && Math.abs(antes - w) > 2;
+      });
+      if (!mudou) return;
+      clearTimeout(roTimer);
+      roTimer = setTimeout(renderAll, 120);
+    });
+    document.querySelectorAll(".chart-scroll").forEach(function (c) { ro.observe(c); });
+  }
 }
 
 // ---- busca os dados e só então monta o painel ----
