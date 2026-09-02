@@ -2150,7 +2150,11 @@ function iniciarPainel(DATA) {
   function centroColors() {
     return { "Campos Sales": seriesColor("ec"), "Juazeiro do Norte": seriesColor("ob"), "Milagres": cv("--series-centro-mi"), "Sul": cv("--series-centro-sul") };
   }
-  function renderCentroMesTable(elId, items, valueKey, fmtCell) {
+  // chamava-se renderCentroMesTable e colidia com a funcao de mesmo nome da aba
+  // Faturamento (declarada antes): como declaracao de funcao vale a ultima, esta
+  // sobrescrevia aquela e a aba Faturamento chamava esta sem argumentos, quebrava
+  // em items.map e ficava com os quatro quadros em branco. Nome proprio agora.
+  function renderCentroMesChartTable(elId, items, valueKey, fmtCell) {
     var thead = "<thead><tr><th>Mês</th><th>Valor</th></tr></thead>";
     var rowsHtml = items.map(function (d) {
       return "<tr><td>" + d.label + "</td><td class=\"cell-plain\">" + fmtCell(d[valueKey]) + "</td></tr>";
@@ -2174,7 +2178,7 @@ function iniciarPainel(DATA) {
     Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
       var items = byCentro[name] || [];
       drawMiniMonthChart(CENTRO_MES_SVGS[name], items, colors[name], valueKey, fmtLabel, fmtTip);
-      renderCentroMesTable(CENTRO_MES_TABLES[name], items, valueKey, fmtTip);
+      renderCentroMesChartTable(CENTRO_MES_TABLES[name], items, valueKey, fmtTip);
     });
   }
   function renderAll() {
