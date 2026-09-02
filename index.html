@@ -209,6 +209,9 @@
      dois-botoes, por isso precisa de mais folga que o padrão de 266px */
   #page-comparativoMensal .panel-title, #page-comparativoMensal .panel-caption { margin-right: 355px; }
   #chartMesTitle-ec, #chartMesTitle-ob, #chartMesTitle-ec + .panel-caption, #chartMesTitle-ob + .panel-caption { margin-right: 236px; }
+  /* painel do cabeçalho do Ranking de Produtividade não tem tabela nem
+     gráfico direto (não ganha copy-btn), só o seletor de 3 botões */
+  #page-rankingProdutividade .panel-title, #page-rankingProdutividade .panel-caption { margin-right: 320px; }
   .seg-btn { font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 7px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
   .seg-btn:hover { color: var(--text-primary); }
   .seg-btn.active { background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow); }
@@ -457,20 +460,25 @@
 
       <section class="page" id="page-rankingProdutividade">
         <div class="panel" style="margin-bottom:14px">
-          <p class="panel-title">Ranking de Produtividade por Equipe</p>
+          <div class="seg-toggle" data-ranking-toggle>
+            <button type="button" class="seg-btn active" data-metric="produtividade">Produtividade</button>
+            <button type="button" class="seg-btn" data-metric="faturamento">Faturamento</button>
+            <button type="button" class="seg-btn" data-metric="ticket">Ticket Médio</button>
+          </div>
+          <p class="panel-title" id="rankingProdutividadeTitle">Ranking de Produtividade</p>
           <p class="panel-caption" id="rankingProdutividadeCaption">Processo Emergencial · cada equipe comparada à média do centro no mês · linha tracejada = 100% da média · selecione um único Mês no filtro lateral</p>
         </div>
         <div class="panel" style="margin-bottom:14px">
-          <p class="panel-title">Juazeiro do Norte — Atingimento de Produtividade</p>
+          <p class="panel-title" id="rankingTitleJN">Juazeiro do Norte — Atingimento de Produtividade</p>
           <div class="chart-scroll"><svg class="chart" id="chartRankJN" viewBox="0 0 900 320"></svg></div>
         </div>
         <div class="grid-2">
           <div class="panel">
-            <p class="panel-title">Milagres — Atingimento de Produtividade</p>
+            <p class="panel-title" id="rankingTitleMI">Milagres — Atingimento de Produtividade</p>
             <div class="chart-scroll"><svg class="chart" id="chartRankMI" viewBox="0 0 480 320"></svg></div>
           </div>
           <div class="panel">
-            <p class="panel-title">Campos Sales — Atingimento de Produtividade</p>
+            <p class="panel-title" id="rankingTitleCS">Campos Sales — Atingimento de Produtividade</p>
             <div class="chart-scroll"><svg class="chart" id="chartRankCS" viewBox="0 0 480 320"></svg></div>
           </div>
         </div>
@@ -708,6 +716,28 @@ function iniciarPainel(DATA) {
         centroMesMetric = btn.dataset.metric;
         document.getElementById("consolidadoCentroTitle").textContent = CENTRO_MES_TITLES[centroMesMetric];
         document.getElementById("consolidadoCentroCaption").textContent = CENTRO_MES_CAPTIONS[centroMesMetric];
+        renderAll();
+      });
+    });
+  });
+
+  var rankingMetric = "produtividade";
+  var RANKING_TITLES = {
+    produtividade: "Ranking de Produtividade",
+    faturamento: "Ranking de Faturamento (% da Meta)",
+    ticket: "Ranking de Ticket Médio"
+  };
+  var RANKING_PANEL_SUB = { produtividade: "Atingimento de Produtividade", faturamento: "% da Meta", ticket: "Atingimento de Ticket Médio" };
+  document.querySelectorAll(".seg-toggle[data-ranking-toggle]").forEach(function (toggle) {
+    toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        toggle.querySelectorAll(".seg-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        rankingMetric = btn.dataset.metric;
+        document.getElementById("rankingProdutividadeTitle").textContent = RANKING_TITLES[rankingMetric];
+        document.getElementById("rankingTitleJN").textContent = "Juazeiro do Norte — " + RANKING_PANEL_SUB[rankingMetric];
+        document.getElementById("rankingTitleMI").textContent = "Milagres — " + RANKING_PANEL_SUB[rankingMetric];
+        document.getElementById("rankingTitleCS").textContent = "Campos Sales — " + RANKING_PANEL_SUB[rankingMetric];
         renderAll();
       });
     });
@@ -1791,11 +1821,12 @@ function iniciarPainel(DATA) {
     });
   }
 
-  // ranking de equipes por % de atingimento da produtividade média do centro
-  // no mês -- uma barra por equipe, ordenada da maior pra menor, cor por
-  // faixa (verde ≥100%, amarelo ≥85%, vermelho abaixo), linha tracejada e
-  // rótulo mostrando o valor absoluto da média (a "meta" da linha)
-  function drawAtingimentoChart(svgId, items, metaAbs) {
+  // ranking de equipes por % de atingimento (de uma meta real, ou da média do
+  // centro quando não existe meta própria pra métrica) -- uma barra por
+  // equipe, ordenada da maior pra menor, cor por faixa (verde ≥100%, amarelo
+  // ≥85%, vermelho abaixo), linha tracejada com rótulo (valor absoluto da
+  // média, ou "Meta" quando é uma meta de verdade por equipe)
+  function drawAtingimentoChart(svgId, items, metaLabelText) {
     var svg = document.getElementById(svgId);
     var H = 320, padL = 8, padR = 44, padT = 30, padB = 66;
     if (!items.length) return emptyChart(svg, 480, H);
@@ -1830,7 +1861,7 @@ function iniciarPainel(DATA) {
     var y100 = padT + innerH - (1 / maxPct) * innerH;
     svg.appendChild(el("line", { x1: padL, x2: padL + innerW, y1: y100, y2: y100, class: "ranking-meta-line" }));
     var metaLbl = el("text", { x: padL + innerW + 6, y: y100 + 4, class: "axis-label" });
-    metaLbl.textContent = fmtNum(metaAbs, 2);
+    metaLbl.textContent = metaLabelText;
     svg.appendChild(metaLbl);
 
     items.forEach(function (d, i) {
@@ -1840,9 +1871,8 @@ function iniciarPainel(DATA) {
       var cls = d.pct >= 1 ? "good" : d.pct >= 0.85 ? "warn" : "crit";
       var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: "var(--status-" + cls + ")", class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
-        showTip(evt, "<div><b>" + d.label + "</b></div>" +
-          '<div class="tt-row"><span>Produtividade</span><b>' + fmtNum(d.produtividade, 2) + "</b></div>" +
-          '<div class="tt-row"><span>% da média do centro</span><b>' + fmtPct(d.pct) + "</b></div>");
+        showTip(evt, "<div><b>" + d.label + "</b></div>" + (d.tip || "") +
+          '<div class="tt-row"><span>' + (d.pctLabel || "% da meta") + "</span><b>" + fmtPct(d.pct) + "</b></div>");
       });
       rect.addEventListener("mouseleave", hideTip);
       svg.appendChild(rect);
@@ -2419,30 +2449,37 @@ function iniciarPainel(DATA) {
     document.getElementById(elId).innerHTML = thead + "<tbody>" + rowsHtml + "</tbody>";
   }
   var RANKING_SVGS = { "Juazeiro do Norte": "chartRankJN", "Milagres": "chartRankMI", "Campos Sales": "chartRankCS" };
+  var RANKING_CAPTIONS = {
+    produtividade: function (mesNome) { return "Processo Emergencial · cada equipe comparada à média de produtividade do centro em " + mesNome + " · linha tracejada = 100% da média"; },
+    ticket: function (mesNome) { return "Processo Emergencial · cada equipe comparada à média de ticket médio do centro em " + mesNome + " · linha tracejada = 100% da média"; },
+    faturamento: function (mesNome) { return "Processo Emergencial · cada equipe comparada à própria meta de faturamento em " + mesNome + " · linha tracejada = 100% da meta"; }
+  };
   function renderRankingProdutividade() {
     var caption = document.getElementById("rankingProdutividadeCaption");
     var f = filters.ec, rows = GROUPS.ec.rows, centroDict = GROUPS.ec.dicts.centro, equipeDict = GROUPS.ec.dicts.equipe;
     var emergCode = GROUPS.ec.dicts.processo.indexOf("Emergencial");
-    // a "meta" (linha tracejada) é a média de produtividade do próprio mês --
-    // só faz sentido comparando dentro de um único mês, por isso exige a
-    // seleção de exatamente um no filtro lateral (em vez de inventar um
-    // seletor de mês novo só pra essa aba)
+    // a "meta" (linha tracejada) é a média do próprio mês (produtividade e
+    // ticket médio não têm meta de verdade na planilha) -- só faz sentido
+    // comparando dentro de um único mês, por isso exige a seleção de
+    // exatamente um no filtro lateral (em vez de inventar um seletor de mês
+    // novo só pra essa aba). Faturamento já tem meta própria por linha, mas
+    // mantém a mesma exigência pra ficar consistente entre as 3 métricas.
     if (f.mes.size !== 1) {
       caption.textContent = f.mes.size === 0
         ? "Selecione um único Mês no filtro lateral pra ver o ranking (nenhum selecionado agora)."
         : "Selecione um único Mês no filtro lateral pra ver o ranking (" + f.mes.size + " selecionados agora).";
-      Object.keys(RANKING_SVGS).forEach(function (name) { drawAtingimentoChart(RANKING_SVGS[name], [], 0); });
+      Object.keys(RANKING_SVGS).forEach(function (name) { drawAtingimentoChart(RANKING_SVGS[name], [], ""); });
       return;
     }
     var mesKey = Array.from(f.mes)[0];
     var mi = parseInt(mesKey.slice(5, 7), 10) - 1;
-    caption.textContent = "Processo Emergencial · cada equipe comparada à média do centro em " + MONTH_FULL[mi] + " · linha tracejada = 100% da média";
+    caption.textContent = RANKING_CAPTIONS[rankingMetric](MONTH_FULL[mi]);
 
     // fixo em Processo = Emergencial (é o recorte da visual original que este
     // ranking reproduz -- times de outro processo, tipo Manutenção, têm uma
-    // escala de produtividade completamente diferente e não são comparáveis
-    // na mesma régua). Por isso ignora tanto o filtro de Centro quanto o de
-    // Processo da barra lateral, igual ao Consolidado por Centro > Turnos.
+    // escala completamente diferente e não são comparáveis na mesma régua).
+    // Por isso ignora tanto o filtro de Centro quanto o de Processo da barra
+    // lateral, igual ao Consolidado por Centro > Turnos.
     var idxs = [];
     if (emergCode >= 0) {
       for (var i = 0; i < rows.date.length; i++) {
@@ -2460,18 +2497,51 @@ function iniciarPainel(DATA) {
       idxs.forEach(function (i) {
         if (rows.centro[i] !== centroCode) return;
         var e = rows.equipe[i]; if (e < 0) return;
-        if (!byEquipe[e]) byEquipe[e] = { qtd: 0, prodDen: 0 };
+        if (!byEquipe[e]) byEquipe[e] = { qtd: 0, prodDen: 0, valor: 0, meta: 0 };
         byEquipe[e].qtd += rows.qtd[i];
+        byEquipe[e].valor += rows.valor[i];
+        byEquipe[e].meta += rows.meta[i];
         if (isProdRow("ec", rows, i)) byEquipe[e].prodDen++;
       });
-      var teams = Object.keys(byEquipe).map(function (code) {
-        var m = byEquipe[code];
-        return { label: equipeDict[code], produtividade: m.prodDen ? m.qtd / m.prodDen : null };
-      }).filter(function (t) { return t.produtividade != null; });
-      var media = teams.length ? teams.reduce(function (s, t) { return s + t.produtividade; }, 0) / teams.length : 0;
-      teams.forEach(function (t) { t.pct = media ? t.produtividade / media : null; });
+
+      var teams, metaLabelText;
+      if (rankingMetric === "faturamento") {
+        // já existe meta de verdade por equipe (meta_valor) -- usa ela
+        // direto, igual ao %meta usado no resto do painel, em vez de
+        // comparar com uma média calculada
+        teams = Object.keys(byEquipe).map(function (code) {
+          var m = byEquipe[code];
+          return {
+            label: equipeDict[code], pct: div(m.valor, m.meta),
+            tip: '<div class="tt-row"><span>Realizado</span><b>' + fmtFullBRL(m.valor) + "</b></div>" +
+              '<div class="tt-row"><span>Meta</span><b>' + fmtFullBRL(m.meta) + "</b></div>",
+            pctLabel: "% da meta"
+          };
+        }).filter(function (t) { return t.pct != null; });
+        metaLabelText = "Meta";
+      } else {
+        // produtividade e ticket médio não têm meta -- a "meta" da linha
+        // tracejada é a média do centro no mês, calculada em cima das
+        // próprias equipes desse centro
+        teams = Object.keys(byEquipe).map(function (code) {
+          var m = byEquipe[code];
+          if (rankingMetric === "ticket") {
+            return { label: equipeDict[code], raw: div(m.valor, m.qtd) };
+          }
+          return { label: equipeDict[code], raw: m.prodDen ? m.qtd / m.prodDen : null };
+        }).filter(function (t) { return t.raw != null; });
+        var media = teams.length ? teams.reduce(function (s, t) { return s + t.raw; }, 0) / teams.length : 0;
+        var tipLabel = rankingMetric === "ticket" ? "Ticket Médio" : "Produtividade";
+        var tipFmt = rankingMetric === "ticket" ? fmtFullBRL : function (v) { return fmtNum(v, 2); };
+        teams.forEach(function (t) {
+          t.pct = media ? t.raw / media : null;
+          t.tip = '<div class="tt-row"><span>' + tipLabel + "</span><b>" + tipFmt(t.raw) + "</b></div>";
+          t.pctLabel = "% da média do centro";
+        });
+        metaLabelText = rankingMetric === "ticket" ? fmtFullBRL(media) : fmtNum(media, 2);
+      }
       teams.sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); });
-      drawAtingimentoChart(RANKING_SVGS[name], teams, media);
+      drawAtingimentoChart(RANKING_SVGS[name], teams, metaLabelText);
     });
   }
   function renderConsolidadoCentro() {
