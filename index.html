@@ -267,11 +267,6 @@
   .pill.cell-warn { background: var(--status-warn-soft); color: var(--status-warn); }
   .pill.cell-crit { background: var(--status-crit-soft); color: var(--status-crit); }
   .pill.cell-empty { background: transparent; color: var(--text-muted); font-weight: 600; }
-  .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; flex: none; }
-  .status-dot.cell-good { background: var(--status-good); }
-  .status-dot.cell-warn { background: var(--status-warn); }
-  .status-dot.cell-crit { background: var(--status-crit); }
-  .status-dot.cell-empty { background: var(--baseline); }
   td.cell-plain { color: var(--text-secondary); }
 
   footer.note { margin-top: 30px; padding: 16px 18px; border-radius: 12px; background: var(--surface-1); border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); line-height: 1.6; }
@@ -1983,6 +1978,10 @@ function iniciarPainel(DATA) {
     document.getElementById(elId).innerHTML = thead + tbody;
   }
   function pctCell(v) { return '<td><span class="pill ' + pctClass(v) + '">' + fmtPct(v) + "</span></td>"; }
+  // o valor sai pintado com a cor do status em vez de vir precedido de um ponto
+  // colorido de 7px, que era fácil de não enxergar -- e assim fica igual às
+  // outras tabelas, que já mostram o status como pílula
+  function brlPillCell(valor, pct) { return '<td><span class="pill ' + pctClass(pct) + '">' + fmtFullBRL(valor) + "</span></td>"; }
   function intCell(v) { return '<td class="cell-plain">' + fmtInt.format(v) + "</td>"; }
   function brlCell(v) { return '<td class="cell-plain">' + fmtFullBRL(v) + "</td>"; }
   function numCell2(v) { return '<td class="cell-plain">' + fmtNum(v, 2) + "</td>"; }
@@ -2148,7 +2147,7 @@ function iniciarPainel(DATA) {
 
     var thead = "<thead><tr><th>" + rowLabel + "</th><th>Valor Realizado</th><th>Ticket Médio</th><th>Produtividade</th></tr></thead>";
     var tbody = "<tbody>" + items.map(function (d) {
-      return "<tr><td>" + d.label + '</td><td><span class="status-dot ' + pctClass(d.pct) + '"></span>' + fmtFullBRL(d.valor) + "</td><td>" + fmtFullBRL(d.ticket) + "</td><td>" + fmtNum(d.prod, 2) + "</td></tr>";
+      return "<tr><td>" + d.label + "</td>" + brlPillCell(d.valor, d.pct) + "<td>" + fmtFullBRL(d.ticket) + "</td><td>" + fmtNum(d.prod, 2) + "</td></tr>";
     }).join("") + "</tbody>";
     document.getElementById(elId).innerHTML = thead + tbody;
     if (!items.length) document.getElementById(elId).innerHTML = thead + '<tbody><tr><td colspan="4" class="cell-empty">Sem dados para esse processo com os filtros atuais</td></tr></tbody>';
@@ -2219,8 +2218,8 @@ function iniciarPainel(DATA) {
 
     var thead = "<thead><tr><th>Equipe</th><th>Valor Realizado</th><th>Meta</th><th>Produtividade</th><th>Ticket Médio</th></tr></thead>";
     function rowHtml(d, isTotal) {
-      return "<tr" + (isTotal ? ' class="total"' : "") + "><td>" + d.label + '</td><td><span class="status-dot ' + pctClass(d.pct) + '"></span>' + fmtFullBRL(d.valor) +
-        "</td><td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtNum(d.produtividade, 2) + "</td><td>" + fmtFullBRL(d.ticket) + "</td></tr>";
+      return "<tr" + (isTotal ? ' class="total"' : "") + "><td>" + d.label + "</td>" + brlPillCell(d.valor, d.pct) +
+        "<td>" + fmtFullBRL(d.meta) + "</td><td>" + fmtNum(d.produtividade, 2) + "</td><td>" + fmtFullBRL(d.ticket) + "</td></tr>";
     }
     document.getElementById("tblAnaliseEquipes").innerHTML = thead + "<tbody>" + items.map(function (d) { return rowHtml(d, false); }).join("") + rowHtml(totalRow, true) + "</tbody>";
   }
