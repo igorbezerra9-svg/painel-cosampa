@@ -2257,11 +2257,13 @@ function iniciarPainel(DATA) {
     var equipeCodes = Array.from(new Set(idxs.map(function (i) { return rows.equipe[i]; }))).filter(function (e) { return e >= 0; });
     var dict = GROUPS.ec.dicts.equipe;
     var equipes = equipeCodes.map(function (c) { return { idx: c, name: dict[c] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    // devolve sempre os dois: em "Valor Realizado" o número exibido é o valor,
+    // mas a cor continua saindo do % da meta -- sem isso a aba ficava sem cor
+    // nenhuma nesse modo, que era a única das tabelas assim
     function metricFor(sub) {
       var valor = sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0);
-      if (equipeMesMetric === "valor") return valor;
       var meta = sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0);
-      return div(valor, meta);
+      return { valor: valor, pct: div(valor, meta) };
     }
     var out = equipes.map(function (eq) {
       var cells = months.map(function (mk) {
@@ -2272,14 +2274,16 @@ function iniciarPainel(DATA) {
     }).filter(function (eq) {
       // esconde equipes sem nenhum mês com valor real (tudo "—" ou zerado) — normalmente equipes
       // administrativas/sem meta que só teriam ruído em uma tabela pensada pra comparar evolução
-      return eq.cells.some(function (v) { return v != null && v !== 0; });
+      return eq.cells.some(function (c) { return c != null && c.valor !== 0; });
     });
     var totalCells = months.map(function (mk) {
       var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk; });
       return sub.length ? metricFor(sub) : null;
     });
     var colHeaders = months.map(function (mk) { var mi = parseInt(mk.slice(5, 7), 10) - 1; return MONTH_FULL[mi]; });
-    var cellFn = equipeMesMetric === "pct" ? pctCell : function (v) { return '<td class="cell-plain">' + fmtFullBRL(v) + "</td>"; };
+    var cellFn = equipeMesMetric === "pct"
+      ? function (c) { return pctCell(c == null ? null : c.pct); }
+      : function (c) { return c == null ? brlPillCell(null, null) : brlPillCell(c.valor, c.pct); };
     renderTable("tblComparativoMensal", colHeaders, "Equipe", out, cellFn, { cells: totalCells });
   }
 
