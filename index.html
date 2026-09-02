@@ -250,7 +250,7 @@
   .tablewrap::-webkit-scrollbar-thumb, .chart-scroll::-webkit-scrollbar-thumb { background: var(--baseline); border-radius: 6px; border: 2px solid var(--grid); }
   .tablewrap::-webkit-scrollbar-thumb:hover, .chart-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   table.datatable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  table.datatable th, table.datatable td { padding: 9px 11px; text-align: right; white-space: nowrap; }
+  table.datatable th, table.datatable td { padding: 9px 11px; text-align: center; white-space: nowrap; }
   table.datatable th:first-child, table.datatable td:first-child { text-align: left; }
   table.datatable thead th { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 800; background: var(--surface-1); }
   table.datatable tbody td { border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
@@ -1243,8 +1243,24 @@ function iniciarPainel(DATA) {
       var cab = titulo ? (subtitulo ? 44 : 28) : 0;
       var lw = w + IMG_PAD * 2, lh = h + IMG_PAD * 2 + cab;
       var t = novaTela(lw, lh), ctx = t.ctx;
+      // tabela vai COM fundo (o gráfico é que sai transparente): número em cima
+      // do fundo do slide fica ilegível, e a tabela não tem forma que se
+      // destaque sozinha como as barras têm
+      ctx.fillStyle = cv("--surface-1") || "#ffffff";
+      ctx.fillRect(0, 0, lw, lh);
       desenhaTitulo(ctx, titulo, subtitulo, IMG_PAD, IMG_PAD);
       var ox = IMG_PAD - tr0.left, oy = IMG_PAD + cab - tr0.top;
+
+      // duas passadas: todos os fundos primeiro, senão o fundo de uma célula
+      // apagaria a borda da vizinha desenhada antes
+      Array.prototype.forEach.call(table.querySelectorAll("tr"), function (tr) {
+        Array.prototype.forEach.call(tr.children, function (cel) {
+          var r = cel.getBoundingClientRect(), cs = getComputedStyle(cel);
+          if (transparente(cs.backgroundColor)) return;
+          ctx.fillStyle = cs.backgroundColor;
+          ctx.fillRect(r.left + ox, r.top + oy, r.width, r.height);
+        });
+      });
 
       Array.prototype.forEach.call(table.querySelectorAll("tr"), function (tr) {
         Array.prototype.forEach.call(tr.children, function (cel) {
