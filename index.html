@@ -565,6 +565,11 @@
             <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe · clique num mês pra filtrar por ele</p>
             <div class="tablewrap"><table class="datatable" id="tblFaltasMesFat"></table></div>
           </div>
+          <div class="panel" id="panelFaltasMotivoFat" style="margin-bottom:14px">
+            <p class="panel-title">Faltas por motivo</p>
+            <p class="panel-caption" id="faltasMotivoCaptionFat">Motivo lançado na planilha · mesmo recorte dos filtros atuais</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasMotivoFat"></table></div>
+          </div>
           <div class="panel" style="margin-bottom:14px">
             <p class="panel-title">Faltas por processo</p>
             <p class="panel-caption" id="faltasProcCaptionFat">Mesmo recorte dos filtros atuais · ordenado por nº de faltas</p>
@@ -687,6 +692,11 @@
             <p class="panel-title">Faltas mês a mês</p>
             <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe · clique num mês pra filtrar por ele</p>
             <div class="tablewrap"><table class="datatable" id="tblFaltasMesOb"></table></div>
+          </div>
+          <div class="panel" id="panelFaltasMotivoOb" style="margin-bottom:14px">
+            <p class="panel-title">Faltas por motivo</p>
+            <p class="panel-caption" id="faltasMotivoCaptionOb">Motivo lançado na planilha · mesmo recorte dos filtros atuais</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasMotivoOb"></table></div>
           </div>
           <div class="panel" style="margin-bottom:14px">
             <p class="panel-title">Faltas por processo</p>
@@ -2491,6 +2501,7 @@ function iniciarPainel(DATA) {
     return max;
   }
   function renderFaltas(group, suf) {
+    renderFaltasPorMotivo(group, suf);
     renderFaltasPorProcesso(group, suf);
     renderFaltasPorSupervisor(group, suf);
     renderFaltasPorMes(group, suf);
@@ -2641,6 +2652,54 @@ function iniciarPainel(DATA) {
       btn.textContent = cortada ? "Mostrar todas as " + items.length + " equipes" : "Mostrar só as " + FALTAS_LIMITE + " primeiras";
     });
     wireFaltaClicks(group, painel);
+  }
+
+  // Por que faltou, direto da coluna conforme_reduz da planilha -- a operação
+  // já categoriza (ATESTADO, DEMISSÃO, COMPENSAÇÃO DE ESCALA, FÉRIAS...).
+  // Tabela própria porque as colunas dos outros quadros não servem aqui:
+  // "escalas" não é atribuível a um motivo, já que motivo só existe na linha
+  // que faltou. O denominador aqui é o total de faltas do recorte.
+  function renderFaltasPorMotivo(group, suf) {
+    var el_ = document.getElementById("tblFaltasMotivo" + suf);
+    if (!el_) return;
+    var idxs = currentIdxs(group), rows = GROUPS[group].rows, D = GROUPS[group].dicts;
+    var painel = document.getElementById("panelFaltasMotivo" + suf);
+    // dado antigo (dados.json gerado antes desta coluna existir) não tem motivo
+    if (painel) painel.hidden = !rows.motivo;
+    if (!rows.motivo) return;
+
+    var cap = document.getElementById("faltasMotivoCaption" + suf);
+    var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
+    var faltas = idxs.filter(function (i) { return isFaltou(group, rows, i); });
+    if (cap) cap.textContent = "Motivo lançado na planilha · " + recorteAtual(datas).toLowerCase() +
+      " · a % é sobre o total de faltas, não sobre as escalas";
+
+    var map = {};
+    faltas.forEach(function (i) {
+      var m = map[rows.motivo[i]] || (map[rows.motivo[i]] = { n: 0, equipes: {} });
+      m.n++; m.equipes[rows.equipe[i]] = 1;
+    });
+    var items = Object.keys(map).map(function (k) {
+      var m = map[k];
+      return { label: nomeDim(D.motivo, parseInt(k, 10), "(sem motivo preenchido)"),
+               n: m.n, equipes: Object.keys(m.equipes).length,
+               pct: faltas.length ? m.n / faltas.length : null };
+    }).sort(function (a, b) { return b.n - a.n || a.label.localeCompare(b.label, "pt-BR"); });
+
+    var thead = "<thead><tr><th>Motivo</th><th>Equipes</th><th>Faltas</th><th>% das faltas</th></tr></thead>";
+    if (!items.length) {
+      el_.innerHTML = thead + '<tbody><tr><td colspan="4" class="cell-empty">Sem falta com os filtros atuais</td></tr></tbody>';
+      return;
+    }
+    var linhas = items.map(function (d) {
+      return '<tr><td class="cell-txt">' + d.label + "</td>" +
+        '<td class="cell-plain">' + fmtInt.format(d.equipes) + "</td>" +
+        '<td class="falta-n">' + fmtInt.format(d.n) + "</td>" +
+        '<td class="cell-plain">' + fmtPct(d.pct) + "</td></tr>";
+    }).join("");
+    el_.innerHTML = thead + "<tbody>" + linhas +
+      '<tr class="total"><td>Total</td><td class="cell-plain">—</td><td class="falta-n">' +
+      fmtInt.format(faltas.length) + '</td><td class="cell-plain">100,0%</td></tr></tbody>';
   }
 
   // Como as tabelas de resumo dizem qual recorte estão mostrando: com um dia

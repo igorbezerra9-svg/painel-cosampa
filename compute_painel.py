@@ -87,7 +87,7 @@ def col_ci(df, name):
     return pd.Series([None] * len(df))
 
 
-def transform_ec(df, sup, centro, proc, equipe):
+def transform_ec(df, sup, centro, proc, equipe, motivo):
     df = df.copy()
     df["data"] = pd.to_datetime(df["data"], dayfirst=True, errors="coerce")
     df = df.dropna(subset=["data"])
@@ -113,10 +113,14 @@ def transform_ec(df, sup, centro, proc, equipe):
         "qtd": df["qtd_serv"].round(2).tolist(),
         "metaQtd": df["meta_qtd"].round(2).tolist(),
         "prod": df["produtividade"].round(0).astype(int).tolist(),
+        # motivo da falta, já categorizado pela operação na própria planilha
+        # (ATESTADO, DEMISSÃO, COMPENSAÇÃO DE ESCALA, FÉRIAS...). Vem em branco
+        # em parte das linhas, e aí o código é -1.
+        "motivo": [motivo.code(v) for v in df.get("conforme_reduz")],
     }
 
 
-def transform_obras(df, sup, centro, proc, equipe):
+def transform_obras(df, sup, centro, proc, equipe, motivo):
     df = df.copy()
     df["dia_interv"] = pd.to_datetime(df["dia_interv"], dayfirst=True, errors="coerce")
     df = df.dropna(subset=["dia_interv"])
@@ -146,6 +150,7 @@ def transform_obras(df, sup, centro, proc, equipe):
         "qtd": df["qtd_serv"].round(2).tolist(),
         "metaQtd": df["meta_qtd"].round(2).tolist(),
         "status": [status_code(r) for _, r in df.iterrows()],
+        "motivo": [motivo.code(v) for v in df.get("conforme_reduz")],
     }
 
 
@@ -174,19 +179,19 @@ def main():
     ec_raw = pd.read_csv(EC_CSV_URL)
     ob_raw = pd.read_csv(OBRAS_CSV_URL)
 
-    sup, centro, proc, equipe = Dict(), Dict(), Dict(), Dict()
-    ec = transform_ec(ec_raw, sup, centro, proc, equipe)
+    sup, centro, proc, equipe, motivo = Dict(), Dict(), Dict(), Dict(), Dict()
+    ec = transform_ec(ec_raw, sup, centro, proc, equipe, motivo)
 
-    obSup, obCentro, obProc, obEquipe = Dict(), Dict(), Dict(), Dict()
-    ob = transform_obras(ob_raw, obSup, obCentro, obProc, obEquipe)
+    obSup, obCentro, obProc, obEquipe, obMotivo = Dict(), Dict(), Dict(), Dict(), Dict()
+    ob = transform_obras(ob_raw, obSup, obCentro, obProc, obEquipe, obMotivo)
 
     now = datetime.now(BRASILIA).strftime("%d/%m/%Y %H:%M")
     data = {
         "generated": now,
         "sourceModified": now,
-        "dicts": {"supervisor": sup.values, "centro": centro.values, "processo": proc.values, "equipe": equipe.values},
+        "dicts": {"supervisor": sup.values, "centro": centro.values, "processo": proc.values, "equipe": equipe.values, "motivo": motivo.values},
         "ec": ec,
-        "obDicts": {"supervisor": obSup.values, "centro": obCentro.values, "processo": obProc.values, "equipe": obEquipe.values},
+        "obDicts": {"supervisor": obSup.values, "centro": obCentro.values, "processo": obProc.values, "equipe": obEquipe.values, "motivo": obMotivo.values},
         "ob": ob,
     }
 
@@ -216,10 +221,10 @@ def main():
 
     print("OK -> " + ", ".join(escritos))
     print("rows: ec=%d ob=%d  bytes=%d" % (len(ec["date"]), len(ob["date"]), len(payload)))
-    print("ec dims: supervisor=%d centro=%d processo=%d equipe=%d" % (
-        len(sup.values), len(centro.values), len(proc.values), len(equipe.values)))
-    print("ob dims: supervisor=%d centro=%d processo=%d equipe=%d" % (
-        len(obSup.values), len(obCentro.values), len(obProc.values), len(obEquipe.values)))
+    print("ec dims: supervisor=%d centro=%d processo=%d equipe=%d motivo=%d" % (
+        len(sup.values), len(centro.values), len(proc.values), len(equipe.values), len(motivo.values)))
+    print("ob dims: supervisor=%d centro=%d processo=%d equipe=%d motivo=%d" % (
+        len(obSup.values), len(obCentro.values), len(obProc.values), len(obEquipe.values), len(obMotivo.values)))
 
 
 if __name__ == "__main__":
