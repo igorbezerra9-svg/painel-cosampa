@@ -298,11 +298,11 @@
   table.datatable td.cell-txt { text-align: left; color: var(--text-secondary); }
   table.datatable td.falta-n { font-weight: 800; color: var(--status-crit); }
   table.datatable.is-cortada tbody tr.is-extra { display: none; }
-  table.datatable tbody tr[data-falta-sup], table.datatable tbody tr[data-falta-mes], table.datatable tbody tr[data-motivo-linha] { cursor: pointer; }
-  tr[data-motivo-linha] td:first-child::before { content: "\25B8"; display: inline-block; width: 13px; color: var(--text-muted); font-size: 10px; transition: transform .12s ease; }
-  tr[data-motivo-linha].aberta td:first-child::before { transform: rotate(90deg); }
-  tr.motivo-detalhe > td { background: var(--surface-2); padding: 10px 11px 12px 24px; }
-  tr.motivo-detalhe .faltas-chips { justify-content: flex-start; }
+  table.datatable tbody tr[data-falta-mes], table.datatable tbody tr[data-exp-linha] { cursor: pointer; }
+  tr[data-exp-linha] td:first-child::before { content: "\25B8"; display: inline-block; width: 13px; color: var(--text-muted); font-size: 10px; transition: transform .12s ease; }
+  tr[data-exp-linha].aberta td:first-child::before { transform: rotate(90deg); }
+  tr.exp-detalhe > td { background: var(--surface-2); padding: 10px 11px 12px 24px; }
+  tr.exp-detalhe .faltas-chips { justify-content: flex-start; }
   .falta-chip b { font-weight: 800; margin-left: 5px; opacity: .75; font-variant-numeric: tabular-nums; }
   .falta-eq { font-weight: 800; color: var(--text-primary); cursor: pointer; }
   .falta-eq:hover { color: var(--status-crit); }
@@ -2686,9 +2686,7 @@ function iniciarPainel(DATA) {
     });
     var items = Object.keys(map).map(function (k) {
       var m = map[k];
-      var eqs = Object.keys(m.equipes).map(function (e) {
-        return { code: e, nome: D.equipe[e], n: m.equipes[e] };
-      }).sort(function (a, b) { return b.n - a.n || a.nome.localeCompare(b.nome, "pt-BR"); });
+      var eqs = equipesDoBucket(m.equipes, D);
       return { label: nomeDim(D.motivo, parseInt(k, 10), "(sem motivo preenchido)"),
                n: m.n, equipes: eqs.length, listaEquipes: eqs,
                pct: faltas.length ? m.n / faltas.length : null };
@@ -2700,16 +2698,12 @@ function iniciarPainel(DATA) {
       return;
     }
     var linhas = items.map(function (d, pos) {
-      var chips = d.listaEquipes.map(function (e) {
-        return '<span class="falta-chip" data-falta-equipe="' + e.code + '" title="' + escapeAttr(e.nome) +
-          " — " + e.n + (e.n === 1 ? " falta por " : " faltas por ") + escapeAttr(d.label) + '">' +
-          e.nome + "<b>" + e.n + "</b></span>";
-      }).join("");
-      return '<tr data-motivo-linha="' + pos + '"><td class="cell-txt">' + d.label + "</td>" +
+      var chips = chipsDeEquipes(d.listaEquipes, d.label);
+      return '<tr data-exp-linha="m' + pos + '"><td class="cell-txt">' + d.label + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.equipes) + "</td>" +
         '<td class="falta-n">' + fmtInt.format(d.n) + "</td>" +
         '<td class="cell-plain">' + fmtPct(d.pct) + "</td></tr>" +
-        '<tr class="motivo-detalhe" data-motivo-de="' + pos + '" hidden><td colspan="4">' +
+        '<tr class="exp-detalhe" data-exp-de="m' + pos + '" hidden><td colspan="4">' +
         '<div class="faltas-chips">' + chips + "</div></td></tr>";
     }).join("");
     el_.innerHTML = thead + "<tbody>" + linhas +
@@ -2719,15 +2713,7 @@ function iniciarPainel(DATA) {
     // motivo não é dimensão de filtro: ele só existe na linha que faltou, então
     // filtrar por ele esvaziaria o denominador e quebraria o "% de falta" dos
     // outros quadros. Por isso abre na própria linha em vez de filtrar.
-    el_.querySelectorAll("[data-motivo-linha]").forEach(function (tr) {
-      tr.addEventListener("click", function (e) {
-        if (e.target.closest("[data-falta-equipe]")) return; // clique no chip é da equipe
-        var det = el_.querySelector('[data-motivo-de="' + tr.getAttribute("data-motivo-linha") + '"]');
-        if (!det) return;
-        det.hidden = !det.hidden;
-        tr.classList.toggle("aberta", !det.hidden);
-      });
-    });
+    ligaExpansao(el_);
     wireFaltaClicks(group, el_);
   }
 
@@ -2747,7 +2733,7 @@ function iniciarPainel(DATA) {
     var idxs = currentIdxs(group), rows = GROUPS[group].rows, D = GROUPS[group].dicts;
     var cap = document.getElementById("faltasProcCaption" + suf);
     var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
-    if (cap) cap.textContent = recorteAtual(datas) + " · ordenado por nº de faltas · clique num processo pra filtrar por ele";
+    if (cap) cap.textContent = recorteAtual(datas) + " · ordenado por nº de faltas · clique na linha pra abrir as equipes, ou no nome pra filtrar";
 
     var map = {};
     idxs.forEach(function (i) {
@@ -2757,11 +2743,12 @@ function iniciarPainel(DATA) {
       var m = map[p] || (map[p] = { esc: 0, faltas: 0, comMeta: 0, equipes: {}, equipesFalta: {} });
       m.esc++; m.equipes[rows.equipe[i]] = 1;
       if (temMetaLinha(group, rows, i)) m.comMeta++;
-      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
+      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = (m.equipesFalta[rows.equipe[i]] || 0) + 1; }
     });
     var items = Object.keys(map).map(function (p) {
       var m = map[p], code = parseInt(p, 10);
       return { label: nomeDim(D.processo, code, "Sem processo"), esc: m.esc, faltas: m.faltas,
+               listaEquipes: equipesDoBucket(m.equipesFalta, D),
                clique: code >= 0 ? ' data-falta-proc="' + code + '"' : "",
                equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
                temMeta: m.comMeta > 0, pctFalta: (m.comMeta && m.esc) ? m.faltas / m.esc : null };
@@ -2784,7 +2771,7 @@ function iniciarPainel(DATA) {
     if (!D.supervisor.length) return;
     var cap = document.getElementById("faltasSupCaption" + suf);
     var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
-    if (cap) cap.textContent = recorteAtual(datas) + " · ordenado por nº de faltas · clique num supervisor pra ver só as equipes dele";
+    if (cap) cap.textContent = recorteAtual(datas) + " · ordenado por nº de faltas · clique na linha pra abrir as equipes, ou no nome pra filtrar";
 
     var map = {};
     idxs.forEach(function (i) {
@@ -2794,11 +2781,12 @@ function iniciarPainel(DATA) {
       var m = map[s] || (map[s] = { esc: 0, faltas: 0, comMeta: 0, equipes: {}, equipesFalta: {} });
       m.esc++; m.equipes[rows.equipe[i]] = 1;
       if (temMetaLinha(group, rows, i)) m.comMeta++;
-      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
+      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = (m.equipesFalta[rows.equipe[i]] || 0) + 1; }
     });
     var items = Object.keys(map).map(function (s) {
       var m = map[s], code = parseInt(s, 10);
       return { label: nomeDim(D.supervisor, code, "Sem supervisor"), esc: m.esc, faltas: m.faltas,
+               listaEquipes: equipesDoBucket(m.equipesFalta, D),
                // "Sem supervisor" não vira filtro: o código -1 não existe na
                // lista lateral, então a barra ficaria marcada sem nada aceso
                clique: code >= 0 ? ' data-falta-sup="' + code + '"' : "",
@@ -2838,23 +2826,68 @@ function iniciarPainel(DATA) {
     wireFaltaClicks(group, el_);
   }
 
+  // Linha que abre mostrando as equipes. O clique num chip de equipe é da
+  // equipe (filtra), não do expansor -- por isso o closest() antes de abrir.
+  function ligaExpansao(el_) {
+    el_.querySelectorAll("[data-exp-linha]").forEach(function (tr) {
+      tr.addEventListener("click", function (e) {
+        if (e.target.closest("[data-falta-equipe]") || e.target.closest("[data-falta-sup]") ||
+            e.target.closest("[data-falta-proc]")) return;
+        var det = el_.querySelector('[data-exp-de="' + tr.getAttribute("data-exp-linha") + '"]');
+        if (!det) return;
+        det.hidden = !det.hidden;
+        tr.classList.toggle("aberta", !det.hidden);
+      });
+    });
+  }
+
+  // as equipes de um motivo/processo/supervisor, como chips clicáveis
+  function chipsDeEquipes(lista, contexto) {
+    return lista.map(function (e) {
+      return '<span class="falta-chip" data-falta-equipe="' + e.code + '" title="' + escapeAttr(e.nome) +
+        " — " + e.n + (e.n === 1 ? " falta" : " faltas") + (contexto ? " por " + escapeAttr(contexto) : "") + '">' +
+        e.nome + "<b>" + e.n + "</b></span>";
+    }).join("");
+  }
+
+  // conta faltas por equipe dentro de um bucket, já ordenado da maior
+  function equipesDoBucket(mapEquipes, D) {
+    return Object.keys(mapEquipes).map(function (e) {
+      return { code: e, nome: D.equipe[e], n: mapEquipes[e] };
+    }).sort(function (a, b) { return b.n - a.n || a.nome.localeCompare(b.nome, "pt-BR"); });
+  }
+
   function renderFaltasTabela(el_, rotulo, items) {
     var thead = "<thead><tr><th>" + rotulo + "</th><th>Equipes escaladas</th><th>Equipes que faltaram</th><th>Escalas</th><th>Faltas</th><th>% de falta</th></tr></thead>";
     if (!items.length) {
       el_.innerHTML = thead + '<tbody><tr><td colspan="6" class="cell-empty">Sem dados com os filtros atuais</td></tr></tbody>';
       return;
     }
-    function linha(d, total) {
+    function linha(d, total, pos) {
       // sem meta lançada a linha não tem como ter falta -- marcar é melhor que
       // exibir 0,0% e passar por mês impecável
-      var rot = d.temMeta === false
-        ? d.label + ' <span class="falta-chip is-ghost" title="meta ainda não lançada na planilha: não dá pra apurar falta neste período">meta não lançada</span>'
+      // quem tem lista de equipes abre na linha, e aí o filtro fica no nome;
+      // quem não tem (mês) mantém o clique de filtro na linha inteira, como
+      // era -- pôr nos dois faz o clique no nome marcar e o bubbling até o
+      // <tr> desmarcar em seguida, e o filtro não sai do lugar
+      var abre = !total && d.listaEquipes && d.listaEquipes.length;
+      var nome = (!total && d.clique && abre)
+        ? '<span class="falta-eq"' + d.clique + ">" + d.label + "</span>"
         : d.label;
-      return "<tr" + (total ? ' class="total"' : (d.clique || "")) + '><td class="cell-txt">' + rot + "</td>" +
+      var rot = d.temMeta === false
+        ? nome + ' <span class="falta-chip is-ghost" title="meta ainda não lançada na planilha: não dá pra apurar falta neste período">meta não lançada</span>'
+        : nome;
+      var attrs = total ? ' class="total"' : (abre ? ' data-exp-linha="' + pos + '"' : (d.clique || ""));
+      var tr = "<tr" + attrs + '><td class="cell-txt">' + rot + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.equipes) + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.comFalta) + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.esc) + "</td>" +
         '<td class="falta-n">' + fmtInt.format(d.faltas) + "</td>" + faltaCell(d.pctFalta, d.faltas, d.esc) + "</tr>";
+      if (abre) {
+        tr += '<tr class="exp-detalhe" data-exp-de="' + pos + '" hidden><td colspan="6"><div class="faltas-chips">' +
+          chipsDeEquipes(d.listaEquipes, d.label) + "</div></td></tr>";
+      }
+      return tr;
     }
     // o total só soma o que dá pra apurar: um mês sem meta entraria com escalas
     // e zero falta, diluindo a % de todo mundo
@@ -2867,8 +2900,9 @@ function iniciarPainel(DATA) {
       equipes: Math.max.apply(null, items.map(function (d) { return d.equipes; })),
       comFalta: Math.max.apply(null, items.map(function (d) { return d.comFalta; })),
       pctFalta: tEsc ? tFaltas / tEsc : null };
-    el_.innerHTML = thead + "<tbody>" + items.map(function (d) { return linha(d, false); }).join("") +
+    el_.innerHTML = thead + "<tbody>" + items.map(function (d, i) { return linha(d, false, i); }).join("") +
       (items.length > 1 ? linha(totalRow, true) : "") + "</tbody>";
+    ligaExpansao(el_);
   }
 
   // clicar numa equipe, supervisor ou mês aplica (ou tira) o filtro da sidebar
