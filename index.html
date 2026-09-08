@@ -504,7 +504,7 @@
             <button type="button" class="seg-btn" data-metric="ticket">Ticket Médio</button>
           </div>
           <p class="panel-title" id="rankingProdutividadeTitle">Ranking de Produtividade</p>
-          <p class="panel-caption" id="rankingProdutividadeCaption">Processo Emergencial · cada equipe comparada à média do centro no mês · linha tracejada = 100% da média · selecione um único Mês no filtro lateral</p>
+          <p class="panel-caption" id="rankingProdutividadeCaption">Cada equipe comparada à média do centro no mês · linha tracejada = 100% da média · segue o filtro de Processo · selecione um único Mês no filtro lateral</p>
           <button type="button" class="btn-toggle-values" id="btnToggleValoresRanking">Mostrar valores</button>
         </div>
         <div class="panel" style="margin-bottom:14px">
@@ -1725,7 +1725,7 @@ function iniciarPainel(DATA) {
     maxPillW += PILL_PAD_X * 2 + 2; // +2px de folga p/ arredondamento sub-pixel do getBBox
     var preferredGap = barGap || 32;
     var n_ = n, innerW_ = innerW, groupW, barW, gap;
-    for (var attempt = 0; attempt < 6; attempt++) {
+    for (var attempt = 0; attempt < 10; attempt++) {
       groupW = innerW_ / n_;
       barW = Math.min(38, groupW * 0.24);
       var minGap = Math.max(10, maxPillW - barW);
@@ -1735,9 +1735,16 @@ function iniciarPainel(DATA) {
         break;
       }
       gap = minGap;
-      useW = useW * 1.25;
-      wide = true;
-      innerW_ = useW - padL - padR;
+      // só expande se ainda sobra pelo menos mais uma volta pra usar o novo
+      // useW -- expandir na última tentativa e sair do loop sem recalcular
+      // deixava useW maior do que groupW/barW/gap refletiam: as barras eram
+      // posicionadas pra um canvas estreito dentro de um canvas largo, e as
+      // etiquetas voltavam a sobrepor mesmo com espaço de sobra à direita
+      if (attempt < 9) {
+        useW = useW * 1.25;
+        wide = true;
+        innerW_ = useW - padL - padR;
+      }
     }
     innerW = innerW_;
     svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
@@ -1861,11 +1868,15 @@ function iniciarPainel(DATA) {
     });
     maxLabelW += 8;
     var useW = W, innerW, groupW;
-    for (var attempt = 0; attempt < 6; attempt++) {
+    for (var attempt = 0; attempt < 10; attempt++) {
       innerW = useW - padL - padR;
       groupW = innerW / n;
       if (groupW >= maxLabelW) break;
-      useW = useW * 1.25;
+      // só expande se sobra mais uma volta pra recalcular innerW/groupW com o
+      // novo useW -- expandir na última tentativa sem reusar deixava o canvas
+      // mais largo do que as barras foram de fato posicionadas para, e a
+      // sobreposição que a expansão devia evitar acontecia do mesmo jeito
+      if (attempt < 9) useW = useW * 1.25;
     }
     var barW = Math.min(34, groupW * 0.5);
     var wide = useW > W + 0.5;
@@ -1927,11 +1938,13 @@ function iniciarPainel(DATA) {
       padR = Math.max(padR, Math.ceil(measureTextWidth(svg, t, "axis-label")) + 14);
     });
     var useW = W, innerW, groupW;
-    for (var attempt = 0; attempt < 6; attempt++) {
+    for (var attempt = 0; attempt < 10; attempt++) {
       innerW = useW - padL - padR;
       groupW = innerW / n;
       if (groupW >= maxLabelW && groupW >= 30) break;
-      useW = useW * 1.2;
+      // mesma coisa do gráfico acima: expandir na última volta sem recalcular
+      // só aumenta o canvas, não o espaço que as barras realmente usam
+      if (attempt < 9) useW = useW * 1.2;
     }
     var barW = Math.min(30, groupW * 0.55);
     var wide = useW > W + 0.5;
