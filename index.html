@@ -2474,6 +2474,11 @@ function iniciarPainel(DATA) {
   // ou administrativa; em ob o dicionário de supervisor vem vazio, então é -1
   // em todas). dict[-1] é undefined e vazava "undefined" pra tela.
   function nomeDim(dict, code, fallback) { return dict[code] || fallback; }
+  // Falta só existe onde há meta lançada: sem meta, a linha que não produziu é
+  // indistinguível de folga. A meta costuma entrar por mês fechado, então o mês
+  // corrente fica cego -- e o painel abre filtrado no dia de hoje, ou seja, é
+  // justamente onde mais engana se não avisar.
+  function temMetaLinha(group, rows, i) { return group === "ob" ? rows.meta[i] > 0 : rows.metaQtd[i] > 0; }
   function renderFaltas(group, suf) {
     renderFaltasPorProcesso(group, suf);
     renderFaltasPorSupervisor(group, suf);
@@ -2490,10 +2495,18 @@ function iniciarPainel(DATA) {
     bodyEl.innerHTML = ""; rodapeEl.innerHTML = ""; tbl.classList.remove("is-cortada");
 
     if (!faltas.length) {
+      var semMeta = idxs.length && !idxs.some(function (i) { return temMetaLinha(group, rows, i); });
       titleEl.textContent = "Equipes que faltaram";
-      capEl.textContent = "Escalada sem nenhum serviço no dia";
+      capEl.textContent = semMeta ? "Sem meta lançada não dá pra apurar falta" : "Escalada sem nenhum serviço no dia";
+      if (semMeta) {
+        bodyEl.innerHTML = '<div class="faltas-aviso"><span><b>A meta ainda não foi lançada para este período.</b>' +
+          " Falta é escala sem produção, e o que diz que a equipe estava escalada é a meta do dia — sem ela, quem não produziu" +
+          " fica indistinguível de quem estava de folga, e o painel não consegue apurar nada. <b>Zero falta aqui não quer dizer" +
+          " que ninguém faltou</b>, quer dizer que o dado ainda não chegou.</span></div>";
+      }
       tbl.innerHTML = "<thead><tr><th>Equipe</th></tr></thead>" +
-        '<tbody><tr><td class="cell-empty">Nenhuma falta com os filtros atuais</td></tr></tbody>';
+        '<tbody><tr><td class="cell-empty">' +
+        (semMeta ? "Sem meta lançada no período" : "Nenhuma falta com os filtros atuais") + "</td></tr></tbody>";
       return;
     }
     var badge = ' <span class="faltas-badge">' + fmtInt.format(faltas.length) + (faltas.length === 1 ? " falta de " : " faltas de ") +
@@ -2636,8 +2649,9 @@ function iniciarPainel(DATA) {
       var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
       if (!t && !f) return;
       var p = rows.proc[i];
-      var m = map[p] || (map[p] = { esc: 0, faltas: 0, equipes: {}, equipesFalta: {} });
+      var m = map[p] || (map[p] = { esc: 0, faltas: 0, comMeta: 0, equipes: {}, equipesFalta: {} });
       m.esc++; m.equipes[rows.equipe[i]] = 1;
+      if (temMetaLinha(group, rows, i)) m.comMeta++;
       if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
     });
     var items = Object.keys(map).map(function (p) {
@@ -2645,7 +2659,7 @@ function iniciarPainel(DATA) {
       return { label: nomeDim(D.processo, code, "Sem processo"), esc: m.esc, faltas: m.faltas,
                clique: code >= 0 ? ' data-falta-proc="' + code + '"' : "",
                equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
-               pctFalta: m.esc ? m.faltas / m.esc : null };
+               temMeta: m.comMeta > 0, pctFalta: (m.comMeta && m.esc) ? m.faltas / m.esc : null };
     }).sort(function (a, b) { return b.faltas - a.faltas || a.label.localeCompare(b.label, "pt-BR"); });
     renderFaltasTabela(el_, "Processo", items);
     wireFaltaClicks(group, el_);
@@ -2672,8 +2686,9 @@ function iniciarPainel(DATA) {
       var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
       if (!t && !f) return;
       var s = rows.sup[i];
-      var m = map[s] || (map[s] = { esc: 0, faltas: 0, equipes: {}, equipesFalta: {} });
+      var m = map[s] || (map[s] = { esc: 0, faltas: 0, comMeta: 0, equipes: {}, equipesFalta: {} });
       m.esc++; m.equipes[rows.equipe[i]] = 1;
+      if (temMetaLinha(group, rows, i)) m.comMeta++;
       if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
     });
     var items = Object.keys(map).map(function (s) {
@@ -2683,7 +2698,7 @@ function iniciarPainel(DATA) {
                // lista lateral, então a barra ficaria marcada sem nada aceso
                clique: code >= 0 ? ' data-falta-sup="' + code + '"' : "",
                equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
-               pctFalta: m.esc ? m.faltas / m.esc : null };
+               temMeta: m.comMeta > 0, pctFalta: (m.comMeta && m.esc) ? m.faltas / m.esc : null };
     }).sort(function (a, b) { return b.faltas - a.faltas || a.label.localeCompare(b.label, "pt-BR"); });
     renderFaltasTabela(el_, "Supervisor", items);
     wireFaltaClicks(group, el_);
@@ -2702,8 +2717,9 @@ function iniciarPainel(DATA) {
       var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
       if (!t && !f) continue;
       var mk = rows.date[i].slice(0, 7);
-      var m = map[mk] || (map[mk] = { esc: 0, faltas: 0, equipes: {}, equipesFalta: {} });
+      var m = map[mk] || (map[mk] = { esc: 0, faltas: 0, comMeta: 0, equipes: {}, equipesFalta: {} });
       m.esc++; m.equipes[rows.equipe[i]] = 1;
+      if (temMetaLinha(group, rows, i)) m.comMeta++;
       if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
     }
     var items = Object.keys(map).sort().map(function (mk) {
@@ -2711,7 +2727,7 @@ function iniciarPainel(DATA) {
       return { label: MONTH_FULL[mi], esc: m.esc, faltas: m.faltas,
                clique: ' data-falta-mes="' + mk + '"',
                equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
-               pctFalta: m.esc ? m.faltas / m.esc : null };
+               temMeta: m.comMeta > 0, pctFalta: (m.comMeta && m.esc) ? m.faltas / m.esc : null };
     });
     renderFaltasTabela(el_, "Mês", items);
     wireFaltaClicks(group, el_);
@@ -2724,14 +2740,22 @@ function iniciarPainel(DATA) {
       return;
     }
     function linha(d, total) {
-      return "<tr" + (total ? ' class="total"' : (d.clique || "")) + '><td class="cell-txt">' + d.label + "</td>" +
+      // sem meta lançada a linha não tem como ter falta -- marcar é melhor que
+      // exibir 0,0% e passar por mês impecável
+      var rot = d.temMeta === false
+        ? d.label + ' <span class="falta-chip is-ghost" title="meta ainda não lançada na planilha: não dá pra apurar falta neste período">meta não lançada</span>'
+        : d.label;
+      return "<tr" + (total ? ' class="total"' : (d.clique || "")) + '><td class="cell-txt">' + rot + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.equipes) + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.comFalta) + "</td>" +
         '<td class="cell-plain">' + fmtInt.format(d.esc) + "</td>" +
         '<td class="falta-n">' + fmtInt.format(d.faltas) + "</td>" + faltaCell(d.pctFalta, d.faltas, d.esc) + "</tr>";
     }
-    var tEsc = items.reduce(function (s, d) { return s + d.esc; }, 0);
-    var tFaltas = items.reduce(function (s, d) { return s + d.faltas; }, 0);
+    // o total só soma o que dá pra apurar: um mês sem meta entraria com escalas
+    // e zero falta, diluindo a % de todo mundo
+    var apuraveis = items.filter(function (d) { return d.temMeta !== false; });
+    var tEsc = apuraveis.reduce(function (s, d) { return s + d.esc; }, 0);
+    var tFaltas = apuraveis.reduce(function (s, d) { return s + d.faltas; }, 0);
     // equipes distintas não somam entre linhas (a mesma equipe aparece em
     // vários meses/supervisores), então o total mostra o maior valor visto
     var totalRow = { label: "Total", esc: tEsc, faltas: tFaltas,

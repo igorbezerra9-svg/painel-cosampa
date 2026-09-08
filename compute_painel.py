@@ -63,6 +63,21 @@ def to_num(series):
     return series.apply(parse)
 
 
+def so_ate_hoje(df, col):
+    """Descarta linha de dia que ainda não aconteceu.
+
+    O export de Obras traz a escala do mês inteiro de uma vez, com meta_valor
+    preenchido e valor_total zerado nos dias futuros -- e "faltou" é exatamente
+    valor_total == 0 com meta_valor > 0. Sem este corte, em 08/09/2026 os 22
+    dias restantes de setembro entravam como falta: 543 faltas fantasmas, 25%
+    de todas as faltas de Obras do ano, e setembro aparecia com 87,5% de falta
+    em vez dos 49,7% reais. O export de faturamento não tem esse problema
+    (para no dia corrente), mas o corte vale para os dois pelo mesmo motivo.
+    """
+    hoje = pd.Timestamp(datetime.now(BRASILIA).date())
+    return df[df[col] <= hoje]
+
+
 def col_ci(df, name):
     """Case-insensitive column lookup — Google Sheets export changed the
     capitalization of a couple of headers (e.g. produtividade -> Produtividade)."""
@@ -76,6 +91,7 @@ def transform_ec(df, sup, centro, proc, equipe):
     df = df.copy()
     df["data"] = pd.to_datetime(df["data"], dayfirst=True, errors="coerce")
     df = df.dropna(subset=["data"])
+    df = so_ate_hoje(df, "data")
     df["valor_total"] = to_num(df["valor_total"])
     df["meta_valor"] = to_num(df["meta_valor"])
     df["qtd_serv"] = to_num(df["qtd_serv"])
@@ -104,6 +120,7 @@ def transform_obras(df, sup, centro, proc, equipe):
     df = df.copy()
     df["dia_interv"] = pd.to_datetime(df["dia_interv"], dayfirst=True, errors="coerce")
     df = df.dropna(subset=["dia_interv"])
+    df = so_ate_hoje(df, "dia_interv")
     df["valor_total"] = to_num(df["valor_total"])
     df["meta_valor"] = to_num(df["meta_valor"])
     df["qtd_serv"] = to_num(df["qtd_serv"])
