@@ -2237,7 +2237,9 @@ function iniciarPainel(DATA) {
     function add(map, mk, i) {
       if (!map[mk]) map[mk] = { trabalhouNum: 0, escaladoDias: new Set() };
       if (isTrabalhou(group, rows, i)) map[mk].trabalhouNum++;
-      if (rows.metaQtd[i] > 0) map[mk].escaladoDias.add(rows.date[i]);
+      // mesmo "escalado" do resto do painel (trabalhou + faltou), senão esta
+      // tela discordaria da aba Faltas -- e ficava cega no mês corrente igual
+      if (isTrabalhou(group, rows, i) || isFaltou(group, rows, i)) map[mk].escaladoDias.add(rows.date[i]);
     }
     for (var i = 0; i < rows.date.length; i++) {
       if (!matchAllExceptCentro(group, i)) continue;
@@ -2478,7 +2480,16 @@ function iniciarPainel(DATA) {
   // indistinguível de folga. A meta costuma entrar por mês fechado, então o mês
   // corrente fica cego -- e o painel abre filtrado no dia de hoje, ou seja, é
   // justamente onde mais engana se não avisar.
-  function temMetaLinha(group, rows, i) { return group === "ob" ? rows.meta[i] > 0 : rows.metaQtd[i] > 0; }
+  function temMetaLinha(group, rows, i) { return rows.meta[i] > 0; }
+  // O último dia que existe no dado é o dia corrente, e ele está em andamento:
+  // equipe que ainda não fechou serviço aparece com produtividade 0, ou seja,
+  // como falta. Comparar com o dado em vez de com o relógio do navegador
+  // porque é o dado que define até onde dá pra apurar.
+  function ultimoDiaDoDado(group) {
+    var rows = GROUPS[group].rows, max = "";
+    for (var i = 0; i < rows.date.length; i++) if (rows.date[i] > max) max = rows.date[i];
+    return max;
+  }
   function renderFaltas(group, suf) {
     renderFaltasPorProcesso(group, suf);
     renderFaltasPorSupervisor(group, suf);
@@ -2517,6 +2528,12 @@ function iniciarPainel(DATA) {
       var dt = datas[0];
       titleEl.innerHTML = "Equipes que faltaram em " + dt.slice(8, 10) + "/" + dt.slice(5, 7) + badge;
       capEl.textContent = "Escalada sem nenhum serviço no dia · clique numa equipe pra filtrar por ela";
+      var avisoDia = dt === ultimoDiaDoDado(group)
+        ? '<div class="faltas-aviso"><span><b>Dia em andamento.</b> Equipe que ainda não fechou serviço aparece' +
+          " aqui como falta, então este número só fica confiável no fim do dia — no fechamento de agosto um dia" +
+          " útil ficou entre 8% e 12% de falta, e o dia corrente costuma aparecer bem acima disso enquanto a" +
+          " produção não entra.</span></div>"
+        : "";
       var porCentro = {};
       faltas.forEach(function (i) { (porCentro[rows.centro[i]] = porCentro[rows.centro[i]] || []).push(i); });
       var cards = Object.keys(porCentro).sort(function (a, b) { return porCentro[b].length - porCentro[a].length; }).map(function (c) {
@@ -2528,7 +2545,7 @@ function iniciarPainel(DATA) {
         return '<div class="faltas-centro"><div class="faltas-centro-head"><span class="faltas-centro-nome">' + nomeDim(D.centro, c, "Sem centro") +
           '</span><span class="faltas-centro-n">' + lista.length + '</span></div><div class="faltas-chips">' + chips + "</div></div>";
       }).join("");
-      bodyEl.innerHTML = '<div class="faltas-centros">' + cards + "</div>";
+      bodyEl.innerHTML = avisoDia + '<div class="faltas-centros">' + cards + "</div>";
 
       var ordDia = faltas.slice().sort(function (a, b) {
         return nomeDim(D.centro, rows.centro[a], "Sem centro").localeCompare(nomeDim(D.centro, rows.centro[b], "Sem centro"), "pt-BR") ||
@@ -2796,8 +2813,20 @@ function iniciarPainel(DATA) {
     liga("data-falta-mes", "mes", function (v) { return v; });
   }
 
-  function isTrabalhou(group, rows, i) { return group === "ob" ? rows.status[i] === 0 : rows.qtd[i] > 0; }
-  function isFaltou(group, rows, i) { return group === "ob" ? rows.status[i] === 1 : (rows.metaQtd[i] > 0 && rows.qtd[i] === 0); }
+  // Faturamento usa a coluna Produtividade da planilha (1 = produziu, 0 = não) e
+  // decide folga pelos valores em R$ -- meta e realizado zerados -- que é o
+  // mesmo teste que Obras já fazia. Antes o "estava escalada" vinha de
+  // meta_qtd, e isso tinha dois problemas: a meta_qtd só é lançada no
+  // fechamento do mês, então o mês corrente ficava cego (em 08/09 setembro
+  // tinha 0 faltas apuráveis; com meta_valor são 133); e ela discordava da
+  // meta_valor em 323 linhas do ano, sendo que as 157 que ela marcava como
+  // falta a mais estavam 80% sem motivo preenchido, enquanto as 166 que ela
+  // deixava passar tinham motivo documentado (operacional, demissão, férias).
+  function isTrabalhou(group, rows, i) { return group === "ob" ? rows.status[i] === 0 : rows.prod[i] === 1; }
+  function isFaltou(group, rows, i) {
+    if (group === "ob") return rows.status[i] === 1;
+    return rows.prod[i] === 0 && !(rows.meta[i] === 0 && rows.valor[i] === 0);
+  }
 
   function renderEscalado(group, chartId, tblEscId, tblTrabId) {
     var idxs = currentIdxs(group), rows = GROUPS[group].rows;
