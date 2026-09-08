@@ -303,7 +303,9 @@
   .falta-eq { font-size: 12.5px; font-weight: 800; color: var(--text-primary); cursor: pointer; }
   .falta-eq:hover { color: var(--status-crit); }
   .falta-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .falta-nums { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+  .falta-nums { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .falta-aat-lbl { font-size: 9.5px; font-weight: 800; letter-spacing: .06em; color: var(--text-muted); text-transform: uppercase; }
+  .faltas-sub-caption { font-size: 11px; color: var(--text-muted); margin: 0 46px 12px 0; }
   .falta-n { font-size: 12.5px; font-weight: 800; color: var(--status-crit); font-variant-numeric: tabular-nums; }
   .falta-n small { font-weight: 700; color: var(--text-muted); font-size: 10.5px; }
   .falta-strip { grid-column: 1 / -1; display: flex; gap: 2px; margin-top: 3px; }
@@ -560,6 +562,18 @@
           <p class="panel-caption" id="faltasCaptionFat"></p>
           <div id="faltasBodyFat"></div>
         </div>
+        <div class="stack-1" style="margin-top:14px">
+          <div class="panel" id="panelFaltasSupFat" style="margin-bottom:14px">
+            <p class="panel-title">Faltas por supervisor</p>
+            <p class="panel-caption" id="faltasSupCaptionFat">Mesmo recorte do quadro de cima · ordenado por nº de faltas</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasSupFat"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Faltas mês a mês</p>
+            <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasMesFat"></table></div>
+          </div>
+        </div>
       </section>
 
       <section class="page" id="page-consolidadoCentro">
@@ -660,6 +674,18 @@
           <p class="panel-title" id="faltasTitleOb">Equipes que faltaram</p>
           <p class="panel-caption" id="faltasCaptionOb"></p>
           <div id="faltasBodyOb"></div>
+        </div>
+        <div class="stack-1" style="margin-top:14px">
+          <div class="panel" id="panelFaltasSupOb" style="margin-bottom:14px">
+            <p class="panel-title">Faltas por supervisor</p>
+            <p class="panel-caption" id="faltasSupCaptionOb">Mesmo recorte do quadro de cima · ordenado por nº de faltas</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasSupOb"></table></div>
+          </div>
+          <div class="panel">
+            <p class="panel-title">Faltas mês a mês</p>
+            <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasMesOb"></table></div>
+          </div>
         </div>
       </section>
 
@@ -2213,6 +2239,14 @@ function iniciarPainel(DATA) {
   // equipe apareceria em amarelo/vermelho mesmo com presença muito boa)
   function aatClass(v) { if (v == null) return "cell-empty"; if (v >= 0.95) return "cell-good"; if (v >= 0.85) return "cell-warn"; return "cell-crit"; }
   function aatCell(v) { return '<td><span class="pill ' + aatClass(v) + '">' + fmtPct(v) + "</span></td>"; }
+  // no painel de faltas a leitura é ao contrário do %AAT: o número grande é a
+  // falta, então a porcentagem também é de falta (24 de 25 = 96%, não 4%).
+  // Os limites são o espelho do aatClass pra cor continuar querendo dizer a
+  // mesma coisa: até 5% de falta é bom, até 15% é atenção, acima é crítico.
+  function faltaClass(v) { if (v == null) return "cell-empty"; if (v <= 0.05) return "cell-good"; if (v <= 0.15) return "cell-warn"; return "cell-crit"; }
+  function faltaCell(v, faltas, esc) {
+    return '<td><span class="pill ' + faltaClass(v) + '" title="faltas ÷ escalas = ' + faltas + " ÷ " + esc + '">' + fmtPct(v) + "</span></td>";
+  }
   function intCell(v) { return '<td class="cell-plain">' + fmtInt.format(v) + "</td>"; }
   function brlCell(v) { return '<td class="cell-plain">' + fmtFullBRL(v) + "</td>"; }
   function numCell2(v) { return '<td class="cell-plain">' + fmtNum(v, 2) + "</td>"; }
@@ -2397,9 +2431,16 @@ function iniciarPainel(DATA) {
   //   N datas -> ranking por equipe + fitinha mostrando em que dias faltou,
   //              pra não perder a leitura por dia quando se olha o mês inteiro.
   var FALTAS_LIMITE = 15;
-  function renderFaltas(group, titleId, captionId, bodyId) {
+  // o dados.json traz -1 em sup/centro/proc pras linhas que não têm esse
+  // cadastro (em ec são ~1.5k linhas, quase todas de equipe de outra regional
+  // ou administrativa; em ob o dicionário de supervisor vem vazio, então é -1
+  // em todas). dict[-1] é undefined e vazava "undefined" pra tela.
+  function nomeDim(dict, code, fallback) { return dict[code] || fallback; }
+  function renderFaltas(group, suf) {
+    renderFaltasPorSupervisor(group, suf);
+    renderFaltasPorMes(group, suf);
     var idxs = currentIdxs(group), rows = GROUPS[group].rows, D = GROUPS[group].dicts;
-    var titleEl = document.getElementById(titleId), capEl = document.getElementById(captionId), bodyEl = document.getElementById(bodyId);
+    var titleEl = document.getElementById("faltasTitle" + suf), capEl = document.getElementById("faltasCaption" + suf), bodyEl = document.getElementById("faltasBody" + suf);
     if (!titleEl) return;
     var faltas = idxs.filter(function (i) { return isFaltou(group, rows, i); });
     var escalas = idxs.filter(function (i) { return isTrabalhou(group, rows, i) || isFaltou(group, rows, i); }).length;
@@ -2424,10 +2465,10 @@ function iniciarPainel(DATA) {
       var cards = Object.keys(porCentro).sort(function (a, b) { return porCentro[b].length - porCentro[a].length; }).map(function (c) {
         var lista = porCentro[c].slice().sort(function (a, b) { return D.equipe[rows.equipe[a]].localeCompare(D.equipe[rows.equipe[b]], "pt-BR"); });
         var chips = lista.map(function (i) {
-          var tip = D.supervisor[rows.sup[i]] + " · " + D.processo[rows.proc[i]];
+          var tip = nomeDim(D.supervisor, rows.sup[i], "Sem supervisor") + " · " + nomeDim(D.processo, rows.proc[i], "Sem processo");
           return '<span class="falta-chip" data-falta-equipe="' + rows.equipe[i] + '" title="' + escapeAttr(tip) + '">' + D.equipe[rows.equipe[i]] + "</span>";
         }).join("");
-        return '<div class="faltas-centro"><div class="faltas-centro-head"><span class="faltas-centro-nome">' + D.centro[c] +
+        return '<div class="faltas-centro"><div class="faltas-centro-head"><span class="faltas-centro-nome">' + nomeDim(D.centro, c, "Sem centro") +
           '</span><span class="faltas-centro-n">' + lista.length + '</span></div><div class="faltas-chips">' + chips + "</div></div>";
       }).join("");
       bodyEl.innerHTML = '<div class="faltas-centros">' + cards + "</div>";
@@ -2453,7 +2494,7 @@ function iniciarPainel(DATA) {
     // ocupa as primeiras linhas e esconde quem de fato está faltando.
     var items = Object.keys(agg).filter(function (e) { return agg[e].faltas > 0; }).map(function (e) {
       var a = agg[e];
-      return { code: e, nome: D.equipe[e], centro: D.centro[a.centro], sup: D.supervisor[a.sup],
+      return { code: e, nome: D.equipe[e], centro: nomeDim(D.centro, a.centro, "Sem centro"), sup: nomeDim(D.supervisor, a.sup, "Sem supervisor"),
                faltas: a.faltas, esc: a.esc, dias: a.dias, ghost: a.faltas === a.esc };
     }).sort(function (x, y) {
       if (x.ghost !== y.ghost) return x.ghost ? 1 : -1;
@@ -2483,13 +2524,13 @@ function iniciarPainel(DATA) {
           return '<i class="' + (faltouNoDia ? "on" : "") + '" title="dia ' + n + (faltouNoDia ? " — faltou" : " — trabalhou") + '"></i>';
         }).join("") + "</div>";
       }
-      var aat = d.esc ? (d.esc - d.faltas) / d.esc : null;
+      var pctFalta = d.esc ? d.faltas / d.esc : null;
       return '<div class="falta-row' + (pos >= FALTAS_LIMITE ? " is-extra" : "") + '"><div>' +
         '<div class="falta-eq" data-falta-equipe="' + d.code + '">' + d.nome +
         (d.ghost ? ' <span class="falta-chip is-ghost" title="faltou em 100% das escalas do período">sem produção no período</span>' : "") +
         '</div><div class="falta-sub">' + d.centro + " · " + d.sup + "</div></div>" +
-        '<div class="falta-nums"><span class="falta-n">' + d.faltas + " <small>de " + d.esc + "</small></span>" +
-        '<span class="pill ' + aatClass(aat) + '">' + fmtPct(aat) + "</span></div>" + strip + "</div>";
+        '<div class="falta-nums"><span class="falta-n" title="' + d.faltas + " faltas em " + d.esc + ' escalas">' + d.faltas + " <small>de " + d.esc + "</small></span>" +
+        '<span class="falta-aat-lbl">faltou</span><span class="pill ' + faltaClass(pctFalta) + '" title="faltas ÷ escalas = ' + d.faltas + " ÷ " + d.esc + '">' + fmtPct(pctFalta) + "</span></div>" + strip + "</div>";
     }).join("");
 
     var temMais = items.length > FALTAS_LIMITE;
@@ -2505,6 +2546,93 @@ function iniciarPainel(DATA) {
       btn.textContent = cortada ? "Mostrar todas as " + items.length + " equipes" : "Mostrar só as " + FALTAS_LIMITE + " primeiras";
     });
     wireFaltaClicks(group, bodyEl);
+  }
+
+  // Quem faltou, somado por supervisor, no mesmo recorte do quadro de cima.
+  // "Equipes" conta equipe distinta, não linha: uma equipe que faltou 10 dias
+  // conta 1 em "com falta" e 10 em "faltas".
+  function renderFaltasPorSupervisor(group, suf) {
+    var el_ = document.getElementById("tblFaltasSup" + suf);
+    if (!el_) return;
+    var idxs = currentIdxs(group), rows = GROUPS[group].rows, D = GROUPS[group].dicts;
+    // Obras não traz supervisor no export (dicionário vazio), então o quadro
+    // inteiro seria uma linha só de "Sem supervisor" -- some com ele.
+    var painel = document.getElementById("panelFaltasSup" + suf);
+    if (painel) painel.hidden = !D.supervisor.length;
+    if (!D.supervisor.length) return;
+    var cap = document.getElementById("faltasSupCaption" + suf);
+    var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
+    if (cap) cap.textContent = (datas.length === 1
+      ? "Só o dia " + datas[0].slice(8, 10) + "/" + datas[0].slice(5, 7)
+      : "Mesmo recorte do quadro de cima") + " · ordenado por nº de faltas";
+
+    var map = {};
+    idxs.forEach(function (i) {
+      var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
+      if (!t && !f) return;
+      var s = rows.sup[i];
+      var m = map[s] || (map[s] = { esc: 0, faltas: 0, equipes: {}, equipesFalta: {} });
+      m.esc++; m.equipes[rows.equipe[i]] = 1;
+      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
+    });
+    var items = Object.keys(map).map(function (s) {
+      var m = map[s];
+      return { label: nomeDim(D.supervisor, s, "Sem supervisor"), esc: m.esc, faltas: m.faltas,
+               equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
+               pctFalta: m.esc ? m.faltas / m.esc : null };
+    }).sort(function (a, b) { return b.faltas - a.faltas || a.label.localeCompare(b.label, "pt-BR"); });
+    renderFaltasTabela(el_, "Supervisor", items);
+  }
+
+  // Faltas mês a mês. Ignora Mês e Dia de propósito -- filtrado num mês só,
+  // uma tabela "por mês" teria uma linha e não serviria pra comparar nada.
+  // Os outros filtros (supervisor, centro, processo, equipe) continuam valendo.
+  function renderFaltasPorMes(group, suf) {
+    var el_ = document.getElementById("tblFaltasMes" + suf);
+    if (!el_) return;
+    var rows = GROUPS[group].rows;
+    var map = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      if (!matchDims(group, i)) continue;
+      var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
+      if (!t && !f) continue;
+      var mk = rows.date[i].slice(0, 7);
+      var m = map[mk] || (map[mk] = { esc: 0, faltas: 0, equipes: {}, equipesFalta: {} });
+      m.esc++; m.equipes[rows.equipe[i]] = 1;
+      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
+    }
+    var items = Object.keys(map).sort().map(function (mk) {
+      var m = map[mk], mi = parseInt(mk.slice(5, 7), 10) - 1;
+      return { label: MONTH_FULL[mi], esc: m.esc, faltas: m.faltas,
+               equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
+               pctFalta: m.esc ? m.faltas / m.esc : null };
+    });
+    renderFaltasTabela(el_, "Mês", items);
+  }
+
+  function renderFaltasTabela(el_, rotulo, items) {
+    var thead = "<thead><tr><th>" + rotulo + "</th><th>Equipes escaladas</th><th>Equipes que faltaram</th><th>Escalas</th><th>Faltas</th><th>% de falta</th></tr></thead>";
+    if (!items.length) {
+      el_.innerHTML = thead + '<tbody><tr><td colspan="6" class="cell-empty">Sem dados com os filtros atuais</td></tr></tbody>';
+      return;
+    }
+    function linha(d, total) {
+      return "<tr" + (total ? ' class="total"' : "") + "><td>" + d.label + "</td>" +
+        '<td class="cell-plain">' + fmtInt.format(d.equipes) + "</td>" +
+        '<td class="cell-plain">' + fmtInt.format(d.comFalta) + "</td>" +
+        '<td class="cell-plain">' + fmtInt.format(d.esc) + "</td>" +
+        '<td class="cell-plain">' + fmtInt.format(d.faltas) + "</td>" + faltaCell(d.pctFalta, d.faltas, d.esc) + "</tr>";
+    }
+    var tEsc = items.reduce(function (s, d) { return s + d.esc; }, 0);
+    var tFaltas = items.reduce(function (s, d) { return s + d.faltas; }, 0);
+    // equipes distintas não somam entre linhas (a mesma equipe aparece em
+    // vários meses/supervisores), então o total mostra o maior valor visto
+    var totalRow = { label: "Total", esc: tEsc, faltas: tFaltas,
+      equipes: Math.max.apply(null, items.map(function (d) { return d.equipes; })),
+      comFalta: Math.max.apply(null, items.map(function (d) { return d.comFalta; })),
+      pctFalta: tEsc ? tFaltas / tEsc : null };
+    el_.innerHTML = thead + "<tbody>" + items.map(function (d) { return linha(d, false); }).join("") +
+      (items.length > 1 ? linha(totalRow, true) : "") + "</tbody>";
   }
 
   // clicar no nome/chip da equipe aplica (ou tira) o filtro de Equipe da sidebar
@@ -2916,7 +3044,7 @@ function iniciarPainel(DATA) {
       renderComparativoMensalTable();
     } else if (activePage === "escaladoFat") {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
-      renderFaltas("ec", "faltasTitleFat", "faltasCaptionFat", "faltasBodyFat");
+      renderFaltas("ec", "Fat");
     } else if (activePage === "consolidadoCentro") {
       renderConsolidadoCentro();
     } else if (activePage === "rankingProdutividade") {
@@ -2934,7 +3062,7 @@ function iniciarPainel(DATA) {
       renderChartMesCentroTable("tblChartCentroOb", centroItemsOb);
     } else if (activePage === "escaladoOb") {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
-      renderFaltas("ob", "faltasTitleOb", "faltasCaptionOb", "faltasBodyOb");
+      renderFaltas("ob", "Ob");
     }
     reconferirEscala();
   }
