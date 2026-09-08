@@ -359,10 +359,12 @@
     <button class="tab-btn" data-page="rankingProdutividade" type="button">Ranking de Produtividade</button>
     <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
+    <button class="tab-btn" data-page="faltasFat" type="button">Faltas</button>
     <button class="tab-btn" data-page="consolidadoCentro" type="button">Consolidado por Centro</button>
     <span class="tab-sep"></span>
     <button class="tab-btn" data-page="geralOb" type="button">Painel Geral - Obras</button>
     <button class="tab-btn" data-page="escaladoOb" type="button">Requerido x Escalado - Obras</button>
+    <button class="tab-btn" data-page="faltasOb" type="button">Faltas - Obras</button>
   </div>
 
   <div class="app">
@@ -554,23 +556,31 @@
             <div class="tablewrap"><table class="datatable sticky-col" id="tblTrabalhadoCentroDiaFat"></table></div>
           </div>
         </div>
-        <div class="panel" id="panelFaltasFat" style="margin-top:14px">
-          <p class="panel-title" id="faltasTitleFat">Equipes que faltaram</p>
-          <p class="panel-caption" id="faltasCaptionFat"></p>
-          <div id="faltasBodyFat"></div>
-          <div class="tablewrap"><table class="datatable" id="tblFaltasRankFat"></table></div>
-          <div id="faltasRodapeFat"></div>
-        </div>
-        <div class="stack-1" style="margin-top:14px">
+      </section>
+
+      <section class="page" id="page-faltasFat">
+        <div class="stack-1">
+          <div class="panel" style="margin-bottom:14px">
+            <p class="panel-title">Faltas mês a mês</p>
+            <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe · clique num mês pra filtrar por ele</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasMesFat"></table></div>
+          </div>
+          <div class="panel" style="margin-bottom:14px">
+            <p class="panel-title">Faltas por processo</p>
+            <p class="panel-caption" id="faltasProcCaptionFat">Mesmo recorte dos filtros atuais · ordenado por nº de faltas</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasProcFat"></table></div>
+          </div>
           <div class="panel" id="panelFaltasSupFat" style="margin-bottom:14px">
             <p class="panel-title">Faltas por supervisor</p>
-            <p class="panel-caption" id="faltasSupCaptionFat">Mesmo recorte do quadro de cima · ordenado por nº de faltas</p>
+            <p class="panel-caption" id="faltasSupCaptionFat">Mesmo recorte dos filtros atuais · ordenado por nº de faltas</p>
             <div class="tablewrap"><table class="datatable" id="tblFaltasSupFat"></table></div>
           </div>
-          <div class="panel">
-            <p class="panel-title">Faltas mês a mês</p>
-            <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe</p>
-            <div class="tablewrap"><table class="datatable" id="tblFaltasMesFat"></table></div>
+          <div class="panel" id="panelFaltasFat">
+            <p class="panel-title" id="faltasTitleFat">Equipes que faltaram</p>
+            <p class="panel-caption" id="faltasCaptionFat"></p>
+            <div id="faltasBodyFat"></div>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasRankFat"></table></div>
+            <div id="faltasRodapeFat"></div>
           </div>
         </div>
       </section>
@@ -669,23 +679,31 @@
             <div class="tablewrap"><table class="datatable sticky-col" id="tblTrabalhadoCentroDia"></table></div>
           </div>
         </div>
-        <div class="panel" id="panelFaltasOb" style="margin-top:14px">
-          <p class="panel-title" id="faltasTitleOb">Equipes que faltaram</p>
-          <p class="panel-caption" id="faltasCaptionOb"></p>
-          <div id="faltasBodyOb"></div>
-          <div class="tablewrap"><table class="datatable" id="tblFaltasRankOb"></table></div>
-          <div id="faltasRodapeOb"></div>
-        </div>
-        <div class="stack-1" style="margin-top:14px">
+      </section>
+
+      <section class="page" id="page-faltasOb">
+        <div class="stack-1">
+          <div class="panel" style="margin-bottom:14px">
+            <p class="panel-title">Faltas mês a mês</p>
+            <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe · clique num mês pra filtrar por ele</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasMesOb"></table></div>
+          </div>
+          <div class="panel" style="margin-bottom:14px">
+            <p class="panel-title">Faltas por processo</p>
+            <p class="panel-caption" id="faltasProcCaptionOb">Mesmo recorte dos filtros atuais · ordenado por nº de faltas</p>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasProcOb"></table></div>
+          </div>
           <div class="panel" id="panelFaltasSupOb" style="margin-bottom:14px">
             <p class="panel-title">Faltas por supervisor</p>
-            <p class="panel-caption" id="faltasSupCaptionOb">Mesmo recorte do quadro de cima · ordenado por nº de faltas</p>
+            <p class="panel-caption" id="faltasSupCaptionOb">Mesmo recorte dos filtros atuais · ordenado por nº de faltas</p>
             <div class="tablewrap"><table class="datatable" id="tblFaltasSupOb"></table></div>
           </div>
-          <div class="panel">
-            <p class="panel-title">Faltas mês a mês</p>
-            <p class="panel-caption">Ignora os filtros de Mês e Dia de propósito, pra dar pra comparar os meses entre si · segue Supervisor, Centro de Serviço, Processo e Equipe</p>
-            <div class="tablewrap"><table class="datatable" id="tblFaltasMesOb"></table></div>
+          <div class="panel" id="panelFaltasOb">
+            <p class="panel-title" id="faltasTitleOb">Equipes que faltaram</p>
+            <p class="panel-caption" id="faltasCaptionOb"></p>
+            <div id="faltasBodyOb"></div>
+            <div class="tablewrap"><table class="datatable" id="tblFaltasRankOb"></table></div>
+            <div id="faltasRodapeOb"></div>
           </div>
         </div>
       </section>
@@ -736,8 +754,8 @@ function iniciarPainel(DATA) {
   };
   var PAGE_GROUP = {
     geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
-    consolidadoCentro: "ec", rankingProdutividade: "ec",
-    geralOb: "ob", escaladoOb: "ob"
+    consolidadoCentro: "ec", rankingProdutividade: "ec", faltasFat: "ec",
+    geralOb: "ob", escaladoOb: "ob", faltasOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
   var EQUIPE_PAGES = { analiseEquipes: true, comparativoMensal: true };
@@ -2457,6 +2475,7 @@ function iniciarPainel(DATA) {
   // em todas). dict[-1] é undefined e vazava "undefined" pra tela.
   function nomeDim(dict, code, fallback) { return dict[code] || fallback; }
   function renderFaltas(group, suf) {
+    renderFaltasPorProcesso(group, suf);
     renderFaltasPorSupervisor(group, suf);
     renderFaltasPorMes(group, suf);
     var idxs = currentIdxs(group), rows = GROUPS[group].rows, D = GROUPS[group].dicts;
@@ -2594,6 +2613,44 @@ function iniciarPainel(DATA) {
     wireFaltaClicks(group, painel);
   }
 
+  // Como as tabelas de resumo dizem qual recorte estão mostrando: com um dia
+  // marcado é aquele dia, senão é o que os filtros deixaram passar.
+  function recorteAtual(datas) {
+    if (datas.length === 1) return "Só o dia " + datas[0].slice(8, 10) + "/" + datas[0].slice(5, 7);
+    return "Mesmo recorte dos filtros atuais";
+  }
+
+  // Quem faltou, somado por processo. Mesmo formato da tabela de supervisor --
+  // é o degrau do meio do funil: o mês diz quando piorou, o processo diz em
+  // que tipo de serviço, o supervisor diz com quem, a lista diz quais equipes.
+  function renderFaltasPorProcesso(group, suf) {
+    var el_ = document.getElementById("tblFaltasProc" + suf);
+    if (!el_) return;
+    var idxs = currentIdxs(group), rows = GROUPS[group].rows, D = GROUPS[group].dicts;
+    var cap = document.getElementById("faltasProcCaption" + suf);
+    var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
+    if (cap) cap.textContent = recorteAtual(datas) + " · ordenado por nº de faltas · clique num processo pra filtrar por ele";
+
+    var map = {};
+    idxs.forEach(function (i) {
+      var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
+      if (!t && !f) return;
+      var p = rows.proc[i];
+      var m = map[p] || (map[p] = { esc: 0, faltas: 0, equipes: {}, equipesFalta: {} });
+      m.esc++; m.equipes[rows.equipe[i]] = 1;
+      if (f) { m.faltas++; m.equipesFalta[rows.equipe[i]] = 1; }
+    });
+    var items = Object.keys(map).map(function (p) {
+      var m = map[p], code = parseInt(p, 10);
+      return { label: nomeDim(D.processo, code, "Sem processo"), esc: m.esc, faltas: m.faltas,
+               clique: code >= 0 ? ' data-falta-proc="' + code + '"' : "",
+               equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
+               pctFalta: m.esc ? m.faltas / m.esc : null };
+    }).sort(function (a, b) { return b.faltas - a.faltas || a.label.localeCompare(b.label, "pt-BR"); });
+    renderFaltasTabela(el_, "Processo", items);
+    wireFaltaClicks(group, el_);
+  }
+
   // Quem faltou, somado por supervisor, no mesmo recorte do quadro de cima.
   // "Equipes" conta equipe distinta, não linha: uma equipe que faltou 10 dias
   // conta 1 em "com falta" e 10 em "faltas".
@@ -2608,9 +2665,7 @@ function iniciarPainel(DATA) {
     if (!D.supervisor.length) return;
     var cap = document.getElementById("faltasSupCaption" + suf);
     var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
-    if (cap) cap.textContent = (datas.length === 1
-      ? "Só o dia " + datas[0].slice(8, 10) + "/" + datas[0].slice(5, 7)
-      : "Mesmo recorte do quadro de cima") + " · ordenado por nº de faltas · clique num supervisor pra ver só as equipes dele";
+    if (cap) cap.textContent = recorteAtual(datas) + " · ordenado por nº de faltas · clique num supervisor pra ver só as equipes dele";
 
     var map = {};
     idxs.forEach(function (i) {
@@ -2713,6 +2768,7 @@ function iniciarPainel(DATA) {
     }
     liga("data-falta-equipe", "equipe", function (v) { return parseInt(v, 10); });
     liga("data-falta-sup", "sup", function (v) { return parseInt(v, 10); });
+    liga("data-falta-proc", "proc", function (v) { return parseInt(v, 10); });
     liga("data-falta-mes", "mes", function (v) { return v; });
   }
 
@@ -3114,6 +3170,7 @@ function iniciarPainel(DATA) {
       renderComparativoMensalTable();
     } else if (activePage === "escaladoFat") {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
+    } else if (activePage === "faltasFat") {
       renderFaltas("ec", "Fat");
     } else if (activePage === "consolidadoCentro") {
       renderConsolidadoCentro();
@@ -3132,6 +3189,7 @@ function iniciarPainel(DATA) {
       renderChartMesCentroTable("tblChartCentroOb", centroItemsOb);
     } else if (activePage === "escaladoOb") {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
+    } else if (activePage === "faltasOb") {
       renderFaltas("ob", "Ob");
     }
     reconferirEscala();
