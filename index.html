@@ -144,7 +144,13 @@
   .fg-opt { display: flex; align-items: center; gap: 9px; padding: 7px 8px; font-size: 12.5px; border-radius: 7px; cursor: pointer; }
   .fg-opt:hover { background: var(--grid); }
   .fg-opt input { accent-color: var(--accent); width: 14px; height: 14px; flex: none; }
-  .fg-actions { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px 2px; margin-top: 4px; border-top: 1px solid var(--border); }
+  /* fica no topo do painel (não embaixo da lista) e gruda lá (sticky) durante
+     a rolagem -- listas grandes (Dia, Equipe) escondiam "Todos"/"Nenhum" até
+     rolar tudo; embaixo, ficava fora de vista quase sempre */
+  .fg-actions {
+    display: flex; justify-content: space-between; gap: 8px; padding: 2px 8px 6px; margin-bottom: 4px;
+    border-bottom: 1px solid var(--border); position: sticky; top: -6px; background: var(--surface-1); z-index: 1;
+  }
   .fg-actions button { font-family: inherit; font-size: 11px; font-weight: 800; color: var(--accent-ink); background: none; border: none; cursor: pointer; }
   .btn-clear { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--status-crit); background: var(--status-crit-soft); border: none; border-radius: 9px; padding: 8px 10px; cursor: pointer; display: none; }
   .btn-clear.show { display: block; }
@@ -1055,9 +1061,9 @@ function iniciarPainel(DATA) {
     var btn = wrap.querySelector(".fg-btn");
     var panel = wrap.querySelector(".fg-panel");
 
-    panel.innerHTML = opts.map(function (o) {
+    panel.innerHTML = '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>' + opts.map(function (o) {
       return '<label class="fg-opt"><input type="checkbox" value="' + o.value + '"' + (sel.has(o.value) ? " checked" : "") + '> <span>' + o.label + "</span></label>";
-    }).join("") + '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>';
+    }).join("");
 
     var freshBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(freshBtn, btn);
@@ -1137,9 +1143,9 @@ function iniciarPainel(DATA) {
       sel.forEach(function (idx) { if (!available.has(idx)) sel.delete(idx); });
     }
 
-    panel.innerHTML = items.map(function (it) {
+    panel.innerHTML = '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>' + items.map(function (it) {
       return '<label class="fg-opt"><input type="checkbox" value="' + it.idx + '"' + (sel.has(it.idx) ? " checked" : "") + '> <span>' + it.name + "</span></label>";
-    }).join("") + '<div class="fg-actions"><button type="button" data-act="all">Todos</button><button type="button" data-act="none">Nenhum</button></div>';
+    }).join("");
 
     var freshBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(freshBtn, btn);
