@@ -131,7 +131,12 @@
   .fg-count { background: var(--accent); color: var(--accent-ink); border-radius: 10px; font-size: 10px; font-weight: 800; padding: 1px 6px; margin-left: auto; }
   .fg-wrap { position: relative; }
   .fg-panel {
-    position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; width: 240px;
+    /* largura igual à do .fg-wrap (o pai posicionado), nunca um valor fixo --
+       um width:240px fixo ficava mais largo que o próprio .fg-wrap (~182px
+       dentro da sidebar de 216px), estourando a lateral e sobrepondo os
+       cards ao lado. Com width:100% o painel nunca passa da própria coluna,
+       tanto na sidebar (desktop) quanto nos grupos lado a lado (mobile) */
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; width: 100%;
     background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
     box-shadow: 0 14px 34px -8px rgba(0,0,0,.28); padding: 6px; max-height: 280px; overflow-y: auto;
   }
