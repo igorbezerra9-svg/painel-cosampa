@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel Cosampa — Faturamento & Obras</title>
 <style>
   .viz-root {
@@ -190,7 +191,14 @@
   .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
   .kpi-sub .crit { color: var(--status-crit); font-weight: 700; } .kpi-sub .good { color: var(--status-good); font-weight: 700; }
 
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  /* minmax(0, 1fr), não só 1fr -- uma coluna de grid por padrão não encolhe
+     abaixo do conteúdo (min-width:auto implícito), então uma tabela larga
+     lá dentro empurrava a página inteira mais larga que a tela, mesmo com
+     .tablewrap tendo overflow-x:auto (que só ajuda depois da coluna já ter
+     encolhido). Sem isso, o celular carregava a página com uma viewport
+     maior que a da tela e diminuía tudo pra caber -- letra minúscula,
+     gráfico cortado, "estourado" */
+  .grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; }
   .panel { position: relative; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 14px; box-shadow: var(--shadow); }
   .panel-title { font-size: 13px; font-weight: 800; color: var(--text-primary); margin: 0 46px 2px 0; letter-spacing: -0.005em; }
   .panel-caption { font-size: 11px; color: var(--text-muted); margin: 0 46px 14px 0; }
@@ -337,10 +345,16 @@
   footer.note code { color: var(--text-secondary); }
 
   @media (max-width: 860px) {
-    .app { flex-direction: column; }
+    /* align-items:flex-start (bom no desktop, lado a lado) vira o eixo
+       cruzado quando a coluna troca pra vertical aqui -- sem "stretch",
+       .main não era esticado até a largura do .app, e cada card lá dentro
+       (o kpi-grid principalmente) crescia pelo próprio conteúdo mínimo em
+       vez de caber na tela, e isso é o que fazia o celular carregar tudo
+       "zoomado" numa viewport maior que a real */
+    .app { flex-direction: column; align-items: stretch; }
     .sidebar { width: 100%; position: static; flex-direction: row; flex-wrap: wrap; }
     .fg { flex: 1; min-width: 140px; }
-    .grid-2 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: minmax(0, 1fr); }
   }
 </style>
 
