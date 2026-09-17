@@ -248,6 +248,10 @@
   .prod-dot { fill: var(--surface-1); stroke: var(--accent); stroke-width: 2; }
   .line-series { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
   .line-series-dot { fill: var(--accent); stroke: var(--surface-1); stroke-width: 2.5; cursor: pointer; }
+  /* linha de % da meta tracejada -- ponto sólido, linha tracejada é a
+     convenção usual pra "indicador derivado" (não é um valor lançado, é
+     uma razão calculada), e fica com leitura mais de relatório executivo */
+  .pct-line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 8 5; }
   .bar-inline-label { fill: #fff; font-size: 11.5px; font-weight: 800; font-family: inherit; pointer-events: none; }
   .pill-label-text { fill: #fff; font-size: 10.5px; font-weight: 800; font-family: inherit; pointer-events: none; }
 
@@ -951,12 +955,13 @@ function iniciarPainel(DATA) {
   // ---------- formatting ----------
   var fmtInt = new Intl.NumberFormat("pt-BR");
   function fmtPct(v) { return v == null ? "—" : (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; }
-  function fmtCompactBRL(v) {
+  function fmtCompactBRL(v, semPrefixo) {
     if (v == null) return "—";
     var abs = Math.abs(v);
-    if (abs >= 1e6) return "R$ " + (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
-    if (abs >= 1e3) return "R$ " + (v / 1e3).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " mil";
-    return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    var rs = semPrefixo ? "" : "R$ ";
+    if (abs >= 1e6) return rs + (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    if (abs >= 1e3) return rs + (v / 1e3).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " mil";
+    return rs + v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
   function fmtFullBRL(v) { return v == null ? "—" : "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   // sem centavos -- pra valor que é referência, não lançamento (a meta na linha
@@ -1808,9 +1813,12 @@ function iniciarPainel(DATA) {
     // fica menor do que o necessário pra etiqueta caber, nem aperta a ponto
     // de invadir o grupo vizinho -- e se não houver espaço nem no mínimo, a
     // própria largura do gráfico cresce (ativando rolagem) até caber.
+    // pílula não repete "R$" (o eixo já deixa a unidade clara) -- texto mais
+    // curto cabe num gap mais apertado, além de ficar menos repetitivo com
+    // 18 pílulas na tela ao mesmo tempo
     var maxPillW = 0;
     items.forEach(function (d) {
-      maxPillW = Math.max(maxPillW, measureTextWidth(svg, fmtCompactBRL(d.valor)), measureTextWidth(svg, fmtCompactBRL(d.meta)));
+      maxPillW = Math.max(maxPillW, measureTextWidth(svg, fmtCompactBRL(d.valor, true)), measureTextWidth(svg, fmtCompactBRL(d.meta, true)));
     });
     maxPillW += PILL_PAD_X * 2 + 2; // +2px de folga p/ arredondamento sub-pixel do getBBox
     var preferredGap = barGap || 32;
@@ -1866,8 +1874,8 @@ function iniciarPainel(DATA) {
         node.addEventListener("mouseleave", hideTip);
       });
       svg.appendChild(metaBar); svg.appendChild(realBar);
-      var metaPillText = drawPill(svg, cx - barW / 2 - gap / 2, metaY - 11, fmtCompactBRL(d.meta));
-      var realPillText = drawPill(svg, cx + barW / 2 + gap / 2, realY - 11, fmtCompactBRL(d.valor));
+      var metaPillText = drawPill(svg, cx - barW / 2 - gap / 2, metaY - 11, fmtCompactBRL(d.meta, true));
+      var realPillText = drawPill(svg, cx + barW / 2 + gap / 2, realY - 11, fmtCompactBRL(d.valor, true));
       pillTops.push(Math.min(metaPillText.previousSibling.getBBox().y, realPillText.previousSibling.getBBox().y));
 
       var pct = div(d.valor, d.meta);
@@ -1879,7 +1887,7 @@ function iniciarPainel(DATA) {
       svg.appendChild(axisLbl);
     });
     var pathD = pts.map(function (p, i) { return (i === 0 ? "M" : "L") + p[0] + " " + p[1]; }).join(" ");
-    svg.appendChild(el("path", { d: pathD, class: "line-series" }));
+    svg.appendChild(el("path", { d: pathD, class: "pct-line" }));
     pts.forEach(function (p, i) {
       var dot = el("circle", { cx: p[0], cy: p[1], r: 4.5, class: "line-series-dot" });
       dot.addEventListener("mousemove", function (evt) { tip(evt, p[2]); });
