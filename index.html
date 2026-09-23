@@ -326,6 +326,7 @@
   tr[data-motivo-linha].aberta td:first-child::before { transform: rotate(90deg); }
   tr.motivo-detalhe > td { background: var(--surface-2); padding: 10px 11px 12px 24px; }
   .motivo-detalhe-nota { font-size: 11px; color: var(--text-muted); margin: 0 0 8px; }
+  .legenda-outro { color: var(--status-warn); font-weight: 700; }
   tr.motivo-detalhe .faltas-chips { justify-content: flex-start; }
   .falta-chip b { font-weight: 800; margin-left: 5px; opacity: .75; font-variant-numeric: tabular-nums; }
   .falta-eq { font-weight: 800; color: var(--text-primary); cursor: pointer; }
@@ -334,6 +335,10 @@
   .falta-strip { display: flex; gap: 2px; }
   .falta-strip i { display: block; width: 9px; height: 12px; border-radius: 3px; background: var(--baseline); opacity: .4; }
   .falta-strip i.on { background: var(--status-crit); opacity: 1; }
+  /* só aparece no detalhe por motivo: faltou naquele dia, mas por outro
+     motivo -- sem isso, um quadradinho "apagado" parecia sempre "trabalhou",
+     mesmo em dias que na verdade foram falta por outra razão */
+  .falta-strip i.outro { background: var(--status-warn); opacity: .55; }
   /* só existe pro "copiar tabela" levar os dias como texto -- a fitinha
      sozinha viraria uma coluna vazia no Excel */
   .falta-dias-txt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -2544,14 +2549,21 @@ function iniciarPainel(DATA) {
   // quanto no detalhe por motivo (renderFaltasPorMotivo), pra ficarem sempre
   // exatamente iguais em vez de duas versões que podem divergir com o tempo.
   // d precisa de: code, nome, centro, sup, esc, faltas, dias ({data: 1}), ghost?
+  // diasOutroMotivo é opcional (só no detalhe por motivo): dias em que a
+  // equipe TAMBÉM faltou, mas por outro motivo -- sem isso, um quadradinho
+  // "apagado" no detalhe de um motivo específico parecia sempre "trabalhou",
+  // mesmo quando na verdade foi falta por outra razão naquele dia
   function linhaFaltaEquipeHtml(d, mesUnico, dias, extraAttrs) {
     var strip = "";
     if (dias) {
       var quais = [];
       var quadrados = dias.map(function (n) {
         var key = mesUnico + "-" + (n < 10 ? "0" + n : n), faltouNoDia = !!d.dias[key];
+        var faltouOutroMotivo = !faltouNoDia && d.diasOutroMotivo && !!d.diasOutroMotivo[key];
         if (faltouNoDia) quais.push(n);
-        return '<i class="' + (faltouNoDia ? "on" : "") + '" title="dia ' + n + (faltouNoDia ? " — faltou" : " — trabalhou") + '"></i>';
+        var cls = faltouNoDia ? "on" : faltouOutroMotivo ? "outro" : "";
+        var titulo = faltouNoDia ? " — faltou" : faltouOutroMotivo ? " — faltou, mas por outro motivo" : " — trabalhou";
+        return '<i class="' + cls + '" title="dia ' + n + titulo + '"></i>';
       }).join("");
       // o texto escondido é o que sai no "copiar tabela" -- a fitinha sozinha
       // viraria uma coluna vazia no Excel
@@ -2735,6 +2747,15 @@ function iniciarPainel(DATA) {
       escPorEquipe[rows.equipe[i]] = (escPorEquipe[rows.equipe[i]] || 0) + 1;
     });
 
+    // dias em que a equipe faltou por QUALQUER motivo -- usado pra distinguir,
+    // no grid do detalhe por motivo, "trabalhou" de "faltou, mas por outro
+    // motivo" (sem isso os dois casos ficavam iguais no quadradinho apagado)
+    var todasFaltasPorEquipe = {};
+    faltas.forEach(function (i) {
+      var e = rows.equipe[i];
+      (todasFaltasPorEquipe[e] || (todasFaltasPorEquipe[e] = {}))[rows.date[i]] = 1;
+    });
+
     var map = {};
     faltas.forEach(function (i) {
       var m = map[rows.motivo[i]] || (map[rows.motivo[i]] = { n: 0, equipes: {} });
@@ -2748,7 +2769,7 @@ function iniciarPainel(DATA) {
       var eqs = Object.keys(m.equipes).map(function (e) {
         var ee = m.equipes[e];
         return { code: e, nome: D.equipe[e], centro: nomeDim(D.centro, ee.centro, "Sem centro"), sup: nomeDim(D.supervisor, ee.sup, "Sem supervisor"),
-                 faltas: ee.n, esc: escPorEquipe[e] || ee.n, dias: ee.dias };
+                 faltas: ee.n, esc: escPorEquipe[e] || ee.n, dias: ee.dias, diasOutroMotivo: todasFaltasPorEquipe[e] };
       }).sort(function (a, b) { return b.faltas - a.faltas || a.nome.localeCompare(b.nome, "pt-BR"); });
       return { label: nomeDim(D.motivo, parseInt(k, 10), "(sem motivo preenchido)"),
                n: m.n, equipes: eqs.length, listaEquipes: eqs,
@@ -2768,7 +2789,8 @@ function iniciarPainel(DATA) {
         '<td class="falta-n">' + fmtInt.format(d.n) + "</td>" +
         '<td class="cell-plain">' + fmtPct(d.pct) + "</td></tr>" +
         '<tr class="motivo-detalhe" data-motivo-de="' + pos + '" hidden><td colspan="4">' +
-        '<p class="motivo-detalhe-nota">Faltas e % de falta aqui são só por "' + escapeAttr(d.label) + '" · Escalas continua sendo o total do período</p>' +
+        '<p class="motivo-detalhe-nota">Faltas e % de falta aqui são só por "' + escapeAttr(d.label) + '" · Escalas continua sendo o total do período' +
+        (diasDoMes ? ' · quadradinho <span class="legenda-outro">laranja</span> = faltou em outro motivo' : "") + "</p>" +
         '<div class="tablewrap"><table class="datatable">' + tabelaEquipes + "</table></div></td></tr>";
     }).join("");
     el_.innerHTML = thead + "<tbody>" + linhas +
