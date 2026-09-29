@@ -808,7 +808,7 @@ function iniciarPainel(DATA) {
     geralOb: "ob", escaladoOb: "ob", faltasOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
-  var EQUIPE_PAGES = { analiseEquipes: true, comparativoMensal: true };
+  var EQUIPE_PAGES = { geral: true, geralOb: true, analiseEquipes: true, comparativoMensal: true };
   var procTabSelection = null;
   var chartMode = { ec: "month", ob: "month" };
   var CHART_TITLES = {
@@ -1227,6 +1227,7 @@ function iniciarPainel(DATA) {
     });
   });
   rebuildSidebar();
+  document.getElementById("fgEquipe").style.display = EQUIPE_PAGES.geral ? "flex" : "none";
   if (restoredPage && restoredPage !== "geral") {
     var restoredTabBtn = document.querySelector('.tab-btn[data-page="' + restoredPage + '"]');
     if (restoredTabBtn) restoredTabBtn.click();
