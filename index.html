@@ -1176,6 +1176,7 @@ function iniciarPainel(DATA) {
     // reconstrói sup primeiro pra equipe já refletir uma eventual poda no sup
     if (changedDim !== "sup") buildFilterUI("sup");
     if (changedDim !== "equipe") buildFilterUI("equipe");
+    buildExcecaoUI(); // a equipe do "excluir de 1 mês" segue o mesmo recorte
   }
   function buildFilterUI(dim) {
     var dict = GROUPS[activeGroup].dicts[FILTER_DICT_KEY[dim]];
@@ -1243,12 +1244,22 @@ function iniciarPainel(DATA) {
   function buildExcecaoUI() {
     var rows = GROUPS[activeGroup].rows, dict = GROUPS[activeGroup].dicts.equipe;
     var selMes = document.getElementById("excecaoMes"), selEquipe = document.getElementById("excecaoEquipe");
+    var valorAntigo = selEquipe.value;
     var meses = DATE_DIMS.mes.values(rows);
     selMes.innerHTML = meses.map(function (m) { return '<option value="' + m.value + '">' + m.label + "</option>"; }).join("");
+
+    // mesma regra de cascata do filtro de Equipe normal: Processo/Supervisor/
+    // Centro já escolhidos restringem quais equipes aparecem aqui também
+    var available = new Set();
+    for (var i = 0; i < rows.equipe.length; i++) {
+      var code = rows.equipe[i];
+      if (code >= 0 && matchDimsExcept(activeGroup, i, "equipe")) available.add(code);
+    }
     var equipes = dict.map(function (name, idx) { return { name: name, idx: idx }; })
-      .filter(function (it) { return it.name; })
+      .filter(function (it) { return it.name && available.has(it.idx); })
       .sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
     selEquipe.innerHTML = equipes.map(function (it) { return '<option value="' + it.idx + '">' + it.name + "</option>"; }).join("");
+    if (equipes.some(function (it) { return String(it.idx) === valorAntigo; })) selEquipe.value = valorAntigo;
     renderExcecaoLista();
   }
   function renderExcecaoLista() {
