@@ -155,6 +155,27 @@
   .fg-actions button { font-family: inherit; font-size: 11px; font-weight: 800; color: var(--accent-ink); background: none; border: none; cursor: pointer; }
   .btn-clear { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--status-crit); background: var(--status-crit-soft); border: none; border-radius: 9px; padding: 8px 10px; cursor: pointer; display: none; }
   .btn-clear.show { display: block; }
+  .fg-excecao { padding-top: 6px; border-top: 1px dashed var(--border); }
+  .excecao-form { display: flex; flex-direction: column; gap: 6px; }
+  .excecao-select {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 9px; padding: 8px 9px; cursor: pointer; width: 100%;
+  }
+  .excecao-add {
+    font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft);
+    border: 1px solid var(--accent); border-radius: 9px; padding: 7px 10px; cursor: pointer;
+  }
+  .excecao-add:hover { opacity: .85; }
+  .excecao-lista { display: flex; flex-direction: column; gap: 5px; }
+  .excecao-chip {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11.5px;
+    background: var(--status-warn-soft); color: var(--status-warn); border-radius: 7px; padding: 5px 8px;
+  }
+  .excecao-chip button {
+    font-family: inherit; font-size: 13px; line-height: 1; font-weight: 800; color: inherit; background: none;
+    border: none; cursor: pointer; opacity: .7; padding: 0 2px;
+  }
+  .excecao-chip button:hover { opacity: 1; }
   .btn-toggle-values { font-family: inherit; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 9px; padding: 7px 12px; cursor: pointer; margin-top: 10px; }
   .btn-toggle-values:hover { opacity: .85; }
   .btn-toggle-values + .btn-toggle-values { margin-left: 8px; }
@@ -432,6 +453,15 @@
       <div class="fg" id="fgEquipe" style="display:none">
         <span class="fg-label">Equipe</span>
         <div class="fg-wrap" data-dim="equipe"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
+      </div>
+      <div class="fg fg-excecao">
+        <span class="fg-label">Excluir equipe de 1 mês</span>
+        <div class="excecao-form">
+          <select class="excecao-select" id="excecaoMes"></select>
+          <select class="excecao-select" id="excecaoEquipe"></select>
+          <button class="excecao-add" id="excecaoAdd" type="button">Excluir</button>
+        </div>
+        <div class="excecao-lista" id="excecaoLista"></div>
       </div>
       <button class="btn-clear" id="btnClear" type="button">✕ Limpar filtros</button>
       <p class="result-note" id="resultNote"></p>
@@ -961,7 +991,7 @@ function iniciarPainel(DATA) {
   // beforeunload do mesmo jeito
   function saveFilterState() {
     try {
-      function serialize(f) { return { mes: Array.from(f.mes), dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe) }; }
+      function serialize(f) { return { mes: Array.from(f.mes), dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe), excluir: Array.from(f.excluir) }; }
       var activeTab = document.querySelector(".tab-btn.active");
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
         activeGroup: activeGroup,
@@ -1006,8 +1036,8 @@ function iniciarPainel(DATA) {
 
   // ---------- filters (independent per dataset group) ----------
   var filters = {
-    ec: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() },
-    ob: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set() }
+    ec: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() },
+    ob: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() }
   };
   var activeGroup = "ec";
   var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
@@ -1033,6 +1063,7 @@ function iniciarPainel(DATA) {
         filters[g].centro = new Set(saved.centro || []);
         filters[g].proc = new Set(saved.proc || []);
         filters[g].equipe = new Set(saved.equipe || []);
+        filters[g].excluir = new Set(saved.excluir || []);
       });
       if (state.activeGroup === "ec" || state.activeGroup === "ob") activeGroup = state.activeGroup;
       if (state.activePage) restoredPage = state.activePage;
@@ -1203,11 +1234,54 @@ function iniciarPainel(DATA) {
   function rebuildSidebar() {
     ["mes", "dia"].forEach(buildDateFilterUI);
     ["proc", "sup", "centro", "equipe"].forEach(buildFilterUI);
+    buildExcecaoUI();
   }
+
+  // "Excluir equipe de 1 mês": exceção pontual que não mexe no filtro normal
+  // de Equipe (esse vale pra todos os meses) -- aqui dá pra tirar só um mês
+  // específico de uma equipe (ex.: mês com dado ruim) sem afetar os outros
+  function buildExcecaoUI() {
+    var rows = GROUPS[activeGroup].rows, dict = GROUPS[activeGroup].dicts.equipe;
+    var selMes = document.getElementById("excecaoMes"), selEquipe = document.getElementById("excecaoEquipe");
+    var meses = DATE_DIMS.mes.values(rows);
+    selMes.innerHTML = meses.map(function (m) { return '<option value="' + m.value + '">' + m.label + "</option>"; }).join("");
+    var equipes = dict.map(function (name, idx) { return { name: name, idx: idx }; })
+      .filter(function (it) { return it.name; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, "pt-BR"); });
+    selEquipe.innerHTML = equipes.map(function (it) { return '<option value="' + it.idx + '">' + it.name + "</option>"; }).join("");
+    renderExcecaoLista();
+  }
+  function renderExcecaoLista() {
+    var dict = GROUPS[activeGroup].dicts.equipe;
+    var lista = document.getElementById("excecaoLista");
+    var itens = Array.from(filters[activeGroup].excluir).map(function (key) {
+      var parts = key.split("|"), equipeIdx = parseInt(parts[0], 10), mesKey = parts[1];
+      var mi = parseInt(mesKey.slice(5, 7), 10) - 1;
+      return { key: key, nome: dict[equipeIdx] || "?", mesLabel: MONTH_FULL[mi] };
+    }).sort(function (a, b) { return a.nome.localeCompare(b.nome, "pt-BR") || a.mesLabel.localeCompare(b.mesLabel, "pt-BR"); });
+    lista.innerHTML = itens.map(function (it) {
+      return '<div class="excecao-chip"><span>' + it.nome + " — " + it.mesLabel + '</span><button type="button" data-key="' + escapeAttr(it.key) + '" title="Remover exceção">×</button></div>';
+    }).join("");
+    lista.querySelectorAll("button[data-key]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        filters[activeGroup].excluir.delete(b.dataset.key);
+        renderExcecaoLista();
+        renderAll();
+      });
+    });
+  }
+  document.getElementById("excecaoAdd").addEventListener("click", function () {
+    var mesKey = document.getElementById("excecaoMes").value;
+    var equipeIdx = document.getElementById("excecaoEquipe").value;
+    if (!mesKey || !equipeIdx) return;
+    filters[activeGroup].excluir.add(equipeIdx + "|" + mesKey);
+    renderExcecaoLista();
+    renderAll();
+  });
 
   document.getElementById("btnClear").addEventListener("click", function () {
     var f = filters[activeGroup];
-    f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear();
+    f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear(); f.excluir.clear();
     rebuildSidebar();
     renderAll();
   });
@@ -1250,11 +1324,18 @@ function iniciarPainel(DATA) {
     if (exceptDim !== "equipe" && f.equipe.size && !f.equipe.has(rows.equipe[i])) return false;
     return true;
   }
+  // exceção pontual: equipe excluída só num mês específico (ex.: dado ruim
+  // daquele mês), sem precisar tirar ela do filtro normal nos outros meses
+  function isExcluido(group, rows, i) {
+    var ex = filters[group].excluir;
+    return ex.size > 0 && ex.has(rows.equipe[i] + "|" + rows.date[i].slice(0, 7));
+  }
   function matchAll(group, i) {
     if (!matchDims(group, i)) return false;
     var rows = GROUPS[group].rows, f = filters[group];
     if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) return false;
     if (f.dia.size && !f.dia.has(rows.date[i])) return false;
+    if (isExcluido(group, rows, i)) return false;
     return true;
   }
   function currentIdxs(group) {
@@ -1269,6 +1350,7 @@ function iniciarPainel(DATA) {
     var rows = GROUPS[group].rows, f = filters[group];
     if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) return false;
     if (f.dia.size && !f.dia.has(rows.date[i])) return false;
+    if (isExcluido(group, rows, i)) return false;
     return true;
   }
   function isProdRow(group, rows, i) {
@@ -1726,7 +1808,7 @@ function iniciarPainel(DATA) {
       m -= 1; if (m === 0) { m = 12; y -= 1; }
       var prevKey = y + "-" + String(m).padStart(2, "0");
       var prevIdxs = [];
-      for (var i = 0; i < rows.date.length; i++) { if (matchDims(group, i) && rows.date[i].slice(0, 7) === prevKey) prevIdxs.push(i); }
+      for (var i = 0; i < rows.date.length; i++) { if (matchDims(group, i) && rows.date[i].slice(0, 7) === prevKey && !isExcluido(group, rows, i)) prevIdxs.push(i); }
       prev = aggRows(group, prevIdxs);
     }
     return { cur: cur, prev: prev };
@@ -2900,7 +2982,7 @@ function iniciarPainel(DATA) {
     var rows = GROUPS[group].rows;
     var map = {};
     for (var i = 0; i < rows.date.length; i++) {
-      if (!matchDims(group, i)) continue;
+      if (!matchDims(group, i) || isExcluido(group, rows, i)) continue;
       var t = isTrabalhou(group, rows, i), f = isFaltou(group, rows, i);
       if (!t && !f) continue;
       var mk = rows.date[i].slice(0, 7);
@@ -3199,6 +3281,7 @@ function iniciarPainel(DATA) {
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.equipe.size && !f.equipe.has(rows.equipe[i])) continue;
       if (f.dia.size && !f.dia.has(rows.date[i])) continue;
+      if (isExcluido("ec", rows, i)) continue;
       idxs.push(i);
     }
     Object.keys(RANKING_SVGS).forEach(function (name) {
