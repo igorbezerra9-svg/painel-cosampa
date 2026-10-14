@@ -77,6 +77,16 @@
   .updated-badge b { color: var(--text-primary); font-weight: 800; font-variant-numeric: tabular-nums; }
   .updated-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--status-good); flex: none; }
   .updated-dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: var(--status-good); opacity: .4; animation: pulse-dot 2.2s ease-out infinite; }
+  .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn-ppt {
+    display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--accent-ink);
+    background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 999px; padding: 8px 16px 8px 13px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-ppt:hover { opacity: .85; }
+  .btn-ppt:disabled { cursor: progress; opacity: .7; }
+  .btn-ppt svg { width: 15px; height: 15px; flex: none; }
+  .btn-ppt[data-estado="pronto"] { color: var(--status-good); border-color: var(--status-good); background: var(--status-good-soft); }
+  .btn-ppt[data-estado="erro"] { color: var(--status-crit); border-color: var(--status-crit); background: var(--status-crit-soft); }
   @keyframes pulse-dot { 0% { transform: scale(.5); opacity: .5; } 100% { transform: scale(2.4); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .updated-dot::after { animation: none; } }
 
@@ -405,9 +415,15 @@
       <p class="eyebrow">Cosampa</p>
       <h1>Faturamento &amp; Obras</h1>
     </div>
-    <div class="updated-badge" title="Atualizado automaticamente, direto da planilha">
-      <span class="updated-dot"></span>
-      Atualizado <b id="genDate"></b>
+    <div class="top-actions">
+      <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação de turnos (Emergencial · mês atual até ontem)">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="btnPptLabel">Apresentação</span>
+      </button>
+      <div class="updated-badge" title="Atualizado automaticamente, direto da planilha">
+        <span class="updated-dot"></span>
+        Atualizado <b id="genDate"></b>
+      </div>
     </div>
   </header>
 
@@ -1281,6 +1297,61 @@ function iniciarPainel(DATA) {
       });
     });
   }
+  // ---------- botão "Apresentação": baixa o PPT de turnos já com o dado de agora ----------
+  // A biblioteca (~470 KB) só é baixada no primeiro clique, não pesa na abertura
+  // do painel. As contas usam as mesmas funções do painel (isTrabalhou/isFaltou)
+  // e respeitam as exceções "excluir equipe de 1 mês", mas não os outros filtros
+  // da lateral: a apresentação é sempre o Emergencial inteiro do mês até ontem.
+  var pptBtn = document.getElementById("btnPpt"), pptLabel = document.getElementById("btnPptLabel"), pptLibs = null, pptTimer = null, pptTituloPadrao = pptBtn.title;
+  function pptEstado(estado, msg) {
+    clearTimeout(pptTimer);
+    pptBtn.disabled = estado === "gerando";
+    if (estado === "repouso") { pptBtn.removeAttribute("data-estado"); pptBtn.title = pptTituloPadrao; pptLabel.textContent = "Apresentação"; return; }
+    pptBtn.setAttribute("data-estado", estado);
+    pptLabel.textContent = estado === "gerando" ? "Gerando…" : estado === "pronto" ? "Baixado" : "Não deu certo — tentar de novo";
+    if (msg) pptBtn.title = msg;
+    if (estado !== "gerando") pptTimer = setTimeout(function () { pptEstado("repouso"); }, estado === "erro" ? 8000 : 3500);
+  }
+  function carregarScript(src) {
+    return new Promise(function (ok, falha) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = ok; s.onerror = function () { falha(new Error("Não consegui carregar " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function carregarLibsPpt() {
+    if (!pptLibs) {
+      pptLibs = carregarScript("apresentacao/pptxgen.bundle.js").then(function () { return carregarScript("apresentacao/gerar.js"); })
+        .catch(function (e) { pptLibs = null; throw e; });
+    }
+    return pptLibs;
+  }
+  function baixarArquivo(arrayBuffer, nome) {
+    var blob = new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
+    var url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+  }
+  pptBtn.addEventListener("click", function () {
+    if (pptBtn.disabled) return;
+    pptEstado("gerando");
+    carregarLibsPpt().then(function () {
+      var rows = GROUPS.ec.rows;
+      return window.PainelApresentacao.gerar({
+        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), geradoEm: DATA.generated, assetBase: "apresentacao/",
+        isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
+        isFaltou: function (i) { return isFaltou("ec", rows, i); },
+        isExcluido: function (i) { return isExcluido("ec", rows, i); }
+      });
+    }).then(function (r) {
+      baixarArquivo(r.arrayBuffer, r.nomeArquivo);
+      pptEstado("pronto", r.nomeArquivo);
+    }).catch(function (e) {
+      console.error(e);
+      pptEstado("erro", String(e && e.message || e));
+    });
+  });
+
   document.getElementById("excecaoAdd").addEventListener("click", function () {
     var mesKey = document.getElementById("excecaoMes").value;
     var equipeIdx = document.getElementById("excecaoEquipe").value;
