@@ -82,6 +82,10 @@
     display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--accent-ink);
     background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 999px; padding: 8px 16px 8px 13px; cursor: pointer; white-space: nowrap;
   }
+  .sel-ppt {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; cursor: pointer; box-shadow: var(--shadow);
+  }
   .btn-ppt:hover { opacity: .85; }
   .btn-ppt:disabled { cursor: progress; opacity: .7; }
   .btn-ppt svg { width: 15px; height: 15px; flex: none; }
@@ -416,6 +420,7 @@
       <h1>Faturamento &amp; Obras</h1>
     </div>
     <div class="top-actions">
+      <select class="sel-ppt" id="selPptMes" title="Mês da apresentação" aria-label="Mês da apresentação"></select>
       <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação de turnos (Emergencial · mês atual até ontem)">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span id="btnPptLabel">Apresentação</span>
@@ -1332,13 +1337,21 @@ function iniciarPainel(DATA) {
     a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
   }
+  (function montarMesesPpt() {
+    var sel = document.getElementById("selPptMes"), meses = {};
+    GROUPS.ec.rows.date.forEach(function (d) { meses[d.slice(0, 7)] = 1; });
+    sel.innerHTML = '<option value="">Mês atual (até ontem)</option>' + Object.keys(meses).sort().reverse().map(function (mk) {
+      var nome = MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1];
+      return '<option value="' + mk + '">' + nome.charAt(0).toUpperCase() + nome.slice(1) + " " + mk.slice(0, 4) + "</option>";
+    }).join("");
+  })();
   pptBtn.addEventListener("click", function () {
     if (pptBtn.disabled) return;
     pptEstado("gerando");
     carregarLibsPpt().then(function () {
       var rows = GROUPS.ec.rows;
       return window.PainelApresentacao.gerar({
-        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), geradoEm: DATA.generated, assetBase: "apresentacao/",
+        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, geradoEm: DATA.generated, assetBase: "apresentacao/",
         isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
         isFaltou: function (i) { return isFaltou("ec", rows, i); },
         isExcluido: function (i) { return isExcluido("ec", rows, i); }

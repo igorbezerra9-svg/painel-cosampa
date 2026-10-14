@@ -36,9 +36,16 @@
     var ultimoNoDado = "";
     for (var k = 0; k < rows.date.length; k++) if (rows.date[k] > ultimoNoDado) ultimoNoDado = rows.date[k];
     var hoje = ctx.hoje || new Date();
-    var fim = iso(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1));
+    var ontem = iso(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1));
+    // ctx.mes ("AAAA-MM") escolhe um mês; sem ele vale o mês de ontem, até ontem
+    var fim = ontem;
+    if (ctx.mes) {
+      var ultimoDoMes = ctx.mes + "-" + pad2(ultimoDiaDoMes(ctx.mes + "-01"));
+      fim = ultimoDoMes < ontem ? ultimoDoMes : ontem;
+    }
     if (ultimoNoDado && ultimoNoDado < fim) fim = ultimoNoDado;
     var mes = fim.slice(0, 7), inicio = mes + "-01";
+    if (ctx.mes && mes !== ctx.mes) throw new Error("Ainda não há dados fechados de " + MESES[+ctx.mes.slice(5, 7) - 1] + " " + ctx.mes.slice(0, 4));
 
     var porCentro = {}, motivos = {};
     CENTROS.forEach(function (n) { porCentro[n] = {}; motivos[n] = {}; });
