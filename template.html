@@ -421,7 +421,8 @@
     </div>
     <div class="top-actions">
       <select class="sel-ppt" id="selPptMes" title="Mês da apresentação" aria-label="Mês da apresentação"></select>
-      <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação de turnos (Emergencial · mês atual até ontem)">
+      <select class="sel-ppt" id="selPptProc" title="Processo da apresentação" aria-label="Processo da apresentação"></select>
+      <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação de turnos (mês e processo escolhidos ao lado)">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span id="btnPptLabel">Apresentação</span>
       </button>
@@ -1344,6 +1345,12 @@ function iniciarPainel(DATA) {
       var nome = MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1];
       return '<option value="' + mk + '">' + nome.charAt(0).toUpperCase() + nome.slice(1) + " " + mk.slice(0, 4) + "</option>";
     }).join("");
+    var procs = {}, rowsEc = GROUPS.ec.rows;
+    for (var i = 0; i < rowsEc.proc.length; i++) procs[rowsEc.proc[i]] = 1;
+    var nomesProc = Object.keys(procs).map(function (c) { return GROUPS.ec.dicts.processo[c]; }).filter(Boolean).sort(function (a, b) {
+      return (a === "Emergencial" ? -1 : b === "Emergencial" ? 1 : 0) || a.localeCompare(b, "pt-BR");
+    });
+    document.getElementById("selPptProc").innerHTML = nomesProc.map(function (n) { return '<option value="' + n + '">' + n + "</option>"; }).join("");
   })();
   pptBtn.addEventListener("click", function () {
     if (pptBtn.disabled) return;
@@ -1351,7 +1358,7 @@ function iniciarPainel(DATA) {
     carregarLibsPpt().then(function () {
       var rows = GROUPS.ec.rows;
       return window.PainelApresentacao.gerar({
-        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, geradoEm: DATA.generated, assetBase: "apresentacao/",
+        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, processo: document.getElementById("selPptProc").value, geradoEm: DATA.generated, assetBase: "apresentacao/",
         isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
         isFaltou: function (i) { return isFaltou("ec", rows, i); },
         isExcluido: function (i) { return isExcluido("ec", rows, i); }

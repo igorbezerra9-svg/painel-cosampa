@@ -5,8 +5,8 @@
 (function (root) {
   "use strict";
 
-  var PROCESSO = "Emergencial";
-  var CENTROS = ["Campos Sales", "Juazeiro do Norte", "Milagres"];
+  var PROCESSO_PADRAO = "Emergencial";
+  var CENTROS_PADRAO = ["Campos Sales", "Juazeiro do Norte", "Milagres"]; // ordem de exibição; centros fora da lista vão depois
   var MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   var COR = {
     barra: "EC6B35", linha: "F5A800", caixa: "3B3B3B", kpi: "FFC000", azul: "1F5C99", azulClaro: "E9ECF5",
@@ -28,10 +28,11 @@
   // ---------- cálculo ----------
   function calcular(ctx) {
     var rows = ctx.rows, D = ctx.dicts;
-    var procIdx = D.processo.indexOf(PROCESSO);
-    if (procIdx < 0) throw new Error('Processo "' + PROCESSO + '" não existe no dado');
+    var processo = ctx.processo || PROCESSO_PADRAO;
+    var procIdx = D.processo.indexOf(processo);
+    if (procIdx < 0) throw new Error('Processo "' + processo + '" não existe no dado');
     var nomeCentro = {};
-    CENTROS.forEach(function (n) { var i = D.centro.indexOf(n); if (i >= 0) nomeCentro[i] = n; });
+    D.centro.forEach(function (n, i) { nomeCentro[i] = n; });
 
     var ultimoNoDado = "";
     for (var k = 0; k < rows.date.length; k++) if (rows.date[k] > ultimoNoDado) ultimoNoDado = rows.date[k];
@@ -48,7 +49,6 @@
     if (ctx.mes && mes !== ctx.mes) throw new Error("Ainda não há dados fechados de " + MESES[+ctx.mes.slice(5, 7) - 1] + " " + ctx.mes.slice(0, 4));
 
     var porCentro = {}, motivos = {};
-    CENTROS.forEach(function (n) { porCentro[n] = {}; motivos[n] = {}; });
 
     for (var i = 0; i < rows.date.length; i++) {
       var dt = rows.date[i];
@@ -57,6 +57,7 @@
       if (!c || ctx.isExcluido(i)) continue;
       var t = ctx.isTrabalhou(i), f = ctx.isFaltou(i);
       if (!t && !f) continue;
+      if (!porCentro[c]) { porCentro[c] = {}; motivos[c] = {}; }
       var d = porCentro[c][dt] || (porCentro[c][dt] = { esc: 0, trab: 0 });
       d.esc++;
       if (t) d.trab++;
@@ -67,18 +68,23 @@
       }
     }
 
+    // só entram centros que tiveram turno do processo no período; os de sempre vêm primeiro
+    var centros = Object.keys(porCentro).sort(function (a, b) {
+      var ia = CENTROS_PADRAO.indexOf(a), ib = CENTROS_PADRAO.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, "pt-BR");
+    });
     var sul = {};
-    CENTROS.forEach(function (c2) {
+    centros.forEach(function (c2) {
       Object.keys(porCentro[c2]).forEach(function (dt2) {
         var s = sul[dt2] || (sul[dt2] = { esc: 0, trab: 0 });
         s.esc += porCentro[c2][dt2].esc; s.trab += porCentro[c2][dt2].trab;
       });
     });
     var motivosSul = {};
-    CENTROS.forEach(function (c3) { Object.keys(motivos[c3]).forEach(function (m2) { motivosSul[m2] = (motivosSul[m2] || 0) + motivos[c3][m2]; }); });
+    centros.forEach(function (c3) { Object.keys(motivos[c3]).forEach(function (m2) { motivosSul[m2] = (motivosSul[m2] || 0) + motivos[c3][m2]; }); });
 
     var dias = Object.keys(sul).sort();
-    if (!dias.length) throw new Error("Sem turnos de " + PROCESSO + " entre " + brData(inicio) + " e " + brData(fim));
+    if (!dias.length) throw new Error("Sem turnos de " + processo + " entre " + brData(inicio) + " e " + brData(fim));
 
     function resumo(diasMap) {
       var ds = Object.keys(diasMap).sort();
@@ -112,13 +118,13 @@
     }
 
     var blocos = [{ nome: "Multiserviços Sul", chave: "Sul", resumo: resumo(sul), serie: serie(sul) }];
-    CENTROS.forEach(function (c4) { blocos.push({ nome: c4, chave: c4, resumo: resumo(porCentro[c4]), serie: serie(porCentro[c4]) }); });
+    centros.forEach(function (c4) { blocos.push({ nome: c4, chave: c4, resumo: resumo(porCentro[c4]), serie: serie(porCentro[c4]) }); });
 
-    var faltasPorCentro = CENTROS.map(function (c5) { return { motivo: c5.toUpperCase(), n: listaMotivos(motivos[c5]).total }; });
+    var faltasPorCentro = centros.map(function (c5) { return { motivo: c5.toUpperCase(), n: listaMotivos(motivos[c5]).total }; });
 
     return {
-      inicio: inicio, fim: fim, mes: mes, dias: dias, blocos: blocos,
-      motivos: CENTROS.map(function (c6) { return { centro: c6, dados: listaMotivos(motivos[c6]) }; }),
+      processo: processo, centros: centros, inicio: inicio, fim: fim, mes: mes, dias: dias, blocos: blocos,
+      motivos: centros.map(function (c6) { return { centro: c6, dados: listaMotivos(motivos[c6]) }; }),
       motivosSul: listaMotivos(motivosSul), faltasPorCentro: faltasPorCentro,
       mesCompleto: +fim.slice(8, 10) === ultimoDiaDoMes(fim),
       mesNome: MESES[+mes.slice(5, 7) - 1], ano: mes.slice(0, 4),
@@ -140,7 +146,7 @@
     s.addText(periodoTexto(r), { x: 0, y: 0.53, w: 5.6, h: 0.5, fontFace: "Calibri", fontSize: 20, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0 });
 
     s.addShape(pptx.ShapeType.rect, { x: 13.6, y: 0, w: 6.4, h: 1.2, fill: { color: COR.caixa }, line: { color: COR.caixa, width: 0 } });
-    s.addText("Média de Turnos por dia - Emergencial", { x: 13.6, y: 0.1, w: 6.4, h: 0.6, fontFace: "Calibri", fontSize: 24, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0 });
+    s.addText("Média de Turnos por dia - " + r.processo, { x: 13.6, y: 0.1, w: 6.4, h: 0.6, fontFace: "Calibri", fontSize: 24, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0 });
     s.addText(bloco.nome, { x: 13.6, y: 0.68, w: 6.4, h: 0.45, fontFace: "Calibri", fontSize: 18, bold: true, color: "FFFFFF", align: "center", valign: "middle", margin: 0 });
 
     var labels = r.dias.map(function (dt) { return String(+dt.slice(8, 10)); });
@@ -163,7 +169,7 @@
     s.addShape(pptx.ShapeType.line, { x: 0, y: 6.85, w: 20, h: 0, line: { color: COR.tracejado, width: 1, dashType: "dash" } });
 
     s.addText("Aderência de Turnos - Seg - Sex / Sáb / Dom", { x: 2.2, y: 7.05, w: 15.6, h: 0.4, fontFace: "Calibri", fontSize: 18, bold: true, color: "262626", align: "center", valign: "middle", margin: 0 });
-    var cats = CENTROS.concat(["Sul"]);
+    var cats = r.centros.concat(["Sul"]);
     var blocoDe = function (chave) { return todos.filter(function (b) { return b.chave === chave; })[0].resumo; };
     var serieTipo = function (campo) { return cats.map(function (c) { return blocoDe(c)[campo]; }); };
     s.addChart(pptx.charts.BAR, [
@@ -176,7 +182,7 @@
       catAxisLabelFontSize: 12, catAxisLabelColor: "262626", showValue: true, dataLabelFontSize: 12, dataLabelColor: "262626", dataLabelPosition: "outEnd", dataLabelFormatCode: "0.0"
     });
 
-    var fonte = "Fonte: Painel Cosampa" + (r.fonteEm ? " · dados de " + r.fonteEm : "") + " · Emergencial · " + brData(r.inicio) + " a " + brData(r.fim);
+    var fonte = "Fonte: Painel Cosampa" + (r.fonteEm ? " · dados de " + r.fonteEm : "") + " · " + r.processo + " · " + brData(r.inicio) + " a " + brData(r.fim);
     s.addText(fonte, { x: 0.3, y: 10.85, w: 14, h: 0.3, fontFace: "Calibri", fontSize: 10, color: COR.cinza, margin: 0 });
     return s;
   }
@@ -213,7 +219,7 @@
   function slideMotivos(pptx, r, img) {
     var s = pptx.addSlide();
     s.addImage(img("bg_capa.png", { x: 0, y: 0, w: 20, h: 11.25 }));
-    s.addText("Motivos de falta de turno - Emergencial · " + periodoTexto(r), { x: 0.25, y: 0.25, w: 13, h: 0.6, fontFace: "Calibri", fontSize: 24, bold: true, color: "262626", margin: 0 });
+    s.addText("Motivos de falta de turno - " + r.processo + " · " + periodoTexto(r), { x: 0.25, y: 0.25, w: 13, h: 0.6, fontFace: "Calibri", fontSize: 24, bold: true, color: "262626", margin: 0 });
 
     var linhasTotais = r.motivos.reduce(function (s2, m) { return s2 + (m.dados.itens.length ? m.dados.itens.length + 2 : 0); }, 0);
     var disponivel = 9.3 - (r.motivos.length - 1) * 0.3;
@@ -226,11 +232,13 @@
       y += (m.dados.itens.length + 2) * rowH + 0.3;
     });
 
-    pizza(pptx, s, "Campos Sales", r.motivos[0].dados, 7.76, 1.0, 6.0, 3.6);
-    pizza(pptx, s, "Milagres", r.motivos[2].dados, 13.7, 1.0, 6.2, 3.6);
-    pizza(pptx, s, "Juazeiro do Norte", r.motivos[1].dados, 7.76, 4.8, 7.2, 4.6);
-    var porCentro = { itens: r.faltasPorCentro.filter(function (x) { return x.n > 0; }).map(function (x) { return { motivo: x.motivo, n: x.n }; }) };
-    pizza(pptx, s, "Multiserviços Sul", porCentro, 14.8, 4.8, 5.0, 3.8);
+    // 3 vagas de pizza por centro (a do meio é a maior) + a de "faltas por centro"
+    var vagas = [[7.76, 1.0, 6.0, 3.6], [7.76, 4.8, 7.2, 4.6], [13.7, 1.0, 6.2, 3.6]];
+    r.motivos.slice(0, 3).forEach(function (m, idx) { pizza(pptx, s, m.centro, m.dados, vagas[idx][0], vagas[idx][1], vagas[idx][2], vagas[idx][3]); });
+    if (r.centros.length > 1) {
+      var porCentro = { itens: r.faltasPorCentro.filter(function (x) { return x.n > 0; }).map(function (x) { return { motivo: x.motivo, n: x.n }; }) };
+      pizza(pptx, s, "Multiserviços Sul", porCentro, 14.8, 4.8, 5.0, 3.8);
+    }
     return s;
   }
 
@@ -241,7 +249,7 @@
       { text: "MULTISERVIÇOS SUL", options: { fontSize: 72, bold: true, color: "000000", breakLine: true } },
       { text: " ", options: { fontSize: 30, breakLine: true } },
       { text: "CONTROLE DE TURNOS – " + r.mesNome + " " + r.ano, options: { fontSize: 48, bold: true, color: "000000", breakLine: true } },
-      { text: "Emergencial · " + (r.mesCompleto ? "mês fechado" : "de " + brData(r.inicio).slice(0, 5) + " a " + brData(r.fim).slice(0, 5)), options: { fontSize: 28, color: "404040", paraSpaceBefore: 10, breakLine: true } },
+      { text: r.processo + " · " + (r.mesCompleto ? "mês fechado" : "de " + brData(r.inicio).slice(0, 5) + " a " + brData(r.fim).slice(0, 5)), options: { fontSize: 28, color: "404040", paraSpaceBefore: 10, breakLine: true } },
       { text: " ", options: { fontSize: 24, breakLine: true } },
       { text: r.emitidoEm, options: { fontSize: 40, bold: true, color: "808080" } }
     ], { x: 1.08, y: 2.6, w: 17.8, h: 6.6, fontFace: "Arial", valign: "top", margin: 0 });
@@ -273,7 +281,8 @@
 
   function nomeArquivo(r) {
     var base = r.mesCompleto ? "Fechamento " + r.mesNome + " " + r.ano : r.mesNome + " " + r.ano + " (até " + r.fim.slice(8, 10) + "-" + r.fim.slice(5, 7) + ")";
-    return "Abertura de turnos " + base + "_Multiserviços Sul.pptx";
+    var proc = r.processo === PROCESSO_PADRAO ? "" : " - " + r.processo;
+    return "Abertura de turnos " + base + proc + "_Multiserviços Sul.pptx";
   }
 
   function gerar(ctx) {
