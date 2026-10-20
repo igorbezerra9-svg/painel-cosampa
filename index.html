@@ -180,6 +180,8 @@
     border: 1px solid var(--accent); border-radius: 9px; padding: 7px 10px; cursor: pointer;
   }
   .excecao-add:hover { opacity: .85; }
+  .excecao-dias { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .excecao-dias .excecao-select { flex: 1; min-width: 0; }
   .excecao-lista { display: flex; flex-direction: column; gap: 5px; }
   .excecao-chip {
     display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11.5px;
@@ -477,10 +479,16 @@
         <div class="fg-wrap" data-dim="equipe"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
       </div>
       <div class="fg fg-excecao">
-        <span class="fg-label">Excluir equipe de 1 mês</span>
+        <span class="fg-label">Excluir equipe (mês ou dias)</span>
         <div class="excecao-form">
           <select class="excecao-select" id="excecaoMes"></select>
           <select class="excecao-select" id="excecaoEquipe"></select>
+          <div class="excecao-dias">
+            <span>Dias</span>
+            <select class="excecao-select" id="excecaoDe" aria-label="Do dia"></select>
+            <span>a</span>
+            <select class="excecao-select" id="excecaoAte" aria-label="Até o dia"></select>
+          </div>
           <button class="excecao-add" id="excecaoAdd" type="button">Excluir</button>
         </div>
         <div class="excecao-lista" id="excecaoLista"></div>
@@ -1062,6 +1070,8 @@ function iniciarPainel(DATA) {
     ob: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() }
   };
   var activeGroup = "ec";
+  var excIdx = { ec: null, ob: null }; // exceções agrupadas por equipe; refeito sob demanda
+  function invalidarExcecoes() { excIdx.ec = null; excIdx.ob = null; }
   var FILTER_LABELS = { proc: "Processo", sup: "Supervisor", centro: "Centro de Serviço", equipe: "Equipe" };
   var FILTER_DICT_KEY = { proc: "processo", sup: "supervisor", centro: "centro", equipe: "equipe" };
   var CASCADE_DIMS = { sup: true, equipe: true };
@@ -1260,15 +1270,17 @@ function iniciarPainel(DATA) {
     buildExcecaoUI();
   }
 
-  // "Excluir equipe de 1 mês": exceção pontual que não mexe no filtro normal
-  // de Equipe (esse vale pra todos os meses) -- aqui dá pra tirar só um mês
-  // específico de uma equipe (ex.: mês com dado ruim) sem afetar os outros
+  // "Excluir equipe (mês ou dias)": exceção pontual que não mexe no filtro normal
+  // de Equipe (esse vale pra todos os meses) -- aqui dá pra tirar uma equipe só
+  // de um mês, ou só de alguns dias dele (ex.: começou no dia 8), sem afetar o resto
   function buildExcecaoUI() {
     var rows = GROUPS[activeGroup].rows, dict = GROUPS[activeGroup].dicts.equipe;
     var selMes = document.getElementById("excecaoMes"), selEquipe = document.getElementById("excecaoEquipe");
-    var valorAntigo = selEquipe.value;
+    var valorAntigo = selEquipe.value, mesAntigo = selMes.value;
     var meses = DATE_DIMS.mes.values(rows);
     selMes.innerHTML = meses.map(function (m) { return '<option value="' + m.value + '">' + m.label + "</option>"; }).join("");
+    if (meses.some(function (m) { return m.value === mesAntigo; })) selMes.value = mesAntigo;
+    montarDiasExcecao(true);
 
     // mesma regra de cascata do filtro de Equipe normal: Processo/Supervisor/
     // Centro já escolhidos restringem quais equipes aparecem aqui também
@@ -1284,20 +1296,39 @@ function iniciarPainel(DATA) {
     if (equipes.some(function (it) { return String(it.idx) === valorAntigo; })) selEquipe.value = valorAntigo;
     renderExcecaoLista();
   }
+  // chave: "equipe|AAAA-MM" = mês inteiro (formato antigo) ou
+  // "equipe|AAAA-MM-DD|AAAA-MM-DD" = só de um dia a outro dentro do mês
+  function parseExcecao(key) {
+    var p = key.split("|"), inteiro = p[1].length === 7;
+    return { equipe: parseInt(p[0], 10), mes: p[1].slice(0, 7), inteiro: inteiro, ini: inteiro ? p[1] + "-01" : p[1], fim: inteiro ? p[1] + "-31" : p[2] };
+  }
+  function diasDoMesExc(mk) { return new Date(+mk.slice(0, 4), +mk.slice(5, 7), 0).getDate(); }
+  function montarDiasExcecao(preservar) {
+    var mk = document.getElementById("excecaoMes").value;
+    var de = document.getElementById("excecaoDe"), ate = document.getElementById("excecaoAte");
+    if (!mk) { de.innerHTML = ate.innerHTML = ""; return; }
+    var n = diasDoMesExc(mk), deAntes = de.value, ateAntes = ate.value, opts = "";
+    for (var d = 1; d <= n; d++) opts += '<option value="' + d + '">' + d + "</option>";
+    de.innerHTML = ate.innerHTML = opts;
+    de.value = preservar && deAntes && +deAntes <= n ? deAntes : "1";
+    ate.value = preservar && ateAntes && +ateAntes <= n ? ateAntes : String(n);
+  }
+  document.getElementById("excecaoMes").addEventListener("change", function () { montarDiasExcecao(false); });
   function renderExcecaoLista() {
     var dict = GROUPS[activeGroup].dicts.equipe;
     var lista = document.getElementById("excecaoLista");
     var itens = Array.from(filters[activeGroup].excluir).map(function (key) {
-      var parts = key.split("|"), equipeIdx = parseInt(parts[0], 10), mesKey = parts[1];
-      var mi = parseInt(mesKey.slice(5, 7), 10) - 1;
-      return { key: key, nome: dict[equipeIdx] || "?", mesLabel: MONTH_FULL[mi] };
-    }).sort(function (a, b) { return a.nome.localeCompare(b.nome, "pt-BR") || a.mesLabel.localeCompare(b.mesLabel, "pt-BR"); });
+      var e = parseExcecao(key), d1 = +e.ini.slice(8, 10), d2 = +e.fim.slice(8, 10);
+      var quando = MONTH_FULL[parseInt(e.mes.slice(5, 7), 10) - 1] + (e.inteiro ? "" : d1 === d2 ? " (dia " + d1 + ")" : " (dias " + d1 + " a " + d2 + ")");
+      return { key: key, nome: dict[e.equipe] || "?", quando: quando, ordem: e.ini };
+    }).sort(function (a, b) { return a.nome.localeCompare(b.nome, "pt-BR") || a.ordem.localeCompare(b.ordem); });
     lista.innerHTML = itens.map(function (it) {
-      return '<div class="excecao-chip"><span>' + it.nome + " — " + it.mesLabel + '</span><button type="button" data-key="' + escapeAttr(it.key) + '" title="Remover exceção">×</button></div>';
+      return '<div class="excecao-chip"><span>' + it.nome + " — " + it.quando + '</span><button type="button" data-key="' + escapeAttr(it.key) + '" title="Remover exceção">×</button></div>';
     }).join("");
     lista.querySelectorAll("button[data-key]").forEach(function (b) {
       b.addEventListener("click", function () {
         filters[activeGroup].excluir.delete(b.dataset.key);
+        invalidarExcecoes();
         renderExcecaoLista();
         renderAll();
       });
@@ -1306,7 +1337,7 @@ function iniciarPainel(DATA) {
   // ---------- botão "Apresentação": baixa o PPT de turnos já com o dado de agora ----------
   // A biblioteca (~470 KB) só é baixada no primeiro clique, não pesa na abertura
   // do painel. As contas usam as mesmas funções do painel (isTrabalhou/isFaltou)
-  // e respeitam as exceções "excluir equipe de 1 mês", mas não os outros filtros
+  // e respeitam as exceções "excluir equipe", mas não os outros filtros
   // da lateral: a apresentação é sempre o Emergencial inteiro do mês até ontem.
   var pptBtn = document.getElementById("btnPpt"), pptLabel = document.getElementById("btnPptLabel"), pptLibs = null, pptTimer = null, pptTituloPadrao = pptBtn.title;
   function pptEstado(estado, msg) {
@@ -1376,14 +1407,19 @@ function iniciarPainel(DATA) {
     var mesKey = document.getElementById("excecaoMes").value;
     var equipeIdx = document.getElementById("excecaoEquipe").value;
     if (!mesKey || !equipeIdx) return;
-    filters[activeGroup].excluir.add(equipeIdx + "|" + mesKey);
+    var de = +document.getElementById("excecaoDe").value, ate = +document.getElementById("excecaoAte").value;
+    if (de > ate) { var tmp = de; de = ate; ate = tmp; }
+    var dd = function (n) { return (n < 10 ? "0" : "") + n; };
+    var chave = de === 1 && ate === diasDoMesExc(mesKey) ? equipeIdx + "|" + mesKey : equipeIdx + "|" + mesKey + "-" + dd(de) + "|" + mesKey + "-" + dd(ate);
+    filters[activeGroup].excluir.add(chave);
+    invalidarExcecoes();
     renderExcecaoLista();
     renderAll();
   });
 
   document.getElementById("btnClear").addEventListener("click", function () {
     var f = filters[activeGroup];
-    f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear(); f.excluir.clear();
+    f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear(); f.excluir.clear(); invalidarExcecoes();
     rebuildSidebar();
     renderAll();
   });
@@ -1426,11 +1462,21 @@ function iniciarPainel(DATA) {
     if (exceptDim !== "equipe" && f.equipe.size && !f.equipe.has(rows.equipe[i])) return false;
     return true;
   }
-  // exceção pontual: equipe excluída só num mês específico (ex.: dado ruim
-  // daquele mês), sem precisar tirar ela do filtro normal nos outros meses
+  // exceção pontual: equipe excluída só num mês (ou só alguns dias dele --
+  // ex.: equipe que começou no dia 8), sem precisar tirar ela do filtro normal
+  // nos outros períodos
   function isExcluido(group, rows, i) {
-    var ex = filters[group].excluir;
-    return ex.size > 0 && ex.has(rows.equipe[i] + "|" + rows.date[i].slice(0, 7));
+    if (!filters[group].excluir.size) return false;
+    if (!excIdx[group]) {
+      var m = {};
+      filters[group].excluir.forEach(function (k) { var e = parseExcecao(k); (m[e.equipe] || (m[e.equipe] = [])).push([e.ini, e.fim]); });
+      excIdx[group] = m;
+    }
+    var faixas = excIdx[group][rows.equipe[i]];
+    if (!faixas) return false;
+    var d = rows.date[i];
+    for (var k = 0; k < faixas.length; k++) if (d >= faixas[k][0] && d <= faixas[k][1]) return true;
+    return false;
   }
   function matchAll(group, i) {
     if (!matchDims(group, i)) return false;
