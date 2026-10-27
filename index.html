@@ -95,6 +95,14 @@
   .chk-ppt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
   .btn-link-ppt { font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-ink); background: none; border: 0; padding: 4px 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
   dialog.dlg-fracos { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 20px 60px rgba(0,0,0,.28); }
+  .dlg-fracos .dlg-topo select { font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); background: var(--surface-1); border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; }
+  .dlg-fracos .dlg-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .dlg-fracos .dlg-resumo div { border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 12px; color: var(--text-secondary); }
+  .dlg-fracos .dlg-resumo b { display: block; font-size: 18px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .dlg-fracos .tag-fraco { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--status-warn-soft, #fdf0d5); color: var(--status-warn, #8a5a00); font-size: 11px; font-weight: 700; }
+  .chk-turnos { display: inline-flex; align-items: center; gap: 7px; margin-left: 14px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+  .chk-turnos input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+  svg.chart .bar.clicavel { cursor: pointer; }
   dialog.dlg-fracos::backdrop { background: rgba(10, 14, 22, .5); }
   .dlg-fracos .dlg-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-1); }
   .dlg-fracos h2 { margin: 0; font-size: 16px; }
@@ -434,6 +442,7 @@
   <dialog class="dlg-fracos" id="dlgFracos" aria-labelledby="dlgFracosTit">
     <div class="dlg-topo">
       <h2 id="dlgFracosTit">Dias de pouco movimento — Sul</h2>
+      <select id="dlgFracosMes" aria-label="Mês"></select>
       <button class="btn-link-ppt" id="dlgFracosFechar" type="button">Fechar</button>
     </div>
     <div class="dlg-corpo" id="dlgFracosCorpo"></div>
@@ -729,6 +738,7 @@
           </div>
           <p class="panel-title" id="consolidadoCentroTitle">Faturamento — Consolidado Mês a Mês por Centro de Serviço</p>
           <p class="panel-caption" id="consolidadoCentroCaption">Sul = soma dos três centros · passe o mouse pra ver os valores exatos</p>
+          <label class="chk-turnos" id="lblTurnosNormais" hidden title="Tira da média os dias com menos da metade do movimento típico do mês (domingos e feriados)"><input type="checkbox" id="chkTurnosNormais"> Só dias normais</label>
           <button type="button" class="btn-toggle-values" id="btnToggleValoresCentro">Mostrar valores</button>
           <button type="button" class="btn-toggle-values btn-ghost" id="btnCopiarConjuntoCentro">Copiar os 4 gráficos</button>
         </div>
@@ -942,7 +952,7 @@ function iniciarPainel(DATA) {
     faturamento: "Sul = soma dos três centros · passe o mouse pra ver os valores exatos",
     ticket: "Valor realizado ÷ qtd. de serviços do mês · Sul = soma dos três centros",
     produtividade: "Serviços realizados ÷ linhas produtivas do mês · Sul = soma dos três centros",
-    turnos: "Média de turnos trabalhados por dia escalado · segue o filtro de Processo · Sul = soma dos três centros"
+    turnos: "Média de turnos trabalhados por dia escalado · segue o filtro de Processo · Sul = soma dos três centros · clique numa barra pra ver os dias e as equipes"
   };
   document.querySelectorAll(".seg-toggle[data-centro-mes-toggle]").forEach(function (toggle) {
     toggle.querySelectorAll(".seg-btn").forEach(function (btn) {
@@ -952,6 +962,7 @@ function iniciarPainel(DATA) {
         centroMesMetric = btn.dataset.metric;
         document.getElementById("consolidadoCentroTitle").textContent = CENTRO_MES_TITLES[centroMesMetric];
         document.getElementById("consolidadoCentroCaption").textContent = CENTRO_MES_CAPTIONS[centroMesMetric];
+        document.getElementById("lblTurnosNormais").hidden = centroMesMetric !== "turnos";
         renderAll();
       });
     });
@@ -1425,12 +1436,21 @@ function iniciarPainel(DATA) {
   // típico, com as equipes que trabalharam em cada um. Usa as mesmas contas da apresentação.
   function escHtml(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   document.getElementById("btnFracos").addEventListener("click", function () {
-    var dlg = document.getElementById("dlgFracos"), corpo = document.getElementById("dlgFracosCorpo");
+    var dlg = document.getElementById("dlgFracos"), selMes = document.getElementById("dlgFracosMes");
+    var mkIni = document.getElementById("selPptMes").value;
+    if (!mkIni) { var a = new Date(); a = new Date(a.getFullYear(), a.getMonth() - 1, 1); mkIni = a.getFullYear() + "-" + ("0" + (a.getMonth() + 1)).slice(-2); }
+    selMes.innerHTML = document.getElementById("selPptMes").innerHTML.replace(/<option value="">[^<]*<\/option>/, "");
+    selMes.value = mkIni; selMes.hidden = false;
+    document.getElementById("dlgFracosTit").textContent = "Dias de pouco movimento — Sul";
+    if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute("open", "");
+    montarDiasFracos(mkIni);
+  });
+  document.getElementById("dlgFracosMes").addEventListener("change", function () { montarDiasFracos(this.value); });
+  document.getElementById("chkTurnosNormais").addEventListener("change", function () { turnosSoNormais = this.checked; renderAll(); });
+  function montarDiasFracos(mk) {
+    var corpo = document.getElementById("dlgFracosCorpo");
     corpo.innerHTML = '<p class="dlg-nota">Calculando…</p>';
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
     carregarLibsPpt("contrato").then(function () {
-      var hoje = new Date(), mk = document.getElementById("selPptMes").value;
-      if (!mk) { var a = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); mk = a.getFullYear() + "-" + ("0" + (a.getMonth() + 1)).slice(-2); }
       var rows = GROUPS.ec.rows, ctx = {
         rows: rows, dicts: GROUPS.ec.dicts,
         isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
@@ -1452,7 +1472,7 @@ function iniciarPainel(DATA) {
       });
       corpo.innerHTML = html;
     }).catch(function (e) { corpo.innerHTML = '<p class="dlg-nota">Não consegui calcular: ' + escHtml(e && e.message || e) + "</p>"; });
-  });
+  }
   document.getElementById("dlgFracosFechar").addEventListener("click", function () { document.getElementById("dlgFracos").close(); });
   document.getElementById("dlgFracos").addEventListener("click", function (ev) { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   document.getElementById("selPptTipo").addEventListener("change", ajustarOpcoesPpt);
@@ -2271,7 +2291,7 @@ function iniciarPainel(DATA) {
 
   // uma barra por mês + etiqueta de valor sempre acima -- usado nos 4 quadros
   // "Consolidado por Centro" (um painel por centro, trocando a métrica)
-  function drawMiniMonthChart(svgId, items, color, valueKey, fmtLabel, fmtTip) {
+  function drawMiniMonthChart(svgId, items, color, valueKey, fmtLabel, fmtTip, onBarClick) {
     var svg = document.getElementById(svgId);
     var H = 240, padL = 10, padR = 10, padT = 30, padB = 26;
     if (!items.length) return emptyChart(svg, 480, H);
@@ -2314,9 +2334,15 @@ function iniciarPainel(DATA) {
       var barH = (v / maxVal) * innerH, by = padT + innerH - barH;
       var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
-        showTip(evt, "<div><b>" + d.label + "</b></div>" + '<div class="tt-row"><span>Valor</span><b>' + fmtTip(v) + "</b></div>");
+        showTip(evt, "<div><b>" + d.label + "</b></div>" + '<div class="tt-row"><span>Valor</span><b>' + fmtTip(v) + "</b></div>" +
+          (onBarClick ? '<div class="tt-row"><span>Clique para ver os dias</span></div>' : "") +
+          (d.diasFora ? '<div class="tt-row"><span>Dias fora da média</span><b>' + d.diasFora + "</b></div>" : ""));
       });
       rect.addEventListener("mouseleave", hideTip);
+      if (onBarClick) {
+        rect.classList.add("clicavel");
+        rect.addEventListener("click", function () { hideTip(); onBarClick(d); });
+      }
       svg.appendChild(rect);
       if (d[valueKey] != null) {
         var lbl = el("text", { x: cx, y: by - 8, class: "val-label", "text-anchor": "middle" });
@@ -2595,8 +2621,8 @@ function iniciarPainel(DATA) {
     var buckets = { Sul: {} };
     dict.forEach(function (name) { buckets[name] = {}; });
     function add(map, mk, i) {
-      if (!map[mk]) map[mk] = { trabalhouNum: 0, escaladoDias: new Set() };
-      if (isTrabalhou(group, rows, i)) map[mk].trabalhouNum++;
+      if (!map[mk]) map[mk] = { trabalhouNum: 0, escaladoDias: new Set(), trabPorDia: {} };
+      if (isTrabalhou(group, rows, i)) { map[mk].trabalhouNum++; map[mk].trabPorDia[rows.date[i]] = (map[mk].trabPorDia[rows.date[i]] || 0) + 1; }
       // mesmo "escalado" do resto do painel (trabalhou + faltou), senão esta
       // tela discordaria da aba Faltas -- e ficava cega no mês corrente igual
       if (isTrabalhou(group, rows, i) || isFaltou(group, rows, i)) map[mk].escaladoDias.add(rows.date[i]);
@@ -2608,15 +2634,67 @@ function iniciarPainel(DATA) {
       var label = rows.centro[i] >= 0 ? dict[rows.centro[i]] : null;
       if (label && buckets[label]) add(buckets[label], mk, i);
     }
+    // "dia fraco" é definido pelo Sul (soma dos centros) e vale igual pra todos os centros
+    var fracos = {};
+    Object.keys(buckets.Sul).forEach(function (mk) { fracos[mk] = diasFracosDe(buckets.Sul[mk].escaladoDias, buckets.Sul[mk].trabPorDia).set; });
+    var soNormais = turnosSoNormais;
     var out = {};
     Object.keys(buckets).forEach(function (name) {
       out[name] = Object.keys(buckets[name]).sort().map(function (mk) {
         var mi = parseInt(mk.slice(5, 7), 10) - 1, m = buckets[name][mk];
-        var dias = m.escaladoDias.size;
-        return { label: MONTH_FULL[mi], turnos: dias ? m.trabalhouNum / dias : null };
+        var dias = 0, trab = 0, fora = 0;
+        m.escaladoDias.forEach(function (dt) {
+          if (soNormais && fracos[mk] && fracos[mk][dt]) { fora++; return; }
+          dias++; trab += m.trabPorDia[dt] || 0;
+        });
+        return { label: MONTH_FULL[mi], mk: mk, turnos: dias ? trab / dias : null, diasFora: fora };
       });
     });
     return out;
+  }
+  // dia fraco = menos da metade dos turnos do dia típico (mediana) do mês; mesma regra do deck Contrato Sul
+  var LIMITE_DIA_FRACO = 0.5, turnosSoNormais = false;
+  function diasFracosDe(diasEscalados, trabPorDia) {
+    var dias = Array.from(diasEscalados), v = dias.map(function (d) { return trabPorDia[d] || 0; }).sort(function (a, b) { return a - b; });
+    var med = v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : 0, set = {};
+    dias.forEach(function (d) { if ((trabPorDia[d] || 0) < med * LIMITE_DIA_FRACO) set[d] = true; });
+    return { set: set, tipico: med };
+  }
+  var DIAS_SEMANA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+  // clique numa barra de Turnos: lista os dias do mês (fracos primeiro) e as equipes de cada um
+  function abrirDiasTurnos(mk, centroNome) {
+    var dlg = document.getElementById("dlgFracos"), corpo = document.getElementById("dlgFracosCorpo"), rows = GROUPS.ec.rows, D = GROUPS.ec.dicts;
+    var porSul = { esc: new Set(), trab: {} }, por = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      var dt = rows.date[i];
+      if (dt.slice(0, 7) !== mk || !matchAllExceptCentro("ec", i)) continue;
+      var t = isTrabalhou("ec", rows, i), f = isFaltou("ec", rows, i);
+      if (!t && !f) continue;
+      porSul.esc.add(dt); if (t) porSul.trab[dt] = (porSul.trab[dt] || 0) + 1;
+      if (centroNome !== "Sul" && D.centro[rows.centro[i]] !== centroNome) continue;
+      var d = por[dt] || (por[dt] = { dt: dt, trab: 0, faltaram: 0, equipes: [] });
+      if (t) { d.trab++; d.equipes.push(D.equipe[rows.equipe[i]]); } else d.faltaram++;
+    }
+    var fr = diasFracosDe(porSul.esc, porSul.trab), dias = Object.keys(por).sort(), nomeMes = MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1];
+    var tot = dias.reduce(function (a, x) { return a + por[x].trab; }, 0), normais = dias.filter(function (x) { return !fr.set[x]; });
+    var totN = normais.reduce(function (a, x) { return a + por[x].trab; }, 0), ml = function (v) { return v == null ? "—" : fmtNum(v, 1); };
+    function bloco(x) {
+      var o = por[x], dd = new Date(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)), fraco = !!fr.set[x];
+      o.equipes.sort(function (a, b) { return a.localeCompare(b, "pt-BR"); });
+      return "<details" + (fraco ? " open" : "") + "><summary>" + x.slice(8, 10) + "/" + x.slice(5, 7) + " (" + DIAS_SEMANA[dd.getDay()] + ") — " + o.trab + (o.trab === 1 ? " turno trabalhado" : " turnos trabalhados") +
+        (o.faltaram ? ", " + o.faltaram + " faltaram" : "") + (fraco ? '<span class="tag-fraco">dia fraco</span>' : "") + "</summary><p>" +
+        (o.equipes.length ? o.equipes.map(function (e) { return '<span class="eq">' + escHtml(e) + "</span>"; }).join("") : "Ninguém trabalhou neste dia.") + "</p></details>";
+    }
+    var fracosLista = dias.filter(function (x) { return fr.set[x]; });
+    document.getElementById("dlgFracosTit").textContent = "Turnos por dia — " + centroNome + " · " + nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + " " + mk.slice(0, 4);
+    document.getElementById("dlgFracosMes").hidden = true;
+    corpo.innerHTML = '<div class="dlg-resumo"><div>Média com todos os dias<b>' + ml(dias.length ? tot / dias.length : null) + "</b>" + tot + " turnos ÷ " + dias.length + " dias</div>" +
+      "<div>Média só dias normais<b>" + ml(normais.length ? totN / normais.length : null) + "</b>" + totN + " turnos ÷ " + normais.length + " dias</div>" +
+      "<div>Dias fracos<b>" + fracosLista.length + "</b>menos de " + Math.ceil(fr.tipico * LIMITE_DIA_FRACO) + " turnos no Sul no dia</div></div>" +
+      '<p class="dlg-nota">Respeita os filtros da tela (processo, supervisor, etc.). Dia fraco = menos da metade dos turnos de um dia típico do mês (' + Math.round(fr.tipico) + " no Sul). Clique num dia para ver as equipes.</p>" +
+      "<h3>Dias fracos</h3>" + (fracosLista.length ? fracosLista.map(bloco).join("") : '<p class="vazio">Nenhum dia fraco neste mês.</p>') +
+      "<h3>Dias normais</h3>" + (normais.length ? normais.map(bloco).join("") : '<p class="vazio">—</p>');
+    if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute("open", "");
   }
 
   // ---------- tables ----------
@@ -3637,7 +3715,8 @@ function iniciarPainel(DATA) {
     }
     Object.keys(CENTRO_MES_SVGS).forEach(function (name) {
       var items = byCentro[name] || [];
-      drawMiniMonthChart(CENTRO_MES_SVGS[name], items, colors[name], valueKey, fmtLabel, fmtTip);
+      drawMiniMonthChart(CENTRO_MES_SVGS[name], items, colors[name], valueKey, fmtLabel, fmtTip,
+        centroMesMetric === "turnos" ? function (d) { abrirDiasTurnos(d.mk, name); } : null);
       renderCentroMesChartTable(CENTRO_MES_TABLES[name], items, valueKey, fmtTip);
     });
   }
