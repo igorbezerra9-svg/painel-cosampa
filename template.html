@@ -91,6 +91,21 @@
   .btn-ppt svg { width: 15px; height: 15px; flex: none; }
   .btn-ppt[data-estado="pronto"] { color: var(--status-good); border-color: var(--status-good); background: var(--status-good-soft); }
   .btn-ppt[data-estado="erro"] { color: var(--status-crit); border-color: var(--status-crit); background: var(--status-crit-soft); }
+  .chk-ppt { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+  .chk-ppt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+  .btn-link-ppt { font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-ink); background: none; border: 0; padding: 4px 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  dialog.dlg-fracos { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 20px 60px rgba(0,0,0,.28); }
+  dialog.dlg-fracos::backdrop { background: rgba(10, 14, 22, .5); }
+  .dlg-fracos .dlg-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-1); }
+  .dlg-fracos h2 { margin: 0; font-size: 16px; }
+  .dlg-fracos .dlg-corpo { padding: 14px 20px 20px; display: grid; gap: 14px; overflow-y: auto; max-height: calc(100vh - 140px); }
+  .dlg-fracos .dlg-nota { margin: 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .dlg-fracos h3 { margin: 4px 0 0; font-size: 13.5px; }
+  .dlg-fracos details { border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+  .dlg-fracos summary { cursor: pointer; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dlg-fracos details p { margin: 8px 0 2px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+  .dlg-fracos .eq { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; font-size: 12px; }
+  .dlg-fracos .vazio { font-size: 12.5px; color: var(--text-secondary); font-weight: 400; }
   @keyframes pulse-dot { 0% { transform: scale(.5); opacity: .5; } 100% { transform: scale(2.4); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .updated-dot::after { animation: none; } }
 
@@ -416,6 +431,14 @@
     </div>
   </div>
 
+  <dialog class="dlg-fracos" id="dlgFracos" aria-labelledby="dlgFracosTit">
+    <div class="dlg-topo">
+      <h2 id="dlgFracosTit">Dias de pouco movimento — Sul</h2>
+      <button class="btn-link-ppt" id="dlgFracosFechar" type="button">Fechar</button>
+    </div>
+    <div class="dlg-corpo" id="dlgFracosCorpo"></div>
+  </dialog>
+
   <header class="top">
     <div class="title-block">
       <p class="eyebrow">Cosampa</p>
@@ -428,6 +451,8 @@
       </select>
       <select class="sel-ppt" id="selPptMes" title="Mês da apresentação" aria-label="Mês da apresentação"></select>
       <select class="sel-ppt" id="selPptProc" title="Processo da apresentação" aria-label="Processo da apresentação"></select>
+      <label class="chk-ppt" id="lblNormais" title="Calcula a média de turnos só com os dias de operação normal, deixando de fora domingos e feriados de pouco movimento"><input type="checkbox" id="chkNormais"> Só dias normais</label>
+      <button class="btn-link-ppt" id="btnFracos" type="button" title="Mostra os dias de pouco movimento do mês e quais equipes trabalharam em cada um">Ver dias fracos</button>
       <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação escolhida ao lado (tipo, mês e processo)">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span id="btnPptLabel">Apresentação</span>
@@ -1393,7 +1418,43 @@ function iniciarPainel(DATA) {
     var contrato = document.getElementById("selPptTipo").value === "contrato";
     document.getElementById("selPptProc").style.display = contrato ? "none" : "";
     document.getElementById("selPptMes").options[0].textContent = contrato ? "Último mês fechado" : "Mês atual (até ontem)";
+    document.getElementById("lblNormais").style.display = contrato ? "" : "none";
+    document.getElementById("btnFracos").style.display = contrato ? "" : "none";
   }
+  // "Ver dias fracos": dias do mês escolhido (padrão: último mês fechado) com menos da metade do movimento
+  // típico, com as equipes que trabalharam em cada um. Usa as mesmas contas da apresentação.
+  function escHtml(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  document.getElementById("btnFracos").addEventListener("click", function () {
+    var dlg = document.getElementById("dlgFracos"), corpo = document.getElementById("dlgFracosCorpo");
+    corpo.innerHTML = '<p class="dlg-nota">Calculando…</p>';
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    carregarLibsPpt("contrato").then(function () {
+      var hoje = new Date(), mk = document.getElementById("selPptMes").value;
+      if (!mk) { var a = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); mk = a.getFullYear() + "-" + ("0" + (a.getMonth() + 1)).slice(-2); }
+      var rows = GROUPS.ec.rows, ctx = {
+        rows: rows, dicts: GROUPS.ec.dicts,
+        isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
+        isFaltou: function (i) { return isFaltou("ec", rows, i); },
+        isExcluido: function (i) { return isExcluido("ec", rows, i); }
+      };
+      var nomeMes = MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1], html = '<p class="dlg-nota">' + nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + " " + mk.slice(0, 4) +
+        ". Dia fraco = menos da metade dos turnos trabalhados de um dia típico do mês (soma de Campos Sales, Juazeiro e Milagres). Clique em um dia para ver quem trabalhou. " +
+        "Com “Só dias normais” ligado, esses dias ficam fora da média de turnos por dia.</p>";
+      [["Emergencial", "Emergencial"], ["Comercial", "Comercial (Carro)"], ["Comercial Moto", "Comercial (Moto)"]].forEach(function (pr) {
+        var d = window.PainelApresentacao.diasFracosContrato(ctx, pr[0], mk);
+        html += "<h3>" + pr[1] + ' <span class="vazio">— dia típico: ' + Math.round(d.tipico) + " turnos</span></h3>";
+        if (!d.fracos.length) { html += '<p class="vazio">Nenhum dia fraco neste mês.</p>'; return; }
+        d.fracos.forEach(function (f) {
+          html += "<details><summary>" + f.dt.slice(8, 10) + "/" + f.dt.slice(5, 7) + " (" + f.dow + ") — " + f.trab + (f.trab === 1 ? " turno trabalhado" : " turnos trabalhados") +
+            (f.faltaram ? ", " + f.faltaram + " faltaram" : "") + "</summary><p>" +
+            f.equipes.map(function (e) { return '<span class="eq">' + escHtml(e.equipe) + " · " + escHtml(e.centro) + "</span>"; }).join("") + "</p></details>";
+        });
+      });
+      corpo.innerHTML = html;
+    }).catch(function (e) { corpo.innerHTML = '<p class="dlg-nota">Não consegui calcular: ' + escHtml(e && e.message || e) + "</p>"; });
+  });
+  document.getElementById("dlgFracosFechar").addEventListener("click", function () { document.getElementById("dlgFracos").close(); });
+  document.getElementById("dlgFracos").addEventListener("click", function (ev) { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   document.getElementById("selPptTipo").addEventListener("change", ajustarOpcoesPpt);
   ajustarOpcoesPpt();
   pptBtn.addEventListener("click", function () {
@@ -1403,7 +1464,7 @@ function iniciarPainel(DATA) {
     carregarLibsPpt(tipoPpt).then(function () {
       var rows = GROUPS.ec.rows;
       return window.PainelApresentacao[tipoPpt === "contrato" ? "gerarContrato" : "gerar"]({
-        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, processo: document.getElementById("selPptProc").value, geradoEm: DATA.generated, assetBase: "apresentacao/",
+        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, processo: document.getElementById("selPptProc").value, geradoEm: DATA.generated, assetBase: "apresentacao/", somenteDiasNormais: document.getElementById("chkNormais").checked,
         isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
         isFaltou: function (i) { return isFaltou("ec", rows, i); },
         isExcluido: function (i) { return isExcluido("ec", rows, i); }

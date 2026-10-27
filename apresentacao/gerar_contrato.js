@@ -13,6 +13,9 @@
   var MES_CAP = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   var MES_MIN = MES_CAP.map(function (m) { return m.toLowerCase(); });
   var PRIMEIRO_MES = "2026-01";
+  // "dia fraco" = dia com menos da metade dos turnos do dia típico do mês (mediana). Pega domingo e
+  // feriado em que quase ninguém trabalha, que puxam a média mensal pra baixo.
+  var LIMITE_DIA_FRACO = 0.5;
   var CIDADES = [
     { chave: "CS", nome: "Campos Sales", curto: "CS", cor: "EC6B35" },
     { chave: "JN", nome: "Juazeiro do Norte", curto: "JN", cor: "2979D8" },
@@ -81,6 +84,21 @@
     var meses = Object.keys(mesesSet).sort();
     if (!meses.length || meses[meses.length - 1] !== alvo) throw new Error("Sem dados de " + nomeMes(alvo) + " " + alvo.slice(0, 4) + " para montar o contrato");
 
+    var fracos = {};
+    PROCESSOS.forEach(function (p) {
+      fracos[p.dict] = {};
+      meses.forEach(function (mk) {
+        var m = acc[p.dict].Sul[mk]; if (!m) return;
+        var ds = Object.keys(m.dias).filter(function (x) { return m.dias[x].esc > 0; });
+        var v = ds.map(function (x) { return m.dias[x].trab; }).sort(function (a, b) { return a - b; });
+        var med = v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : 0;
+        var lista = ds.filter(function (x) { return m.dias[x].trab < med * LIMITE_DIA_FRACO; }).sort()
+          .map(function (x) { return { dt: x, trab: m.dias[x].trab }; });
+        var set = {}; lista.forEach(function (l) { set[l.dt] = true; });
+        fracos[p.dict][mk] = { set: set, lista: lista, tipico: med };
+      });
+    });
+
     var series = {};
     PROCESSOS.forEach(function (p) {
       series[p.dict] = {};
@@ -88,7 +106,8 @@
         var s = { turnos: [], fat: [], prod: [], ticket: [] };
         meses.forEach(function (mk) {
           var m = acc[p.dict][c.chave][mk] || { val: 0, qtd: 0, den: 0, dias: {} };
-          var dias = Object.keys(m.dias).filter(function (x) { return m.dias[x].esc > 0; });
+          var fr = fracos[p.dict][mk];
+          var dias = Object.keys(m.dias).filter(function (x) { return m.dias[x].esc > 0 && !(ctx.somenteDiasNormais && fr && fr.set[x]); });
           s.turnos.push(dias.length ? dias.reduce(function (a, x) { return a + m.dias[x].trab; }, 0) / dias.length : 0);
           s.fat.push(m.val);
           s.prod.push(m.den ? m.qtd / m.den : 0);
@@ -97,7 +116,31 @@
         series[p.dict][c.chave] = s;
       });
     });
-    return { meses: meses, alvo: alvo, parcial: parcial, fimTxt: parcial ? brData(ontem) : "", series: series, emitidoEm: brData(iso(hoje)) };
+    return { meses: meses, alvo: alvo, parcial: parcial, fimTxt: parcial ? brData(ontem) : "", series: series, fracos: fracos, somenteDiasNormais: !!ctx.somenteDiasNormais, emitidoEm: brData(iso(hoje)) };
+  }
+
+  var DIA_SEMANA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+  // Lista os dias fracos de um processo/mês e, em cada um, quem trabalhou. ctx: rows, dicts,
+  // isTrabalhou, isFaltou, isExcluido (as mesmas funções do painel).
+  function diasFracosDetalhe(ctx, procDict, mk) {
+    var rows = ctx.rows, D = ctx.dicts, pIdx = D.processo.indexOf(procDict), cenIdx = {};
+    CIDADES.forEach(function (c) { cenIdx[D.centro.indexOf(c.nome)] = c.curto; });
+    var por = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      var dt = rows.date[i];
+      if (dt.slice(0, 7) !== mk || rows.proc[i] !== pIdx || !cenIdx[rows.centro[i]] || ctx.isExcluido(i)) continue;
+      var t = ctx.isTrabalhou(i), f = ctx.isFaltou(i);
+      if (!t && !f) continue;
+      var d = por[dt] || (por[dt] = { dt: dt, trab: 0, faltaram: 0, equipes: [] });
+      if (t) { d.trab++; d.equipes.push({ equipe: D.equipe[rows.equipe[i]], centro: cenIdx[rows.centro[i]], qtd: rows.qtd[i], valor: rows.valor[i] }); } else d.faltaram++;
+    }
+    var dias = Object.keys(por).sort(), v = dias.map(function (x) { return por[x].trab; }).sort(function (a, b) { return a - b; });
+    var med = v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : 0, lim = med * LIMITE_DIA_FRACO;
+    var fracos = dias.filter(function (x) { return por[x].trab < lim; }).map(function (x) {
+      var d = por[x], dd = new Date(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10));
+      d.dow = DIA_SEMANA[dd.getDay()]; d.equipes.sort(function (a, b) { return a.equipe.localeCompare(b.equipe, "pt-BR"); }); return d;
+    });
+    return { tipico: med, limite: lim, diasNoMes: dias.length, fracos: fracos };
   }
 
   // ---------- insights (texto montado só com os números) ----------
@@ -212,6 +255,11 @@
         runs.push({ text: p.t, options: o });
       });
     });
+    if (met === "turnos" && res.somenteDiasNormais) {
+      var fr = res.fracos[proc.dict], porMes = res.meses.map(function (mk) { var l = fr[mk] ? fr[mk].lista : []; return l.length ? nomeMesMin(mk).slice(0, 3) + ": " + l.length + (l.length === 1 ? " dia" : " dias") : null; }).filter(Boolean);
+      s.addText("Média de turnos só com dias de operação normal (exclui dias com menos da metade do movimento típico do mês, como domingos e feriados)." + (porMes.length ? " Dias fora da conta — " + porMes.join(" · ") + ". Lista no anexo." : " Nenhum dia fora da conta neste processo."),
+        { x: 0.45, y: 10.78, w: 19.1, h: 0.4, fontFace: "Calibri", fontSize: 11, italic: true, color: "6B6B6B", margin: 0, valign: "top" });
+    }
     s.addText(runs, { x: 0.75, y: 8.62, w: 18.5, h: 2.0, fontFace: "Calibri", valign: "top", margin: 0, lineSpacingMultiple: 1.12 });
   }
 
@@ -224,6 +272,26 @@
       { text: "ENEL CEARÁ", options: { breakLine: true } },
       { text: res.emitidoEm, options: {} }
     ], { x: 1.55, y: 6.8, w: 12, h: 2.7, fontFace: "Calibri Light", fontSize: 40, color: "A6A6A6", valign: "top", margin: 0, lineSpacingMultiple: 1.15 });
+  }
+  function slideAnexo(pptx, res, img) {
+    var s = pptx.addSlide();
+    s.addImage(img("bg_dados.png", { x: -0.06, y: -0.06, w: 20.12, h: 11.37 }));
+    cabecalho(pptx, s, "Anexo — dias fora da média de turnos", "Só dias normais");
+    var cab = function (t) { return { text: t, options: { bold: true, color: "FFFFFF", fill: { color: "1F5C99" }, align: "center" } }; };
+    var linhas = [[cab("Processo"), cab("Mês"), cab("Dias fora da média (turnos trabalhados no dia)")]];
+    PROCESSOS.forEach(function (p) {
+      res.meses.forEach(function (mk) {
+        var fr = res.fracos[p.dict][mk]; if (!fr || !fr.lista.length) return;
+        var zebra = linhas.length % 2 ? "EEF2F9" : "FFFFFF";
+        linhas.push([{ text: p.nome, options: { fill: { color: zebra } } }, { text: nomeMes(mk), options: { fill: { color: zebra } } },
+          { text: fr.lista.map(function (l) { return l.dt.slice(8, 10) + "/" + l.dt.slice(5, 7) + " (" + l.trab + ")"; }).join(" · "), options: { fill: { color: zebra } } }]);
+      });
+    });
+    if (linhas.length === 1) linhas.push([{ text: "—" }, { text: "—" }, { text: "Nenhum dia de baixa operação no período." }]);
+    var fonte = linhas.length > 26 ? 10 : linhas.length > 18 ? 11 : 13;
+    s.addTable(linhas, { x: 0.5, y: 1.5, w: 19, colW: [3.2, 2.3, 13.5], fontFace: "Calibri", fontSize: fonte, color: "262626", valign: "middle", margin: [0.03, 0.08, 0.03, 0.08], border: { type: "solid", pt: 0.5, color: "D0D0D0" } });
+    s.addText("Critério: dia fraco = menos da metade dos turnos trabalhados do dia típico (mediana) do mês, somando Campos Sales, Juazeiro e Milagres. O número entre parênteses é o total de turnos trabalhados no Sul naquele dia.",
+      { x: 0.5, y: 10.55, w: 19, h: 0.5, fontFace: "Calibri", fontSize: 11, italic: true, color: "6B6B6B", margin: 0 });
   }
   function slideImagem(pptx, arquivo, img) { var s = pptx.addSlide(); s.addImage(img(arquivo, { x: 0, y: 0, w: 20, h: 11.25 })); }
 
@@ -244,6 +312,7 @@
     slideImagem(pptx, "missao.png", img);
     slideImagem(pptx, "valores.jpg", img);
     PROCESSOS.forEach(function (p) { p.ordem.forEach(function (m) { slideMetrica(pptx, res, p, m, img); }); });
+    if (res.somenteDiasNormais) slideAnexo(pptx, res, img);
     slideImagem(pptx, "fim.png", img);
 
     return pptx.write({ outputType: "arraybuffer" }).then(function (buf) { return { arrayBuffer: buf, nomeArquivo: nomeArquivo(res), resumo: res }; });
@@ -252,5 +321,6 @@
   root.PainelApresentacao = root.PainelApresentacao || {};
   root.PainelApresentacao.gerarContrato = gerar;
   root.PainelApresentacao.calcularContrato = calcular;
+  root.PainelApresentacao.diasFracosContrato = diasFracosDetalhe;
   root.PainelApresentacao.insightsContrato = insights;
 })(typeof window !== "undefined" ? window : globalThis);
