@@ -422,9 +422,13 @@
       <h1>Faturamento &amp; Obras</h1>
     </div>
     <div class="top-actions">
+      <select class="sel-ppt" id="selPptTipo" title="Qual apresentação baixar" aria-label="Qual apresentação baixar">
+        <option value="turnos">Controle de turnos</option>
+        <option value="contrato">Contrato Sul (gerência)</option>
+      </select>
       <select class="sel-ppt" id="selPptMes" title="Mês da apresentação" aria-label="Mês da apresentação"></select>
       <select class="sel-ppt" id="selPptProc" title="Processo da apresentação" aria-label="Processo da apresentação"></select>
-      <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação de turnos (mês e processo escolhidos ao lado)">
+      <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação escolhida ao lado (tipo, mês e processo)">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span id="btnPptLabel">Apresentação</span>
       </button>
@@ -1339,7 +1343,7 @@ function iniciarPainel(DATA) {
   // do painel. As contas usam as mesmas funções do painel (isTrabalhou/isFaltou)
   // e respeitam as exceções "excluir equipe", mas não os outros filtros
   // da lateral: a apresentação é sempre o Emergencial inteiro do mês até ontem.
-  var pptBtn = document.getElementById("btnPpt"), pptLabel = document.getElementById("btnPptLabel"), pptLibs = null, pptTimer = null, pptTituloPadrao = pptBtn.title;
+  var pptBtn = document.getElementById("btnPpt"), pptLabel = document.getElementById("btnPptLabel"), pptLibs = {}, pptBundle = null, pptTimer = null, pptTituloPadrao = pptBtn.title;
   function pptEstado(estado, msg) {
     clearTimeout(pptTimer);
     pptBtn.disabled = estado === "gerando";
@@ -1356,12 +1360,12 @@ function iniciarPainel(DATA) {
       document.head.appendChild(s);
     });
   }
-  function carregarLibsPpt() {
-    if (!pptLibs) {
-      pptLibs = carregarScript("apresentacao/pptxgen.bundle.js").then(function () { return carregarScript("apresentacao/gerar.js"); })
-        .catch(function (e) { pptLibs = null; throw e; });
-    }
-    return pptLibs;
+  // o bundle (pptxgenjs + JSZip) é comum; cada tipo de apresentação tem o seu gerador
+  var PPT_GERADORES = { turnos: "apresentacao/gerar.js", contrato: "apresentacao/gerar_contrato.js" };
+  function carregarLibsPpt(tipo) {
+    if (!pptBundle) pptBundle = carregarScript("apresentacao/pptxgen.bundle.js").catch(function (e) { pptBundle = null; throw e; });
+    if (!pptLibs[tipo]) pptLibs[tipo] = pptBundle.then(function () { return carregarScript(PPT_GERADORES[tipo]); }).catch(function (e) { pptLibs[tipo] = null; throw e; });
+    return pptLibs[tipo];
   }
   function baixarArquivo(arrayBuffer, nome) {
     var blob = new Blob([arrayBuffer], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
@@ -1383,12 +1387,22 @@ function iniciarPainel(DATA) {
     });
     document.getElementById("selPptProc").innerHTML = nomesProc.map(function (n) { return '<option value="' + n + '">' + n + "</option>"; }).join("");
   })();
+  // contrato: não usa o seletor de processo (já traz Emergencial, Comercial Carro e Moto) e o padrão
+  // do mês é o último mês fechado, não o mês corrente
+  function ajustarOpcoesPpt() {
+    var contrato = document.getElementById("selPptTipo").value === "contrato";
+    document.getElementById("selPptProc").style.display = contrato ? "none" : "";
+    document.getElementById("selPptMes").options[0].textContent = contrato ? "Último mês fechado" : "Mês atual (até ontem)";
+  }
+  document.getElementById("selPptTipo").addEventListener("change", ajustarOpcoesPpt);
+  ajustarOpcoesPpt();
   pptBtn.addEventListener("click", function () {
     if (pptBtn.disabled) return;
     pptEstado("gerando");
-    carregarLibsPpt().then(function () {
+    var tipoPpt = document.getElementById("selPptTipo").value;
+    carregarLibsPpt(tipoPpt).then(function () {
       var rows = GROUPS.ec.rows;
-      return window.PainelApresentacao.gerar({
+      return window.PainelApresentacao[tipoPpt === "contrato" ? "gerarContrato" : "gerar"]({
         PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, processo: document.getElementById("selPptProc").value, geradoEm: DATA.generated, assetBase: "apresentacao/",
         isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
         isFaltou: function (i) { return isFaltou("ec", rows, i); },

@@ -319,5 +319,8 @@
     });
   }
 
-  root.PainelApresentacao = { gerar: gerar, calcular: calcular };
+  // soma ao objeto (não substitui): gerar_contrato.js também registra funções aqui
+  root.PainelApresentacao = root.PainelApresentacao || {};
+  root.PainelApresentacao.gerar = gerar;
+  root.PainelApresentacao.calcular = calcular;
 })(typeof window !== "undefined" ? window : globalThis);
