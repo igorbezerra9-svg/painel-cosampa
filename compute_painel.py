@@ -120,6 +120,22 @@ def transform_ec(df, sup, centro, proc, equipe, motivo):
     }
 
 
+def corrigir_valor_obras_em_milhar(df):
+    """Correção provisória dos meses de Obras gravados com o valor ~1000x menor.
+
+    Entre 21 e 29/10/2026 o conversor do robô leu "7.574,28" (pt-BR) como americano
+    e gravou 7,57. O conversor já foi corrigido e os meses são refeitos pela VPS; até
+    cada mês ser refeito, aqui o valor menor que 100 é multiplicado por 1000 -- só nos
+    meses em que a maioria dos dias com valor está nessa faixa (mês refeito tem quase
+    todos acima de 100, então não é mexido). Perde os centavos (±R$ 5 por linha)."""
+    mes = df["dia_interv"].dt.strftime("%Y-%m")
+    com_valor = df["valor_total"] > 0
+    pequeno = com_valor & (df["valor_total"] < 100) & (df["meta_valor"] >= 100)
+    quebrado = pequeno.groupby(mes).transform("sum") > 0.4 * com_valor.groupby(mes).transform("sum")
+    alvo = pequeno & quebrado
+    df.loc[alvo, "valor_total"] = (df.loc[alvo, "valor_total"] * 1000).round(0)
+
+
 def transform_obras(df, sup, centro, proc, equipe, motivo):
     df = df.copy()
     df["dia_interv"] = pd.to_datetime(df["dia_interv"], dayfirst=True, errors="coerce")
@@ -129,6 +145,7 @@ def transform_obras(df, sup, centro, proc, equipe, motivo):
     df["meta_valor"] = to_num(df["meta_valor"])
     df["qtd_serv"] = to_num(df["qtd_serv"])
     df["meta_qtd"] = to_num(df["meta_qtd"])
+    corrigir_valor_obras_em_milhar(df)
 
     def status_code(r):
         if r["valor_total"] > 0:
