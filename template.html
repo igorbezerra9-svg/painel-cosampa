@@ -469,6 +469,7 @@
       <select class="sel-ppt" id="selPptMes" title="Mês da apresentação" aria-label="Mês da apresentação"></select>
       <select class="sel-ppt" id="selPptProc" title="Processo da apresentação" aria-label="Processo da apresentação"></select>
       <label class="chk-ppt" id="lblNormais" title="Calcula a média de turnos só com os dias de operação normal, deixando de fora domingos e feriados de pouco movimento"><input type="checkbox" id="chkNormais"> Só dias normais</label>
+      <label class="chk-ppt" id="lblComparar" title="Põe 2025 e 2026 lado a lado, mês a mês, nos mesmos gráficos (só os meses que existem nos dois anos: a partir de maio)"><input type="checkbox" id="chkComparar"> Comparar com 2025</label>
       <button class="btn-link-ppt" id="btnFracos" type="button" title="Mostra os dias de pouco movimento do mês e quais equipes trabalharam em cada um">Ver dias fracos</button>
       <button class="btn-ppt" id="btnPpt" type="button" title="Baixar a apresentação escolhida ao lado (tipo, mês e processo)">
         <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1499,6 +1500,7 @@ function iniciarPainel(DATA) {
     document.getElementById("selPptProc").style.display = contrato ? "none" : "";
     document.getElementById("selPptMes").options[0].textContent = contrato ? "Último mês fechado" : "Mês atual (até ontem)";
     document.getElementById("lblNormais").style.display = contrato ? "" : "none";
+    document.getElementById("lblComparar").style.display = contrato ? "" : "none";
     document.getElementById("btnFracos").style.display = contrato ? "" : "none";
   }
   // "Ver dias fracos": dias do mês escolhido (padrão: último mês fechado) com menos da metade do movimento
@@ -1553,7 +1555,7 @@ function iniciarPainel(DATA) {
     carregarLibsPpt(tipoPpt).then(function () {
       var rows = GROUPS.ec.rows;
       return window.PainelApresentacao[tipoPpt === "contrato" ? "gerarContrato" : "gerar"]({
-        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, processo: document.getElementById("selPptProc").value, geradoEm: DATA.generated, assetBase: "apresentacao/", somenteDiasNormais: document.getElementById("chkNormais").checked,
+        PptxGenJS: window.PptxGenJS, JSZip: window.JSZip, rows: rows, dicts: GROUPS.ec.dicts, hoje: new Date(), mes: document.getElementById("selPptMes").value, processo: document.getElementById("selPptProc").value, geradoEm: DATA.generated, assetBase: "apresentacao/", somenteDiasNormais: document.getElementById("chkNormais").checked, compararAno: document.getElementById("chkComparar").checked,
         isTrabalhou: function (i) { return isTrabalhou("ec", rows, i); },
         isFaltou: function (i) { return isFaltou("ec", rows, i); },
         isExcluido: function (i) { return isExcluido("ec", rows, i); }
