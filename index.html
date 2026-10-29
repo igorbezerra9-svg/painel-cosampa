@@ -27,6 +27,8 @@
     --series-centro-sul: #8355c9;
     --series-prev:       #14a39a;
     --series-prev-strong: #0d6e68;
+    --mot-1: #2a78d6; --mot-2: #e5622c; --mot-3: #8355c9; --mot-4: #14a39a; --mot-5: #c23d7e; --mot-6: #9a7b12;
+    --mot-outros: #a39a84; --mot-sem: #5c5647;
     --pill-bg:        rgba(15,13,8,.82);
     --status-good:    #0ca30c;
     --status-warn:    #b8790f;
@@ -95,6 +97,29 @@
   .btn-ppt svg { width: 15px; height: 15px; flex: none; }
   .btn-ppt[data-estado="pronto"] { color: var(--status-good); border-color: var(--status-good); background: var(--status-good-soft); }
   .btn-ppt[data-estado="erro"] { color: var(--status-crit); border-color: var(--status-crit); background: var(--status-crit-soft); }
+
+  /* Impacto financeiro das faltas por motivo */
+  .impacto-ponte { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 10px 0 16px; }
+  .impacto-ponte .ip-card { flex: 1 1 150px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 140px; }
+  .impacto-ponte .ip-op { align-self: center; font-size: 18px; font-weight: 800; color: var(--text-muted); }
+  .impacto-ponte .ip-rot { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .impacto-ponte .ip-val { font-size: 20px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .impacto-ponte .ip-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .impacto-ponte .ip-card.perda .ip-val { color: var(--status-crit); }
+  .impacto-sub { font-size: 12px; font-weight: 800; color: var(--text-secondary); margin: 16px 0 6px; }
+  .impacto-rank { display: grid; grid-template-columns: minmax(120px, 210px) 1fr minmax(150px, auto); gap: 6px 12px; align-items: center; font-size: 12px; }
+  .impacto-rank .ir-nome { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text-primary); min-width: 0; }
+  .impacto-rank .ir-nome i, .legenda-motivos i { width: 11px; height: 11px; border-radius: 3px; flex: none; display: inline-block; }
+  .impacto-rank .ir-nome span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .impacto-rank .ir-trilho { background: var(--surface-2); border-radius: 4px; height: 14px; }
+  .impacto-rank .ir-barra { height: 14px; border-radius: 4px; min-width: 2px; }
+  .impacto-rank .ir-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); white-space: nowrap; }
+  .impacto-rank .ir-val b { color: var(--text-primary); }
+  .legenda-motivos { display: flex; gap: 6px 14px; flex-wrap: wrap; margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .legenda-motivos span { display: inline-flex; align-items: center; gap: 6px; }
+  .impacto-mes-svg .barra-mes { cursor: pointer; }
+  .impacto-nota { font-size: 11px; color: var(--text-muted); margin: 6px 0 0; }
+  @media (max-width: 640px) { .impacto-rank { grid-template-columns: 1fr; } .impacto-rank .ir-val { text-align: left; } }
   .legenda-anos { display: flex; gap: 14px; flex-wrap: wrap; margin: -4px 0 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
   .legenda-anos:empty { display: none; }
   .legenda-anos span { display: inline-flex; align-items: center; gap: 6px; }
@@ -734,6 +759,18 @@
             <div class="tablewrap"><table class="datatable" id="tblFaltasRankFat"></table></div>
             <div id="faltasRodapeFat"></div>
           </div>
+          <div class="panel" id="panelImpactoMotivoFat" style="margin-bottom:14px">
+            <p class="panel-title">Impacto financeiro das faltas por motivo</p>
+            <p class="panel-caption" id="impactoCaptionFat"></p>
+            <div class="impacto-ponte" id="impactoPonteFat"></div>
+            <p class="impacto-sub">Quanto cada motivo custou da meta</p>
+            <div class="impacto-rank" id="impactoRankFat"></div>
+            <p class="impacto-sub">Mês a mês · clique numa barra para filtrar o mês</p>
+            <div class="legenda-motivos" id="impactoLegendaFat"></div>
+            <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesFat" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
+            <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblFat"></table></div>
+            <p class="impacto-nota">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado). Respeita os filtros de supervisor, centro, processo e equipe; o gráfico e a tabela mostram todos os meses.</p>
+          </div>
           <div class="panel" id="panelFaltasMotivoFat">
             <p class="panel-title">Faltas por motivo</p>
             <p class="panel-caption" id="faltasMotivoCaptionFat">Motivo lançado na planilha · mesmo recorte dos filtros atuais</p>
@@ -864,6 +901,18 @@
             <div id="faltasBodyOb"></div>
             <div class="tablewrap"><table class="datatable" id="tblFaltasRankOb"></table></div>
             <div id="faltasRodapeOb"></div>
+          </div>
+          <div class="panel" id="panelImpactoMotivoOb" style="margin-bottom:14px">
+            <p class="panel-title">Impacto financeiro das faltas por motivo</p>
+            <p class="panel-caption" id="impactoCaptionOb"></p>
+            <div class="impacto-ponte" id="impactoPonteOb"></div>
+            <p class="impacto-sub">Quanto cada motivo custou da meta</p>
+            <div class="impacto-rank" id="impactoRankOb"></div>
+            <p class="impacto-sub">Mês a mês · clique numa barra para filtrar o mês</p>
+            <div class="legenda-motivos" id="impactoLegendaOb"></div>
+            <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesOb" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
+            <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblOb"></table></div>
+            <p class="impacto-nota">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado). Respeita os filtros de supervisor, centro, processo e equipe; o gráfico e a tabela mostram todos os meses.</p>
           </div>
           <div class="panel" id="panelFaltasMotivoOb">
             <p class="panel-title">Faltas por motivo</p>
@@ -3043,7 +3092,198 @@ function iniciarPainel(DATA) {
     return "<thead><tr><th>Equipe</th><th>Centro de Serviço</th><th>Supervisor</th><th>Escalas</th><th>Faltas</th><th>% de falta</th>" +
       (dias ? "<th>Dias em que faltou</th>" : "") + "</tr></thead>";
   }
+
+  // ---------- Impacto financeiro das faltas por motivo ----------
+  // Projetado - perda por falta (por motivo) +/- dias trabalhados fora da meta = Realizado.
+  // Perda de uma falta = meta do dia que não virou valor. A cor de cada motivo é fixa
+  // (os 6 maiores do dado inteiro), pra não mudar quando um filtro tira ou põe motivo.
+  var MOTIVO_SLOTS = 6;
+  function perdaDaFalta(rows, i) { return Math.max(0, rows.meta[i] - rows.valor[i]); }
+  function corDoSlot(slot) { return slot === "sem" ? cv("--mot-sem") : slot === "outros" ? cv("--mot-outros") : cv("--mot-" + (slot + 1)); }
+  function slotsDeMotivo(group) {
+    var rows = GROUPS[group].rows, tot = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      if (!isFaltou(group, rows, i) || rows.motivo[i] < 0) continue;
+      tot[rows.motivo[i]] = (tot[rows.motivo[i]] || 0) + perdaDaFalta(rows, i);
+    }
+    var slots = {};
+    Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; }).slice(0, MOTIVO_SLOTS).forEach(function (k, pos) { slots[k] = pos; });
+    return slots;
+  }
+  function slotDe(slots, code) { return code < 0 ? "sem" : (slots[code] !== undefined ? slots[code] : "outros"); }
+
+  function renderImpactoMotivo(group, suf) {
+    var painel = document.getElementById("panelImpactoMotivo" + suf);
+    if (!painel) return;
+    var rows = GROUPS[group].rows, D = GROUPS[group].dicts;
+    painel.hidden = !rows.motivo;
+    if (!rows.motivo) return;
+    var slots = slotsDeMotivo(group);
+    var nomeMot = function (code) { return code < 0 ? "Sem motivo preenchido" : nomeDim(D.motivo, code, "Sem motivo preenchido"); };
+    var f = filters[group];
+
+    // ---- ponte do recorte atual (respeita Mês/Dia) ----
+    var idxs = currentIdxs(group);
+    var projetado = 0, realizado = 0, perdaTotal = 0, nFaltas = 0, porMot = {};
+    idxs.forEach(function (i) {
+      projetado += rows.meta[i]; realizado += rows.valor[i];
+      if (!isFaltou(group, rows, i)) return;
+      var p = perdaDaFalta(rows, i), k = rows.motivo[i];
+      perdaTotal += p; nFaltas++;
+      var m = porMot[k] || (porMot[k] = { perda: 0, n: 0, equipes: {} });
+      m.perda += p; m.n++; m.equipes[rows.equipe[i]] = 1;
+    });
+    var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
+    var cap = document.getElementById("impactoCaption" + suf);
+    if (cap) cap.textContent = recorteAtual(datas) + " · para ver um mês, escolha o filtro Mês ou clique numa barra do gráfico abaixo";
+    var resid = realizado - (projetado - perdaTotal);   // dias trabalhados acima (+) ou abaixo (-) da meta
+    var pct = function (v) { return projetado > 0 ? fmtPct(v / projetado) : "—"; };
+    var ponte = document.getElementById("impactoPonte" + suf);
+    if (ponte) {
+      ponte.innerHTML =
+        '<div class="ip-card"><div class="ip-rot">Projetado (meta)</div><div class="ip-val">' + fmtCompactBRL(projetado) + '</div><div class="ip-sub">' + fmtFullBRL(projetado) + "</div></div>" +
+        '<div class="ip-op">−</div>' +
+        '<div class="ip-card perda"><div class="ip-rot">Perda por faltas</div><div class="ip-val">' + fmtCompactBRL(perdaTotal) + '</div><div class="ip-sub">' + pct(perdaTotal) + " do projetado · " + fmtInt.format(nFaltas) + " faltas</div></div>" +
+        '<div class="ip-op">' + (resid < 0 ? "−" : "+") + "</div>" +
+        '<div class="ip-card"><div class="ip-rot">Dias trabalhados ' + (resid < 0 ? "abaixo" : "acima") + ' da meta</div><div class="ip-val">' + fmtCompactBRL(Math.abs(resid)) + '</div><div class="ip-sub">' + pct(Math.abs(resid)) + " do projetado</div></div>" +
+        '<div class="ip-op">=</div>' +
+        '<div class="ip-card"><div class="ip-rot">Realizado</div><div class="ip-val">' + fmtCompactBRL(realizado) + '</div><div class="ip-sub">' + pct(realizado) + " do projetado</div></div>";
+    }
+
+    // ---- ranking de motivos (R$ perdido) ----
+    var lista = Object.keys(porMot).map(function (k) { return { code: parseInt(k, 10), perda: porMot[k].perda, n: porMot[k].n, eq: Object.keys(porMot[k].equipes).length }; })
+      .sort(function (a, b) { return b.perda - a.perda; });
+    var rank = document.getElementById("impactoRank" + suf);
+    if (rank) {
+      var maxP = lista.length ? lista[0].perda : 0;
+      // os 10 maiores; o resto soma numa linha só (a tabela mês a mês lista todos)
+      var RANK_MAX = 10;
+      if (lista.length > RANK_MAX + 1) {
+        var resto = lista.slice(RANK_MAX);
+        lista = lista.slice(0, RANK_MAX).concat([{ code: "outros", nome: "Outros " + resto.length + " motivos", n: 0, eq: 0, perda: 0 }]);
+        resto.forEach(function (d) { var o = lista[RANK_MAX]; o.perda += d.perda; o.n += d.n; o.eq += d.eq; });
+      }
+      rank.innerHTML = lista.length ? lista.map(function (d) {
+        var cor = corDoSlot(d.code === "outros" ? "outros" : slotDe(slots, d.code));
+        var nome = d.code === "outros" ? d.nome : nomeMot(d.code);
+        return '<div class="ir-nome" title="' + escapeAttr(nome) + '"><i style="background:' + cor + '"></i><span>' + nome + "</span></div>" +
+          '<div class="ir-trilho"><div class="ir-barra" style="width:' + (maxP ? (d.perda / maxP * 100).toFixed(1) : 0) + "%;background:" + cor + '"></div></div>' +
+          '<div class="ir-val"><b>' + fmtCompactBRL(d.perda) + "</b> · " + pct(d.perda) + " · " + fmtInt.format(d.n) + " faltas · " + fmtInt.format(d.eq) + " equipes</div>";
+      }).join("") : '<div class="cell-empty" style="grid-column:1/-1">Sem falta com os filtros atuais</div>';
+    }
+
+    // ---- mês a mês (ignora Mês/Dia, respeita o resto) ----
+    var meses = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      if (!matchDims(group, i) || isExcluido(group, rows, i)) continue;
+      if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) continue;
+      var mk = rows.date[i].slice(0, 7);
+      var mm = meses[mk] || (meses[mk] = { proj: 0, perda: 0, porMot: {} });
+      mm.proj += rows.meta[i];
+      if (!isFaltou(group, rows, i)) continue;
+      var p2 = perdaDaFalta(rows, i);
+      mm.perda += p2; mm.porMot[rows.motivo[i]] = (mm.porMot[rows.motivo[i]] || 0) + p2;
+    }
+    var mks = Object.keys(meses).sort();
+    var posCode = {};
+    Object.keys(slots).forEach(function (k) { posCode[slots[k]] = parseInt(k, 10); });
+    var ordem = ["sem", "outros"];   // empilha de baixo pra cima; o maior motivo fica no topo
+    for (var pos = MOTIVO_SLOTS - 1; pos >= 0; pos--) if (posCode[pos] !== undefined) ordem.push(pos);
+    var rotSlot = function (sl) { return sl === "sem" ? "Sem motivo preenchido" : sl === "outros" ? "Outros motivos" : nomeMot(posCode[sl]); };
+    var presentes = {};
+    mks.forEach(function (mk) { Object.keys(meses[mk].porMot).forEach(function (k) { presentes[slotDe(slots, parseInt(k, 10))] = 1; }); });
+    var leg = document.getElementById("impactoLegenda" + suf);
+    if (leg) {
+      leg.innerHTML = ordem.filter(function (sl) { return presentes[sl]; }).reverse().map(function (sl) {
+        return '<span><i style="background:' + corDoSlot(sl) + '"></i>' + rotSlot(sl) + "</span>";
+      }).join("");
+    }
+    desenharImpactoMeses(group, suf, mks, meses, slots, ordem, rotSlot);
+    desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot);
+  }
+
+  function desenharImpactoMeses(group, suf, mks, meses, slots, ordem, rotSlot) {
+    var svg = document.getElementById("impactoMes" + suf);
+    if (!svg) return;
+    var H = 260, padL = 8, padR = 8, padT = 28, padB = 26;
+    if (!mks.length) return emptyChart(svg, 480, H);
+    var container = svg.parentElement;
+    var W = Math.max(300, container ? container.clientWidth : 480);
+    var n = mks.length, groupW = Math.max(46, (W - padL - padR) / n);
+    var useW = Math.max(W, padL + padR + groupW * n);
+    var innerH = H - padT - padB, barW = Math.min(40, groupW * 0.62);
+    var maxV = 0;
+    mks.forEach(function (mk) { maxV = Math.max(maxV, meses[mk].perda); });
+    maxV = maxV * 1.12 || 1;
+    svg.setAttribute("viewBox", "0 0 " + useW + " " + H);
+    svg.style.width = useW > W + 0.5 ? useW + "px" : "100%";
+    svg.innerHTML = "";
+    mks.forEach(function (mk, idx) {
+      var m = meses[mk], cx = padL + groupW * idx + groupW / 2, y = padT + innerH;
+      var g = el("g", { class: "barra-mes" });
+      // mesmos blocos do tooltip: do maior pro menor motivo
+      var linhas = Object.keys(m.porMot).map(function (k) { return { k: parseInt(k, 10), v: m.porMot[k] }; }).sort(function (a, b) { return b.v - a.v; });
+      var agr = {};   // soma por slot (cada motivo grande é 1 bloco; o resto vira "Outros")
+      Object.keys(m.porMot).forEach(function (k) { var sl = slotDe(slots, parseInt(k, 10)); agr[sl] = (agr[sl] || 0) + m.porMot[k]; });
+      ordem.forEach(function (sl) {
+        var v = agr[sl]; if (!v) return;
+        var h = v / maxV * innerH; y -= h;
+        g.appendChild(el("rect", { x: cx - barW / 2, y: y, width: barW, height: Math.max(h, 1), fill: corDoSlot(sl), stroke: cv("--surface-1"), "stroke-width": 1 }));
+      });
+      var hit = el("rect", { x: cx - groupW / 2, y: padT, width: groupW, height: innerH + padB - 4, fill: "transparent" });
+      var tip = function (evt) {
+        showTip(evt, "<div><b>" + mesLabel(mk) + "</b></div>" +
+          '<div class="tt-row"><span>Perda por faltas</span><b>' + fmtFullBRL(m.perda) + "</b></div>" +
+          '<div class="tt-row"><span>% do projetado</span><b>' + (m.proj > 0 ? fmtPct(m.perda / m.proj) : "—") + "</b></div>" +
+          linhas.slice(0, 8).map(function (d) {
+            return '<div class="tt-row"><span>' + (d.k < 0 ? "Sem motivo" : nomeDim(GROUPS[group].dicts.motivo, d.k, "Sem motivo")) + "</span><b>" + fmtCompactBRL(d.v) + "</b></div>";
+          }).join("") + '<div class="tt-row"><span>Clique para filtrar o mês</span></div>');
+      };
+      hit.addEventListener("mousemove", tip);
+      hit.addEventListener("mouseleave", hideTip);
+      hit.addEventListener("click", function () {
+        hideTip();
+        var conj = filters[group].mes;
+        if (conj.has(mk) && conj.size === 1) conj.clear(); else { conj.clear(); conj.add(mk); }
+        filters[group].dia.clear();
+        buildDateFilterUI("mes"); buildDateFilterUI("dia");
+        renderAll();
+      });
+      g.appendChild(hit);
+      svg.appendChild(g);
+      var t = el("text", { x: cx, y: y - 7, class: "val-label", "text-anchor": "middle" });
+      t.textContent = fmtCompactBRL(m.perda, true);
+      svg.appendChild(t);
+      var ax = el("text", { x: cx, y: H - padB + 15, class: "axis-label", "text-anchor": "middle" });
+      ax.textContent = mesLabel(mk);
+      svg.appendChild(ax);
+    });
+  }
+
+  function desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot) {
+    var tbl = document.getElementById("impactoTbl" + suf);
+    if (!tbl) return;
+    if (!mks.length) { tbl.innerHTML = '<tbody><tr><td class="cell-empty">Sem dados com os filtros atuais</td></tr></tbody>'; return; }
+    var tot = {}, totMes = {}, projTot = 0, perdaTot = 0;
+    mks.forEach(function (mk) {
+      projTot += meses[mk].proj; perdaTot += meses[mk].perda; totMes[mk] = meses[mk].perda;
+      Object.keys(meses[mk].porMot).forEach(function (k) { tot[k] = (tot[k] || 0) + meses[mk].porMot[k]; });
+    });
+    var ks = Object.keys(tot).map(Number).sort(function (a, b) { return (tot[b] - tot[a]); });
+    var thead = "<thead><tr><th>Motivo</th>" + mks.map(function (mk) { return "<th>" + mesLabel(mk) + "</th>"; }).join("") + "<th>Total</th><th>% do projetado</th></tr></thead>";
+    var cel = function (v) { return '<td class="cell-plain">' + (v ? fmtCompactBRL(v, true) : "—") + "</td>"; };
+    var corpo = ks.map(function (k) {
+      return '<tr><td class="cell-txt"><span class="legenda-motivos" style="margin:0"><span><i style="background:' + corDoSlot(slotDe(slots, k)) + '"></i>' + nomeMot(k) + "</span></span></td>" +
+        mks.map(function (mk) { return cel(meses[mk].porMot[k]); }).join("") +
+        '<td class="falta-n">' + fmtCompactBRL(tot[k], true) + '</td><td class="cell-plain">' + (projTot > 0 ? fmtPct(tot[k] / projTot) : "—") + "</td></tr>";
+    }).join("");
+    var rodape = '<tr class="total"><td>Total</td>' + mks.map(function (mk) { return '<td class="cell-plain">' + (totMes[mk] ? fmtCompactBRL(totMes[mk], true) : "—") + "</td>"; }).join("") +
+      '<td class="falta-n">' + fmtCompactBRL(perdaTot, true) + '</td><td class="cell-plain">' + (projTot > 0 ? fmtPct(perdaTot / projTot) : "—") + "</td></tr>";
+    tbl.innerHTML = thead + "<tbody>" + corpo + rodape + "</tbody>";
+  }
+
   function renderFaltas(group, suf) {
+    renderImpactoMotivo(group, suf);
     renderFaltasPorMotivo(group, suf);
     renderFaltasPorProcesso(group, suf);
     renderFaltasPorSupervisor(group, suf);
@@ -3142,8 +3382,8 @@ function iniciarPainel(DATA) {
     });
 
     var fantasmas = items.filter(function (d) { return d.ghost; });
-    var mesLabel = mesUnico ? " em " + mesLabel(mesUnico) : "";
-    titleEl.innerHTML = "Equipes que mais faltaram" + mesLabel + badge;
+    var emMes = mesUnico ? " em " + mesLabel(mesUnico) : "";
+    titleEl.innerHTML = "Equipes que mais faltaram" + emMes + badge;
     capEl.textContent = "Ordenado por nº de faltas · " + items.length + (items.length === 1 ? " equipe" : " equipes") + " com pelo menos uma falta" +
       (dias ? " · os quadradinhos mostram em que dias faltou" : "") + " · clique numa equipe pra filtrar por ela";
 
