@@ -3095,8 +3095,9 @@ function iniciarPainel(DATA) {
 
   // ---------- Impacto financeiro das faltas por motivo ----------
   // Projetado - perda por falta (por motivo) +/- dias trabalhados fora da meta = Realizado.
-  // Perda de uma falta = meta do dia que não virou valor. A cor de cada motivo é fixa
-  // (os 6 maiores do dado inteiro), pra não mudar quando um filtro tira ou põe motivo.
+  // Perda de uma falta = meta do dia que não virou valor. Os 6 maiores motivos do recorte
+  // atual (filtros e mês) ganham cor; os demais ficam em cinza ("Outros"). O ranking, o
+  // gráfico mensal e a tabela usam o mesmo mapa, então a cor muda ao trocar de mês.
   var MOTIVO_SLOTS = 6;
   function perdaDaFalta(rows, i) { return Math.max(0, rows.meta[i] - rows.valor[i]); }
   function corDoSlot(slot) { return slot === "sem" ? cv("--mot-sem") : slot === "outros" ? cv("--mot-outros") : cv("--mot-" + (slot + 1)); }
@@ -3104,6 +3105,7 @@ function iniciarPainel(DATA) {
     var rows = GROUPS[group].rows, tot = {};
     for (var i = 0; i < rows.date.length; i++) {
       if (!isFaltou(group, rows, i) || rows.motivo[i] < 0) continue;
+      if (!matchAll(group, i)) continue;   // o recorte inteiro, mês incluído: o maior motivo do que se vê sempre tem cor
       tot[rows.motivo[i]] = (tot[rows.motivo[i]] || 0) + perdaDaFalta(rows, i);
     }
     var slots = {};
