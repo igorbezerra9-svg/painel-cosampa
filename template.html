@@ -25,6 +25,8 @@
     --series-ec-strong: #a8471c;
     --series-centro-mi:  #3f9142;
     --series-centro-sul: #8355c9;
+    --series-prev:       #14a39a;
+    --series-prev-strong: #0d6e68;
     --pill-bg:        rgba(15,13,8,.82);
     --status-good:    #0ca30c;
     --status-warn:    #b8790f;
@@ -42,6 +44,7 @@
       --accent: #eda100; --accent-ink: #2b1d00; --accent-soft: #3a2a08;
       --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ob-strong: #6ba6ec; --series-ec: #d95926; --series-ec-soft: #3a2013; --series-ec-strong: #e88a5c;
       --series-centro-mi: #57b25a; --series-centro-sul: #a687e0; --pill-bg: rgba(10,9,6,.85);
+      --series-prev: #2cc0b5; --series-prev-strong: #5fd9cf;
       --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
       --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
     }
@@ -54,6 +57,7 @@
     --accent: #eda100; --accent-ink: #2b1d00; --accent-soft: #3a2a08;
     --series-ob: #3987e5; --series-ob-soft: #16273f; --series-ec: #d95926; --series-ec-soft: #3a2013;
     --series-centro-mi: #57b25a; --series-centro-sul: #a687e0;
+    --series-prev: #2cc0b5; --series-prev-strong: #5fd9cf;
     --status-good: #0ca30c; --status-warn: #fab219; --status-crit: #e66767;
     --status-good-soft: #12301a; --status-warn-soft: #3a2f10; --status-crit-soft: #3a1616;
   }
@@ -91,6 +95,10 @@
   .btn-ppt svg { width: 15px; height: 15px; flex: none; }
   .btn-ppt[data-estado="pronto"] { color: var(--status-good); border-color: var(--status-good); background: var(--status-good-soft); }
   .btn-ppt[data-estado="erro"] { color: var(--status-crit); border-color: var(--status-crit); background: var(--status-crit-soft); }
+  .legenda-anos { display: flex; gap: 14px; flex-wrap: wrap; margin: -4px 0 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .legenda-anos:empty { display: none; }
+  .legenda-anos span { display: inline-flex; align-items: center; gap: 6px; }
+  .legenda-anos i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
   .chk-ppt { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
   .chk-ppt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
   .btn-link-ppt { font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--accent-ink); background: none; border: 0; padding: 4px 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
@@ -492,6 +500,10 @@
 
   <div class="app">
     <aside class="sidebar">
+      <div class="fg" id="fgAno" hidden>
+        <span class="fg-label">Ano</span>
+        <div class="fg-wrap" data-dim="ano"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
+      </div>
       <div class="fg">
         <span class="fg-label">Mês</span>
         <div class="fg-wrap" data-dim="mes"><button class="fg-btn" type="button"></button><div class="fg-panel" hidden></div></div>
@@ -547,6 +559,7 @@
           </div>
           <p class="panel-title" id="chartMesTitle-ec">Realizado vs. Meta por Mês</p>
           <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
+          <div class="legenda-anos"></div>
           <div class="chart-scroll"><svg class="chart" id="chartMes" viewBox="0 0 980 260"></svg></div>
           <div class="chart-legend">
             <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ec-strong)"></span>Meta</span>
@@ -738,6 +751,7 @@
           </div>
           <p class="panel-title" id="consolidadoCentroTitle">Faturamento — Consolidado Mês a Mês por Centro de Serviço</p>
           <p class="panel-caption" id="consolidadoCentroCaption">Sul = soma dos três centros · passe o mouse pra ver os valores exatos</p>
+          <div class="legenda-anos" data-grupo="centro"></div>
           <label class="chk-turnos" id="lblTurnosNormais" hidden title="Tira da média os dias com menos da metade do movimento típico do mês (domingos e feriados)"><input type="checkbox" id="chkTurnosNormais"> Só dias normais</label>
           <button type="button" class="btn-toggle-values" id="btnToggleValoresCentro">Mostrar valores</button>
           <button type="button" class="btn-toggle-values btn-ghost" id="btnCopiarConjuntoCentro">Copiar os 4 gráficos</button>
@@ -778,6 +792,7 @@
           </div>
           <p class="panel-title" id="chartMesTitle-ob">Realizado vs. Meta por Mês — Obras</p>
           <p class="panel-caption">Passe o mouse pra ver os valores exatos</p>
+          <div class="legenda-anos" data-grupo="ob"></div>
           <div class="chart-scroll"><svg class="chart" id="chartMesOb" viewBox="0 0 980 260"></svg></div>
           <div class="chart-legend">
             <span class="legend-item"><span class="legend-swatch" style="background:var(--series-ob-strong)"></span>Meta</span>
@@ -1061,7 +1076,7 @@ function iniciarPainel(DATA) {
   // beforeunload do mesmo jeito
   function saveFilterState() {
     try {
-      function serialize(f) { return { mes: Array.from(f.mes), dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe), excluir: Array.from(f.excluir) }; }
+      function serialize(f) { return { mes: Array.from(f.mes), dia: Array.from(f.dia), sup: Array.from(f.sup), centro: Array.from(f.centro), proc: Array.from(f.proc), equipe: Array.from(f.equipe), excluir: Array.from(f.excluir), ano: Array.from(f.ano) }; }
       var activeTab = document.querySelector(".tab-btn.active");
       sessionStorage.setItem(STATE_KEY, JSON.stringify({
         activeGroup: activeGroup,
@@ -1101,13 +1116,53 @@ function iniciarPainel(DATA) {
   function pctClass(pct) { if (pct == null) return "cell-empty"; if (pct >= 1) return "cell-good"; if (pct >= 0.9) return "cell-warn"; return "cell-crit"; }
 
   var MONTH_FULL = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  var MONTH_SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  // Nome do mês pra tela. Com dados de mais de um ano ganha o ano ("janeiro/25"); passando de 12 meses
+  // no total vira abreviado ("jan/25") pra caber no eixo dos gráficos.
+  var _mesesNoDado = null;
+  function mesLabel(mk) {
+    if (_mesesNoDado === null) {
+      var set = {};
+      ["ec", "ob"].forEach(function (g) { if (GROUPS[g] && GROUPS[g].rows) GROUPS[g].rows.date.forEach(function (d) { set[d.slice(0, 7)] = 1; }); });
+      var ks = Object.keys(set);
+      if (!ks.length) return MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1];
+      _mesesNoDado = { anos: new Set(ks.map(function (k) { return k.slice(0, 4); })).size, total: ks.length };
+    }
+    var mi = parseInt(mk.slice(5, 7), 10) - 1, ano = mk.slice(2, 4);
+    if (_mesesNoDado.anos < 2) return MONTH_FULL[mi];
+    return (_mesesNoDado.total > 12 ? MONTH_SHORT[mi] : MONTH_FULL[mi]) + "/" + ano;
+  }
+  // Meses de anos anteriores ao mais recente nos dados ganham cor própria (verde-água) nos gráficos de barras
+  var _anoRecente = null;
+  function ehAnoAnterior(mk) {
+    if (!mk) return false;
+    if (_anoRecente === null) {
+      var max = "";
+      ["ec", "ob"].forEach(function (g) { if (GROUPS[g] && GROUPS[g].rows) GROUPS[g].rows.date.forEach(function (d) { if (d.slice(0, 4) > max) max = d.slice(0, 4); }); });
+      _anoRecente = max || "0";
+    }
+    return mk.slice(0, 4) < _anoRecente;
+  }
+  function atualizarLegendaAnos() {
+    var anos = {};
+    ["ec", "ob"].forEach(function (g) { if (GROUPS[g] && GROUPS[g].rows) GROUPS[g].rows.date.forEach(function (d) { anos[d.slice(0, 4)] = 1; }); });
+    var lista = Object.keys(anos).sort();
+    document.querySelectorAll(".legenda-anos").forEach(function (el) {
+      if (lista.length < 2) { el.innerHTML = ""; return; }
+      var g = el.getAttribute("data-grupo"), atual = g === "ob" ? "var(--series-ob)" : g === "centro" ? "var(--text-muted)" : "var(--series-ec)";
+      el.innerHTML = lista.map(function (a, i) {
+        var ultimo = i === lista.length - 1;
+        return '<span><i style="background:' + (ultimo ? atual : "var(--series-prev)") + '"></i>' + a + (ultimo && g === "centro" ? " (cor de cada centro)" : "") + "</span>";
+      }).join("");
+    });
+  }
   var WEEKDAY_PT = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"];
   function weekdayIdx(dateStr) { var d = new Date(dateStr + "T00:00:00"); return (d.getDay() + 6) % 7; }
 
   // ---------- filters (independent per dataset group) ----------
   var filters = {
-    ec: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() },
-    ob: { mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() }
+    ec: { ano: new Set(), mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() },
+    ob: { ano: new Set(), mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() }
   };
   var activeGroup = "ec";
   var excIdx = { ec: null, ob: null }; // exceções agrupadas por equipe; refeito sob demanda
@@ -1130,6 +1185,7 @@ function iniciarPainel(DATA) {
         if (!saved) return;
         // sessão antiga guardava o mês como string única; converte pra Set
         filters[g].mes = new Set(typeof saved.mes === "string" ? (saved.mes ? [saved.mes] : []) : (saved.mes || []));
+        filters[g].ano = new Set(saved.ano || []);
         filters[g].dia = new Set(saved.dia || []);
         filters[g].sup = new Set(saved.sup || []);
         filters[g].centro = new Set(saved.centro || []);
@@ -1145,11 +1201,20 @@ function iniciarPainel(DATA) {
   // Mês e Dia são filtros por data, ambos multi-seleção (mesmo componente das
   // outras dimensões). Marcar meses reduz a lista de dias disponíveis.
   var DATE_DIMS = {
+    ano: {
+      label: "Ano",
+      values: function (rows) {
+        return Array.from(new Set(rows.date.map(function (d) { return d.slice(0, 4); }))).sort()
+          .map(function (a) { return { value: a, label: a }; });
+      }
+    },
     mes: {
       label: "Mês",
       values: function (rows) {
+        var ano = filters[activeGroup].ano;
         return Array.from(new Set(rows.date.map(function (d) { return d.slice(0, 7); }))).sort()
-          .map(function (mk) { return { value: mk, label: MONTH_FULL[parseInt(mk.slice(5, 7), 10) - 1] }; });
+          .filter(function (mk) { return !ano.size || ano.has(mk.slice(0, 4)); })
+          .map(function (mk) { return { value: mk, label: mesLabel(mk) }; });
       }
     },
     dia: {
@@ -1159,6 +1224,7 @@ function iniciarPainel(DATA) {
         for (var i = 0; i < rows.date.length; i++) {
           var d = rows.date[i];
           if (mes.size && !mes.has(d.slice(0, 7))) continue;
+          if (filters[activeGroup].ano.size && !filters[activeGroup].ano.has(d.slice(0, 4))) continue;
           set[d] = true;
         }
         return Object.keys(set).sort().map(function (d) {
@@ -1205,8 +1271,9 @@ function iniciarPainel(DATA) {
     panel.addEventListener("click", function (e) { e.stopPropagation(); });
     function afterChange() {
       updateDateBtn(dim);
-      // trocar os meses redefine quais dias existem, então o painel de Dia é refeito
-      if (dim === "mes") buildDateFilterUI("dia");
+      // trocar o ano redefine quais meses existem; trocar os meses redefine quais dias existem
+      if (dim === "ano") buildDateFilterUI("mes");
+      if (dim === "ano" || dim === "mes") buildDateFilterUI("dia");
       renderAll();
     }
     panel.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
@@ -1224,6 +1291,8 @@ function iniciarPainel(DATA) {
       sel.clear(); afterChange();
     });
     updateDateBtn(dim);
+    // com um ano só de dados o filtro de Ano não ajuda em nada: fica escondido
+    if (dim === "ano") document.getElementById("fgAno").hidden = opts.length < 2;
   }
 
   function closeAllPanels() { document.querySelectorAll(".fg-panel").forEach(function (p) { p.setAttribute("hidden", ""); }); }
@@ -1231,7 +1300,7 @@ function iniciarPainel(DATA) {
 
   function updateClearVisibility() {
     var f = filters[activeGroup];
-    var any = f.mes.size || f.dia.size || f.sup.size || f.centro.size || f.proc.size;
+    var any = f.ano.size || f.mes.size || f.dia.size || f.sup.size || f.centro.size || f.proc.size;
     document.getElementById("btnClear").classList.toggle("show", !!any);
   }
   function updateFilterBtn(dim) {
@@ -1305,7 +1374,7 @@ function iniciarPainel(DATA) {
     updateFilterBtn(dim);
   }
   function rebuildSidebar() {
-    ["mes", "dia"].forEach(buildDateFilterUI);
+    ["ano", "mes", "dia"].forEach(buildDateFilterUI);
     ["proc", "sup", "centro", "equipe"].forEach(buildFilterUI);
     buildExcecaoUI();
   }
@@ -1359,7 +1428,7 @@ function iniciarPainel(DATA) {
     var lista = document.getElementById("excecaoLista");
     var itens = Array.from(filters[activeGroup].excluir).map(function (key) {
       var e = parseExcecao(key), d1 = +e.ini.slice(8, 10), d2 = +e.fim.slice(8, 10);
-      var quando = MONTH_FULL[parseInt(e.mes.slice(5, 7), 10) - 1] + (e.inteiro ? "" : d1 === d2 ? " (dia " + d1 + ")" : " (dias " + d1 + " a " + d2 + ")");
+      var quando = mesLabel(e.mes) + (e.inteiro ? "" : d1 === d2 ? " (dia " + d1 + ")" : " (dias " + d1 + " a " + d2 + ")");
       return { key: key, nome: dict[e.equipe] || "?", quando: quando, ordem: e.ini };
     }).sort(function (a, b) { return a.nome.localeCompare(b.nome, "pt-BR") || a.ordem.localeCompare(b.ordem); });
     lista.innerHTML = itens.map(function (it) {
@@ -1514,7 +1583,7 @@ function iniciarPainel(DATA) {
 
   document.getElementById("btnClear").addEventListener("click", function () {
     var f = filters[activeGroup];
-    f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear(); f.excluir.clear(); invalidarExcecoes();
+    f.ano.clear(); f.mes.clear(); f.dia.clear(); f.sup.clear(); f.centro.clear(); f.proc.clear(); f.equipe.clear(); f.excluir.clear(); invalidarExcecoes();
     rebuildSidebar();
     renderAll();
   });
@@ -1576,6 +1645,7 @@ function iniciarPainel(DATA) {
   function matchAll(group, i) {
     if (!matchDims(group, i)) return false;
     var rows = GROUPS[group].rows, f = filters[group];
+    if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) return false;
     if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) return false;
     if (f.dia.size && !f.dia.has(rows.date[i])) return false;
     if (isExcluido(group, rows, i)) return false;
@@ -1591,6 +1661,7 @@ function iniciarPainel(DATA) {
   function matchAllExceptCentro(group, i) {
     if (!matchDimsExcept(group, i, "centro")) return false;
     var rows = GROUPS[group].rows, f = filters[group];
+    if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) return false;
     if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) return false;
     if (f.dia.size && !f.dia.has(rows.date[i])) return false;
     if (isExcluido(group, rows, i)) return false;
@@ -2213,8 +2284,8 @@ function iniciarPainel(DATA) {
       var cx = padL + groupW * i + groupW / 2;
       var metaH = (d.meta / scale.max) * innerH, metaY = padT + innerH - metaH;
       var realH = (d.valor / scale.max) * innerH, realY = padT + innerH - realH;
-      var metaBar = el("rect", { x: cx - barW - gap / 2, y: metaY, width: barW, height: Math.max(metaH, 1), rx: 4, fill: colorStrong, class: "bar" });
-      var realBar = el("rect", { x: cx + gap / 2, y: realY, width: barW, height: Math.max(realH, 1), rx: 4, fill: color, class: "bar" });
+      var metaBar = el("rect", { x: cx - barW - gap / 2, y: metaY, width: barW, height: Math.max(metaH, 1), rx: 4, fill: ehAnoAnterior(d.mk) ? cv("--series-prev-strong") : colorStrong, class: "bar" });
+      var realBar = el("rect", { x: cx + gap / 2, y: realY, width: barW, height: Math.max(realH, 1), rx: 4, fill: ehAnoAnterior(d.mk) ? cv("--series-prev") : color, class: "bar" });
       [metaBar, realBar].forEach(function (node) {
         node.addEventListener("mousemove", function (evt) { tip(evt, d); });
         node.addEventListener("mouseleave", hideTip);
@@ -2263,7 +2334,7 @@ function iniciarPainel(DATA) {
     items.forEach(function (d, i) {
       var cx = padL + groupW * i + groupW / 2;
       var barH = (d.valor / maxVal) * innerH, by = padT + innerH - barH;
-      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: ehAnoAnterior(d.mk) ? cv("--series-prev") : color, class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
         showTip(evt, "<div><b>" + d.label + "</b></div>" +
           '<div class="tt-row"><span>Valor</span><b>' + fmtFullBRL(d.valor) + "</b></div>" +
@@ -2307,6 +2378,7 @@ function iniciarPainel(DATA) {
     // a sobrepor hoje. Se não couber nem alargando a barra, ativa rolagem.
     var maxLabelW = 0;
     items.forEach(function (d) {
+      maxLabelW = Math.max(maxLabelW, measureTextWidth(svg, d.label, "axis-label"));
       if (d[valueKey] == null) return;
       maxLabelW = Math.max(maxLabelW, measureTextWidth(svg, fmtLabel(d[valueKey]), "val-label"));
     });
@@ -2332,7 +2404,7 @@ function iniciarPainel(DATA) {
       var cx = padL + groupW * i + groupW / 2;
       var v = d[valueKey] || 0;
       var barH = (v / maxVal) * innerH, by = padT + innerH - barH;
-      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: color, class: "bar" });
+      var rect = el("rect", { x: cx - barW / 2, y: by, width: barW, height: Math.max(barH, 1), rx: 3, fill: ehAnoAnterior(d.mk) ? cv("--series-prev") : color, class: "bar" });
       rect.addEventListener("mousemove", function (evt) {
         showTip(evt, "<div><b>" + d.label + "</b></div>" + '<div class="tt-row"><span>Valor</span><b>' + fmtTip(v) + "</b></div>" +
           (onBarClick ? '<div class="tt-row"><span>Clique para ver os dias</span></div>' : "") +
@@ -2508,7 +2580,7 @@ function iniciarPainel(DATA) {
     });
     return Object.keys(map).sort().map(function (mk) {
       var mi = parseInt(mk.slice(5, 7), 10) - 1;
-      return { label: MONTH_FULL[mi], valor: map[mk].valor, meta: map[mk].meta };
+      return { label: mesLabel(mk), mk: mk, valor: map[mk].valor, meta: map[mk].meta };
     });
   }
   function weekStart(dateStr) {
@@ -2602,7 +2674,7 @@ function iniciarPainel(DATA) {
     Object.keys(buckets).forEach(function (name) {
       out[name] = Object.keys(buckets[name]).sort().map(function (mk) {
         var mi = parseInt(mk.slice(5, 7), 10) - 1, m = buckets[name][mk];
-        return { label: MONTH_FULL[mi], valor: m.valor, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null, ticket: div(m.valor, m.qtd) };
+        return { label: mesLabel(mk), mk: mk, valor: m.valor, qtd: m.qtd, prodDen: m.prodDen, produtividade: m.prodDen ? m.qtd / m.prodDen : null, ticket: div(m.valor, m.qtd) };
       });
     });
     return out;
@@ -2647,7 +2719,7 @@ function iniciarPainel(DATA) {
           if (soNormais && fracos[mk] && fracos[mk][dt]) { fora++; return; }
           dias++; trab += m.trabPorDia[dt] || 0;
         });
-        return { label: MONTH_FULL[mi], mk: mk, turnos: dias ? trab / dias : null, diasFora: fora };
+        return { label: mesLabel(mk), mk: mk, turnos: dias ? trab / dias : null, diasFora: fora };
       });
     });
     return out;
@@ -2764,7 +2836,7 @@ function iniciarPainel(DATA) {
         var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk && rows.centro[i] === c.idx; });
         return div(sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0), sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0));
       });
-      return { label: MONTH_FULL[mi], cells: cells };
+      return { label: mesLabel(mk), mk: mk, cells: cells };
     });
     renderTable("tblCentroMes", centros.map(function (c) { return c.name; }), "Mês", out, pctCell);
   }
@@ -2823,7 +2895,7 @@ function iniciarPainel(DATA) {
         if (!sub.length) return null;
         return div(sub.reduce(function (s, i) { return s + rows.valor[i]; }, 0), sub.reduce(function (s, i) { return s + rows.meta[i]; }, 0));
       });
-      return { label: MONTH_FULL[mi], cells: cells };
+      return { label: mesLabel(mk), mk: mk, cells: cells };
     });
     renderTable("tblDiaSemana", WEEKDAY_PT.map(function (w) { return w.replace("-feira", ""); }), "Mês", out, pctCell);
   }
@@ -2836,6 +2908,7 @@ function iniciarPainel(DATA) {
       if (rows.valor[i] === 0) continue;
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
+      if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) continue;
       if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) continue;
       if (f.dia.size && !f.dia.has(rows.date[i])) continue;
       hasData[rows.proc[i]] = true;
@@ -2866,6 +2939,7 @@ function iniciarPainel(DATA) {
       if (rows.proc[i] !== procTabSelection) continue;
       if (f.sup.size && !f.sup.has(rows.sup[i])) continue;
       if (f.centro.size && !f.centro.has(rows.centro[i])) continue;
+      if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) continue;
       if (f.mes.size && !f.mes.has(rows.date[i].slice(0, 7))) continue;
       if (f.dia.size && !f.dia.has(rows.date[i])) continue;
       out.push(i);
@@ -3066,7 +3140,7 @@ function iniciarPainel(DATA) {
     });
 
     var fantasmas = items.filter(function (d) { return d.ghost; });
-    var mesLabel = mesUnico ? " em " + MONTH_FULL[parseInt(mesUnico.slice(5, 7), 10) - 1] : "";
+    var mesLabel = mesUnico ? " em " + mesLabel(mesUnico) : "";
     titleEl.innerHTML = "Equipes que mais faltaram" + mesLabel + badge;
     capEl.textContent = "Ordenado por nº de faltas · " + items.length + (items.length === 1 ? " equipe" : " equipes") + " com pelo menos uma falta" +
       (dias ? " · os quadradinhos mostram em que dias faltou" : "") + " · clique numa equipe pra filtrar por ela";
@@ -3294,7 +3368,7 @@ function iniciarPainel(DATA) {
     }
     var items = Object.keys(map).sort().map(function (mk) {
       var m = map[mk], mi = parseInt(mk.slice(5, 7), 10) - 1;
-      return { label: MONTH_FULL[mi], esc: m.esc, faltas: m.faltas,
+      return { label: mesLabel(mk), mk: mk, esc: m.esc, faltas: m.faltas,
                clique: ' data-falta-mes="' + mk + '"',
                equipes: Object.keys(m.equipes).length, comFalta: Object.keys(m.equipesFalta).length,
                temMeta: m.comMeta > 0, pctFalta: (m.comMeta && m.esc) ? m.faltas / m.esc : null };
@@ -3472,7 +3546,7 @@ function iniciarPainel(DATA) {
       var den = sub.filter(function (i) { return isProdRow("ec", rows, i); }).length;
       return den ? qtd / den : null;
     });
-    var colHeaders = months.map(function (mk) { var mi = parseInt(mk.slice(5, 7), 10) - 1; return MONTH_FULL[mi]; });
+    var colHeaders = months.map(function (mk) { return mesLabel(mk); });
     function numCell(v) { return '<td class="cell-plain">' + fmtNum(v, 2) + "</td>"; }
     renderTable("tblProdutividadeMensal", colHeaders, "Equipe", out, numCell, { cells: totalCells });
   }
@@ -3510,7 +3584,7 @@ function iniciarPainel(DATA) {
       var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk; });
       return sub.length ? metricFor(sub) : null;
     });
-    var colHeaders = months.map(function (mk) { var mi = parseInt(mk.slice(5, 7), 10) - 1; return MONTH_FULL[mi]; });
+    var colHeaders = months.map(function (mk) { return mesLabel(mk); });
     var cellFn = equipeMesMetric === "pct"
       ? function (c) { return pctCell(c == null ? null : c.pct); }
       : equipeMesMetric === "aat"
@@ -3564,7 +3638,7 @@ function iniciarPainel(DATA) {
     }
     var mesKey = Array.from(f.mes)[0];
     var mi = parseInt(mesKey.slice(5, 7), 10) - 1;
-    caption.textContent = RANKING_CAPTIONS[rankingMetric](MONTH_FULL[mi]);
+    caption.textContent = RANKING_CAPTIONS[rankingMetric](mesLabel(mesKey));
 
     // O Processo era fixo em "Emergencial" aqui, então mudar o filtro lateral
     // não trocava as equipes do ranking. Agora ele vale, como nas outras abas:
@@ -3747,6 +3821,7 @@ function iniciarPainel(DATA) {
   }
 
   function renderAll() {
+    atualizarLegendaAnos();
     var activePage = document.querySelector(".page.active").id.replace("page-", "");
     var group = PAGE_GROUP[activePage];
     var idxs = activePage === "procSup" ? procSupIdxs() : currentIdxs(group);
