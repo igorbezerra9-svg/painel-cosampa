@@ -143,6 +143,16 @@
   .impacto-cen .cen-delta { color: var(--status-good); font-weight: 800; }
   .impacto-cen .cen-vazio { font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .impacto-cen tr:not(.cen-proj):not(.cen-real):not(.cen-ating-linha) td:not(:first-child) { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+  .impacto-subs, .impacto-radios { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
+  .impacto-radios { margin: 12px 0 4px; }
+  .impacto-subs button, .impacto-radios button { font: inherit; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; }
+  .impacto-subs button.on, .impacto-radios button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .impacto-mesmes th, .impacto-mesmes td { text-align: center; }
+  .impacto-mesmes th:first-child, .impacto-mesmes td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface-1); z-index: 1; }
+  .impacto-mesmes th.gr { border-bottom: 1px solid var(--baseline); }
+  .impacto-mesmes th.gr1, .impacto-mesmes td.gr1 { background: var(--accent-soft); }
+  .impacto-mesmes td.sep, .impacto-mesmes th.sep { border-left: 2px solid var(--baseline); }
+  .impacto-mesmes td.at { font-weight: 800; font-variant-numeric: tabular-nums; }
   .impacto-sub { font-size: 12px; font-weight: 800; color: var(--text-secondary); margin: 16px 0 6px; }
   .impacto-rank { display: grid; grid-template-columns: minmax(120px, 210px) 1fr minmax(150px, auto); gap: 6px 12px; align-items: center; font-size: 12px; }
   .impacto-rank .ir-nome { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text-primary); min-width: 0; }
@@ -812,9 +822,26 @@
             <p class="panel-title">Impacto financeiro das faltas</p>
             <p class="panel-caption" id="impactoCaptionFat"></p>
             <div class="impacto-desc" id="impactoDescFat"></div>
+            <div class="impacto-subs" id="impactoSubsFat" role="tablist">
+              <button type="button" class="on" data-impacto-sub="geral" data-suf="Fat">Visão geral</button>
+              <button type="button" data-impacto-sub="mes" data-suf="Fat">Mês a mês: projetado × realizado</button>
+            </div>
+            <div id="impactoSubGeralFat">
             <div class="tablewrap" style="margin-top:12px"><table class="datatable impacto-cen" id="impactoPonteFat"></table></div>
             <p class="impacto-nota"><b>Hoje</b>: tudo como está. <b>Descontando os motivos marcados</b>: as faltas desses motivos saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
           </div>
+            <div id="impactoSubMesFat" hidden>
+              <div class="impacto-radios" id="impactoRadiosFat">
+                <button type="button" class="on" data-impacto-cen="0" data-suf="Fat">Hoje</button>
+                <button type="button" data-impacto-cen="1" data-suf="Fat">Descontando os motivos marcados</button>
+                <button type="button" data-impacto-cen="2" data-suf="Fat">Sem nenhuma falta</button>
+              </div>
+              <p class="impacto-nota" id="impactoMesNotaFat"></p>
+              <div class="chart-scroll"><svg class="chart" id="impactoMesGrafFat" viewBox="0 0 980 360"></svg></div>
+              <div class="tablewrap" style="margin-top:10px"><table class="datatable impacto-mesmes" id="impactoMesTblFat"></table></div>
+            </div>
+          </div>
+          <div id="impactoGeralRestoFat">
           <div class="panel" id="panelImpactoRankFat" style="margin-bottom:14px">
             <p class="panel-title">Quanto cada motivo custou da meta</p>
             <p class="panel-caption">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado) · mesmo recorte dos filtros da esquerda</p>
@@ -827,6 +854,7 @@
             <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesFat" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
             <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblFat"></table></div>
           </div>
+          </div>
         </div>
       </section>
 
@@ -836,9 +864,26 @@
             <p class="panel-title">Impacto financeiro das faltas</p>
             <p class="panel-caption" id="impactoCaptionOb"></p>
             <div class="impacto-desc" id="impactoDescOb"></div>
+            <div class="impacto-subs" id="impactoSubsOb" role="tablist">
+              <button type="button" class="on" data-impacto-sub="geral" data-suf="Ob">Visão geral</button>
+              <button type="button" data-impacto-sub="mes" data-suf="Ob">Mês a mês: projetado × realizado</button>
+            </div>
+            <div id="impactoSubGeralOb">
             <div class="tablewrap" style="margin-top:12px"><table class="datatable impacto-cen" id="impactoPonteOb"></table></div>
             <p class="impacto-nota"><b>Hoje</b>: tudo como está. <b>Descontando os motivos marcados</b>: as faltas desses motivos saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
           </div>
+            <div id="impactoSubMesOb" hidden>
+              <div class="impacto-radios" id="impactoRadiosOb">
+                <button type="button" class="on" data-impacto-cen="0" data-suf="Ob">Hoje</button>
+                <button type="button" data-impacto-cen="1" data-suf="Ob">Descontando os motivos marcados</button>
+                <button type="button" data-impacto-cen="2" data-suf="Ob">Sem nenhuma falta</button>
+              </div>
+              <p class="impacto-nota" id="impactoMesNotaOb"></p>
+              <div class="chart-scroll"><svg class="chart" id="impactoMesGrafOb" viewBox="0 0 980 360"></svg></div>
+              <div class="tablewrap" style="margin-top:10px"><table class="datatable impacto-mesmes" id="impactoMesTblOb"></table></div>
+            </div>
+          </div>
+          <div id="impactoGeralRestoOb">
           <div class="panel" id="panelImpactoRankOb" style="margin-bottom:14px">
             <p class="panel-title">Quanto cada motivo custou da meta</p>
             <p class="panel-caption">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado) · mesmo recorte dos filtros da esquerda</p>
@@ -850,6 +895,7 @@
             <div class="legenda-motivos" id="impactoLegendaOb"></div>
             <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesOb" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
             <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblOb"></table></div>
+          </div>
           </div>
         </div>
       </section>
@@ -1273,6 +1319,9 @@ function iniciarPainel(DATA) {
   function weekdayIdx(dateStr) { var d = new Date(dateStr + "T00:00:00"); return (d.getDay() + 6) % 7; }
 
   // ---------- filters (independent per dataset group) ----------
+  var impactoSub = { Fat: "geral", Ob: "geral" };   // sub-aba aberta em cada guia de impacto
+  var impactoCenario = { Fat: 0, Ob: 0 };           // cenário mostrado no gráfico mês a mês (0 hoje, 1 descontando, 2 sem nenhuma falta)
+  var GRUPO_DA_SUF = { Fat: "ec", Ob: "ob" };
   // motivos marcados em "Descontar motivos da meta" (aba Faltas): as faltas deles saem do projetado e do realizado
   var descontoMotivos = { ec: new Set(), ob: new Set() };
   var filters = {
@@ -3326,6 +3375,7 @@ function iniciarPainel(DATA) {
     }
     desenharImpactoMeses(group, suf, mks, meses, slots, ordem, rotSlot);
     desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot);
+    aplicarSubImpacto(group, suf);
   }
 
   function desenharImpactoMeses(group, suf, mks, meses, slots, ordem, rotSlot) {
@@ -3384,6 +3434,75 @@ function iniciarPainel(DATA) {
       ax.textContent = mesLabel(mk);
       svg.appendChild(ax);
     });
+  }
+
+
+  // ---- sub-abas da guia de impacto: "Visão geral" e "Mês a mês: projetado x realizado" ----
+  function aplicarSubImpacto(group, suf) {
+    var mes = impactoSub[suf] === "mes";
+    var g = document.getElementById("impactoSubGeral" + suf), m = document.getElementById("impactoSubMes" + suf), r = document.getElementById("impactoGeralResto" + suf);
+    if (g) g.hidden = mes; if (r) r.hidden = mes; if (m) m.hidden = !mes;
+    document.querySelectorAll('#impactoSubs' + suf + " button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-impacto-sub") === impactoSub[suf]); });
+    if (mes) renderImpactoMesAMes(group, suf);
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-impacto-sub],[data-impacto-cen]") : null;
+    if (!b) return;
+    var suf = b.getAttribute("data-suf"), group = GRUPO_DA_SUF[suf];
+    if (b.hasAttribute("data-impacto-sub")) impactoSub[suf] = b.getAttribute("data-impacto-sub");
+    else impactoCenario[suf] = parseInt(b.getAttribute("data-impacto-cen"), 10);
+    aplicarSubImpacto(group, suf);
+  });
+
+  // Projetado x realizado de cada mês nos três cenários. Ignora Mês e Dia (compara os meses
+  // entre si) e respeita o resto dos filtros, igual ao gráfico de perda por motivo.
+  function renderImpactoMesAMes(group, suf) {
+    var rows = GROUPS[group].rows, f = filters[group], sel = descontoMotivos[group];
+    var graf = document.getElementById("impactoMesGraf" + suf), tbl = document.getElementById("impactoMesTbl" + suf);
+    if (!graf || !tbl) return;
+    var meses = {};
+    for (var i = 0; i < rows.date.length; i++) {
+      if (!matchDims(group, i) || isExcluido(group, rows, i)) continue;
+      if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) continue;
+      var mk = rows.date[i].slice(0, 7);
+      var m = meses[mk] || (meses[mk] = [0, 0, 0, 0, 0, 0]);   // proj/real de: hoje, descontando, sem falta
+      var meta = rows.meta[i], val = rows.valor[i], fal = isFaltou(group, rows, i);
+      m[0] += meta; m[1] += val;
+      if (!foiDescontada(group, rows, i)) { m[2] += meta; m[3] += val; }
+      if (!fal) { m[4] += meta; m[5] += val; }
+    }
+    var mks = Object.keys(meses).sort();
+    var cen = impactoCenario[suf];
+    document.querySelectorAll("#impactoRadios" + suf + " button").forEach(function (b) { b.classList.toggle("on", parseInt(b.getAttribute("data-impacto-cen"), 10) === cen); });
+    var nota = document.getElementById("impactoMesNota" + suf);
+    var semSel = cen === 1 && !sel.size;
+    if (nota) nota.textContent = semSel ? "Marque motivos em \"Descontar motivos da meta\" (acima) para ver este cenário."
+      : "Barra escura = projetado (meta) · barra clara = realizado · linha = atingimento · " +
+        (cen === 0 ? "tudo como está." : cen === 1 ? "sem as faltas dos motivos marcados." : "contando só os dias em que a equipe trabalhou.");
+    if (semSel || !mks.length) {
+      graf.innerHTML = ""; if (!mks.length) emptyChart(graf, 980, 360);
+    } else {
+      drawComboChart("impactoMesGraf" + suf, mks.map(function (mk) { return { label: mesLabel(mk), mk: mk, meta: meses[mk][cen * 2], valor: meses[mk][cen * 2 + 1] }; }),
+        seriesColor(group), seriesColorStrong(group), 980, 100, 24);
+    }
+
+    // tabela: os três cenários lado a lado
+    var corAt = function (a) { return a == null ? "" : ' style="color:var(' + (a >= 1 ? "--status-good" : a >= 0.9 ? "--status-warn" : "--status-crit") + ')"'; };
+    var bloco = function (p, r, k, vazio) {
+      var a = p > 0 ? r / p : null, cls = k === 1 ? " gr1" : "";
+      if (vazio) return '<td class="sep' + cls + '">—</td><td class="' + cls.trim() + '">—</td><td class="at' + cls + '">—</td>';
+      return '<td class="sep' + cls + '">' + fmtCompactBRL(p) + '</td><td class="' + cls.trim() + '">' + fmtCompactBRL(r) + '</td><td class="at' + cls + '"' + corAt(a) + ">" + fmtPct(a) + "</td>";
+    };
+    var vazio1 = !sel.size;
+    var thead = '<thead><tr><th class="gr"></th><th class="gr sep" colspan="3">Hoje</th><th class="gr sep gr1" colspan="3">Descontando os motivos marcados' + (sel.size ? " (" + sel.size + ")" : "") + '</th><th class="gr sep" colspan="3">Sem nenhuma falta</th></tr>' +
+      "<tr><th>Mês</th>" + [0, 1, 2].map(function (k) { var c = k === 1 ? " gr1" : ""; return '<th class="sep' + c + '">Projetado</th><th class="' + c.trim() + '">Realizado</th><th class="' + c.trim() + '">Atingimento</th>'; }).join("") + "</tr></thead>";
+    var tot = [0, 0, 0, 0, 0, 0];
+    var corpo = mks.map(function (mk) {
+      var m = meses[mk]; for (var j = 0; j < 6; j++) tot[j] += m[j];
+      return '<tr><td class="cell-txt">' + mesLabel(mk) + "</td>" + bloco(m[0], m[1], 0) + bloco(m[2], m[3], 1, vazio1) + bloco(m[4], m[5], 2) + "</tr>";
+    }).join("");
+    var rodape = '<tr class="total"><td>Total</td>' + bloco(tot[0], tot[1], 0) + bloco(tot[2], tot[3], 1, vazio1) + bloco(tot[4], tot[5], 2) + "</tr>";
+    tbl.innerHTML = mks.length ? thead + "<tbody>" + corpo + rodape + "</tbody>" : '<tbody><tr><td class="cell-empty">Sem dados com os filtros atuais</td></tr></tbody>';
   }
 
   // Tabela motivo x mês: totais logo depois do motivo (não ficam cortados à direita), motivo
