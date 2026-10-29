@@ -132,6 +132,17 @@
   .impacto-matriz th.im-mes.sel { color: var(--accent-ink); background: var(--accent-soft); }
   .impacto-matriz .im-un { font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
   .impacto-matriz .im-mais { font: inherit; font-size: 11px; font-weight: 700; margin-left: 8px; padding: 1px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .impacto-cen { width: 100%; table-layout: fixed; }
+  .impacto-cen th, .impacto-cen td { text-align: center; }
+  .impacto-cen th:first-child, .impacto-cen td:first-child { text-align: left; width: 30%; }
+  .impacto-cen td.cen-1 { background: var(--accent-soft); }
+  .impacto-cen tr.cen-proj td, .impacto-cen tr.cen-real td { font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .impacto-cen tr.cen-ating-linha td { border-top: 2px solid var(--baseline); }
+  .impacto-cen .cen-ating { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .impacto-cen .cen-sub, .impacto-cen .cen-delta { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .impacto-cen .cen-delta { color: var(--status-good); font-weight: 800; }
+  .impacto-cen .cen-vazio { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .impacto-cen tr:not(.cen-proj):not(.cen-real):not(.cen-ating-linha) td:not(:first-child) { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
   .impacto-sub { font-size: 12px; font-weight: 800; color: var(--text-secondary); margin: 16px 0 6px; }
   .impacto-rank { display: grid; grid-template-columns: minmax(120px, 210px) 1fr minmax(150px, auto); gap: 6px 12px; align-items: center; font-size: 12px; }
   .impacto-rank .ir-nome { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text-primary); min-width: 0; }
@@ -543,11 +554,13 @@
     <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
     <button class="tab-btn" data-page="faltasFat" type="button">Faltas</button>
+    <button class="tab-btn" data-page="impactoFat" type="button">Impacto das Faltas</button>
     <button class="tab-btn" data-page="consolidadoCentro" type="button">Consolidado por Centro</button>
     <span class="tab-sep"></span>
     <button class="tab-btn" data-page="geralOb" type="button">Painel Geral - Obras</button>
     <button class="tab-btn" data-page="escaladoOb" type="button">Requerido x Escalado - Obras</button>
     <button class="tab-btn" data-page="faltasOb" type="button">Faltas - Obras</button>
+    <button class="tab-btn" data-page="impactoOb" type="button">Impacto das Faltas - Obras</button>
   </div>
 
   <div class="app">
@@ -785,23 +798,58 @@
             <div class="tablewrap"><table class="datatable" id="tblFaltasRankFat"></table></div>
             <div id="faltasRodapeFat"></div>
           </div>
-          <div class="panel" id="panelImpactoMotivoFat" style="margin-bottom:14px">
-            <p class="panel-title">Impacto financeiro das faltas por motivo</p>
-            <p class="panel-caption" id="impactoCaptionFat"></p>
-            <div class="impacto-desc" id="impactoDescFat"></div>
-            <div class="impacto-ponte" id="impactoPonteFat"></div>
-            <p class="impacto-sub">Quanto cada motivo custou da meta</p>
-            <div class="impacto-rank" id="impactoRankFat"></div>
-            <p class="impacto-sub">Mês a mês · clique numa barra para filtrar o mês</p>
-            <div class="legenda-motivos" id="impactoLegendaFat"></div>
-            <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesFat" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
-            <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblFat"></table></div>
-            <p class="impacto-nota">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado). Respeita os filtros de supervisor, centro, processo e equipe; o gráfico e a tabela mostram todos os meses.</p>
-          </div>
           <div class="panel" id="panelFaltasMotivoFat">
             <p class="panel-title">Faltas por motivo</p>
             <p class="panel-caption" id="faltasMotivoCaptionFat">Motivo lançado na planilha · mesmo recorte dos filtros atuais</p>
             <div class="tablewrap"><table class="datatable" id="tblFaltasMotivoFat"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-impactoFat">
+        <div class="stack-1">
+          <div class="panel" id="panelImpactoMotivoFat" style="margin-bottom:14px">
+            <p class="panel-title">Impacto financeiro das faltas</p>
+            <p class="panel-caption" id="impactoCaptionFat"></p>
+            <div class="impacto-desc" id="impactoDescFat"></div>
+            <div class="tablewrap" style="margin-top:12px"><table class="datatable impacto-cen" id="impactoPonteFat"></table></div>
+            <p class="impacto-nota"><b>Hoje</b>: tudo como está. <b>Descontando os motivos marcados</b>: as faltas desses motivos saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
+          </div>
+          <div class="panel" id="panelImpactoRankFat" style="margin-bottom:14px">
+            <p class="panel-title">Quanto cada motivo custou da meta</p>
+            <p class="panel-caption">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado) · mesmo recorte dos filtros da esquerda</p>
+            <div class="impacto-rank" id="impactoRankFat"></div>
+          </div>
+          <div class="panel" id="panelImpactoMesFat" style="margin-bottom:14px">
+            <p class="panel-title">Perda por motivo, mês a mês</p>
+            <p class="panel-caption">Mostra todos os meses (ignora Mês e Dia) · clique numa barra ou no título de um mês da tabela para filtrar o mês</p>
+            <div class="legenda-motivos" id="impactoLegendaFat"></div>
+            <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesFat" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
+            <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblFat"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-impactoOb">
+        <div class="stack-1">
+          <div class="panel" id="panelImpactoMotivoOb" style="margin-bottom:14px">
+            <p class="panel-title">Impacto financeiro das faltas</p>
+            <p class="panel-caption" id="impactoCaptionOb"></p>
+            <div class="impacto-desc" id="impactoDescOb"></div>
+            <div class="tablewrap" style="margin-top:12px"><table class="datatable impacto-cen" id="impactoPonteOb"></table></div>
+            <p class="impacto-nota"><b>Hoje</b>: tudo como está. <b>Descontando os motivos marcados</b>: as faltas desses motivos saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
+          </div>
+          <div class="panel" id="panelImpactoRankOb" style="margin-bottom:14px">
+            <p class="panel-title">Quanto cada motivo custou da meta</p>
+            <p class="panel-caption">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado) · mesmo recorte dos filtros da esquerda</p>
+            <div class="impacto-rank" id="impactoRankOb"></div>
+          </div>
+          <div class="panel" id="panelImpactoMesOb" style="margin-bottom:14px">
+            <p class="panel-title">Perda por motivo, mês a mês</p>
+            <p class="panel-caption">Mostra todos os meses (ignora Mês e Dia) · clique numa barra ou no título de um mês da tabela para filtrar o mês</p>
+            <div class="legenda-motivos" id="impactoLegendaOb"></div>
+            <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesOb" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
+            <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblOb"></table></div>
           </div>
         </div>
       </section>
@@ -929,19 +977,6 @@
             <div class="tablewrap"><table class="datatable" id="tblFaltasRankOb"></table></div>
             <div id="faltasRodapeOb"></div>
           </div>
-          <div class="panel" id="panelImpactoMotivoOb" style="margin-bottom:14px">
-            <p class="panel-title">Impacto financeiro das faltas por motivo</p>
-            <p class="panel-caption" id="impactoCaptionOb"></p>
-            <div class="impacto-desc" id="impactoDescOb"></div>
-            <div class="impacto-ponte" id="impactoPonteOb"></div>
-            <p class="impacto-sub">Quanto cada motivo custou da meta</p>
-            <div class="impacto-rank" id="impactoRankOb"></div>
-            <p class="impacto-sub">Mês a mês · clique numa barra para filtrar o mês</p>
-            <div class="legenda-motivos" id="impactoLegendaOb"></div>
-            <div class="chart-scroll"><svg class="impacto-mes-svg" id="impactoMesOb" role="img" aria-label="Perda por motivo mês a mês"></svg></div>
-            <div class="tablewrap" style="margin-top:10px"><table class="datatable" id="impactoTblOb"></table></div>
-            <p class="impacto-nota">Perda = meta do dia em que a equipe estava escalada e faltou (meta − realizado). Respeita os filtros de supervisor, centro, processo e equipe; o gráfico e a tabela mostram todos os meses.</p>
-          </div>
           <div class="panel" id="panelFaltasMotivoOb">
             <p class="panel-title">Faltas por motivo</p>
             <p class="panel-caption" id="faltasMotivoCaptionOb">Motivo lançado na planilha · mesmo recorte dos filtros atuais</p>
@@ -996,8 +1031,8 @@ function iniciarPainel(DATA) {
   };
   var PAGE_GROUP = {
     geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
-    consolidadoCentro: "ec", rankingProdutividade: "ec", faltasFat: "ec",
-    geralOb: "ob", escaladoOb: "ob", faltasOb: "ob"
+    consolidadoCentro: "ec", rankingProdutividade: "ec", faltasFat: "ec", impactoFat: "ec",
+    geralOb: "ob", escaladoOb: "ob", faltasOb: "ob", impactoOb: "ob"
   };
   var PROC_TAB_PAGES = { procSup: true };
   var EQUIPE_PAGES = { geral: true, geralOb: true, analiseEquipes: true, comparativoMensal: true };
@@ -3151,6 +3186,7 @@ function iniciarPainel(DATA) {
     if (!painel) return;
     var rows = GROUPS[group].rows, D = GROUPS[group].dicts;
     painel.hidden = !rows.motivo;
+    ["panelImpactoRank", "panelImpactoMes"].forEach(function (id) { var p = document.getElementById(id + suf); if (p) p.hidden = !rows.motivo; });
     if (!rows.motivo) return;
     var slots = slotsDeMotivo(group);
     var nomeMot = function (code) { return code < 0 ? "Sem motivo preenchido" : nomeDim(D.motivo, code, "Sem motivo preenchido"); };
@@ -3159,12 +3195,13 @@ function iniciarPainel(DATA) {
     // ---- ponte do recorte atual (respeita Mês/Dia) ----
     var idxs = currentIdxs(group);
     var projetado = 0, realizado = 0, perdaTotal = 0, nFaltas = 0, porMot = {};
-    var projOrig = 0, realOrig = 0, descMeta = 0, descN = 0, todosMot = {};
+    var projOrig = 0, realOrig = 0, descMeta = 0, descN = 0, todosMot = {}, metaFal = 0, valFal = 0;
     idxs.forEach(function (i) {
       projOrig += rows.meta[i]; realOrig += rows.valor[i];
       if (isFaltou(group, rows, i)) {
         var tm = todosMot[rows.motivo[i]] || (todosMot[rows.motivo[i]] = { perda: 0, n: 0 });
         tm.perda += perdaDaFalta(rows, i); tm.n++;
+        metaFal += rows.meta[i]; valFal += rows.valor[i];
       }
       if (foiDescontada(group, rows, i)) { descMeta += rows.meta[i]; descN++; return; }   // sai da conta inteira
       projetado += rows.meta[i]; realizado += rows.valor[i];
@@ -3176,30 +3213,22 @@ function iniciarPainel(DATA) {
     });
     var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
     var cap = document.getElementById("impactoCaption" + suf);
-    if (cap) cap.textContent = recorteAtual(datas) + " · para ver um mês, escolha o filtro Mês ou clique numa barra do gráfico abaixo" +
-      (descontoMotivos[group].size ? " · com motivos descontados da meta (ver acima)" : "");
-    var resid = realizado - (projetado - perdaTotal);   // dias trabalhados acima (+) ou abaixo (-) da meta
+    if (cap) cap.textContent = recorteAtual(datas) + " · para ver um mês, escolha o filtro Mês ou clique numa barra do gráfico mais abaixo";
     var pct = function (v) { return projetado > 0 ? fmtPct(v / projetado) : "—"; };
-    // ---- filtro "descontar motivos da meta" ----
     var sel = descontoMotivos[group];
+
+    // ---- filtro "descontar motivos da meta" ----
     var boxDesc = document.getElementById("impactoDesc" + suf);
     if (boxDesc) {
       var antigo = boxDesc.querySelector("details"), aberto = !!(antigo && antigo.open);
       var opts = Object.keys(todosMot).map(Number).sort(function (a, b) { return todosMot[b].perda - todosMot[a].perda; });
-      var ating0 = projOrig > 0 ? realOrig / projOrig : null, ating1 = projetado > 0 ? realizado / projetado : null;
-      var resultado = "";
-      if (sel.size) {
-        var nomes = Array.from(sel).filter(function (c) { return todosMot[c]; }).map(nomeMot).join(", ");
-        var delta = ating0 != null && ating1 != null ? (ating1 - ating0) * 100 : null;
-        resultado = '<div class="id-resultado">Atingimento hoje <b>' + fmtPct(ating0) + "</b> → sem " + (sel.size === 1 ? "esse motivo" : "esses motivos") + ' <b>' + fmtPct(ating1) + "</b>" +
-          (delta != null ? ' <em>' + (delta >= 0 ? "+" : "") + delta.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " p.p.</em>" : "") +
-          "<br>Meta descontada: <b>" + fmtCompactBRL(descMeta) + "</b> (" + fmtInt.format(descN) + " faltas por " + (nomes || "—") + ") · projetado " + fmtCompactBRL(projOrig) + " → " + fmtCompactBRL(projetado) + "</div>";
-      }
-      boxDesc.innerHTML = '<details' + (aberto ? " open" : "") + "><summary>Descontar motivos da meta" + (sel.size ? '<span class="id-n">' + sel.size + "</span>" : "") +
+      var nomesSel = Array.from(sel).filter(function (c) { return todosMot[c]; }).map(nomeMot);
+      var resumoSel = nomesSel.length ? ": " + nomesSel.slice(0, 3).join(", ") + (nomesSel.length > 3 ? " +" + (nomesSel.length - 3) : "") : "";
+      boxDesc.innerHTML = '<details' + (aberto ? " open" : "") + "><summary>Descontar motivos da meta" + (sel.size ? '<span class="id-n">' + sel.size + "</span>" : "") + resumoSel +
         '</summary><div class="id-corpo"><p class="impacto-nota" style="margin-top:0">Marque os motivos que não devem pesar no atingimento (atestado, licença, férias...). As faltas deles saem do projetado, o realizado continua o mesmo.</p>' +
         '<div class="id-lista">' + opts.map(function (c) {
           return '<label><input type="checkbox" data-mot="' + c + '"' + (sel.has(c) ? " checked" : "") + "><span>" + nomeMot(c) + '</span><span class="v">' + fmtCompactBRL(todosMot[c].perda) + " · " + fmtInt.format(todosMot[c].n) + "</span></label>";
-        }).join("") + '</div><button type="button" class="id-limpar">Limpar seleção</button></div></details>' + resultado;
+        }).join("") + '</div><button type="button" class="id-limpar">Limpar seleção</button></div></details>';
       boxDesc.querySelectorAll("input[data-mot]").forEach(function (cb) {
         cb.addEventListener("change", function () {
           var c = parseInt(cb.getAttribute("data-mot"), 10);
@@ -3209,16 +3238,42 @@ function iniciarPainel(DATA) {
       });
       boxDesc.querySelector(".id-limpar").addEventListener("click", function () { sel.clear(); renderImpactoMotivo(group, suf); });
     }
+
+    // ---- três cenários lado a lado, em R$ ----
+    var loss0 = 0; Object.keys(todosMot).forEach(function (k) { loss0 += todosMot[k].perda; });
+    var cen = [
+      { proj: projOrig, perda: loss0, real: realOrig },
+      sel.size ? { proj: projetado, perda: perdaTotal, real: realizado } : null,
+      { proj: projOrig - metaFal, perda: 0, real: realOrig - valFal }
+    ];
+    cen.forEach(function (c) {
+      if (!c) return;
+      c.resid = c.real - (c.proj - c.perda);   // dias trabalhados acima (+) ou abaixo (-) da meta
+      c.ating = c.proj > 0 ? c.real / c.proj : null;
+      c.gap = c.real - c.proj;
+    });
     var ponte = document.getElementById("impactoPonte" + suf);
     if (ponte) {
-      ponte.innerHTML =
-        '<div class="ip-card"><div class="ip-rot">Projetado' + (sel.size ? " ajustado" : "") + ' (meta)</div><div class="ip-val">' + fmtCompactBRL(projetado) + '</div><div class="ip-sub">' + (sel.size && descN ? "original " + fmtCompactBRL(projOrig) : fmtFullBRL(projetado)) + "</div></div>" +
-        '<div class="ip-op">−</div>' +
-        '<div class="ip-card perda"><div class="ip-rot">Perda por faltas</div><div class="ip-val">' + fmtCompactBRL(perdaTotal) + '</div><div class="ip-sub">' + pct(perdaTotal) + " do projetado · " + fmtInt.format(nFaltas) + " faltas</div></div>" +
-        '<div class="ip-op">' + (resid < 0 ? "−" : "+") + "</div>" +
-        '<div class="ip-card"><div class="ip-rot">Dias trabalhados ' + (resid < 0 ? "abaixo" : "acima") + ' da meta</div><div class="ip-val">' + fmtCompactBRL(Math.abs(resid)) + '</div><div class="ip-sub">' + pct(Math.abs(resid)) + " do projetado</div></div>" +
-        '<div class="ip-op">=</div>' +
-        '<div class="ip-card"><div class="ip-rot">Realizado</div><div class="ip-val">' + fmtCompactBRL(realizado) + '</div><div class="ip-sub">' + pct(realizado) + " do projetado</div></div>";
+      var moeda = function (v) { return '<span title="' + fmtFullBRL(v) + '">' + fmtCompactBRL(v) + "</span>"; };
+      var sinal = function (v) { return (v < 0 ? "−" : "+") + " " + moeda(Math.abs(v)); };
+      var linhaC = function (rot, fn, cls) {
+        return "<tr" + (cls ? ' class="' + cls + '"' : "") + '><td class="cell-txt">' + rot + "</td>" + cen.map(function (c, k) {
+          return '<td class="cell-plain cen-' + k + '">' + (c ? fn(c, k) : (cls === "cen-proj" ? '<span class="cen-vazio">marque motivos acima</span>' : "—")) + "</td>";
+        }).join("") + "</tr>";
+      };
+      var dpp = function (c) {
+        if (!c || c === cen[0] || c.ating == null || cen[0].ating == null) return "";
+        var d = (c.ating - cen[0].ating) * 100;
+        return '<div class="cen-delta">' + (d >= 0 ? "+" : "") + d.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " p.p. vs hoje</div>";
+      };
+      ponte.innerHTML = "<thead><tr><th></th><th>Hoje</th><th>Descontando os motivos marcados" + (sel.size ? " (" + sel.size + ")" : "") + "</th><th>Sem nenhuma falta</th></tr></thead><tbody>" +
+        linhaC("Projetado (meta)", function (c) { return moeda(c.proj); }, "cen-proj") +
+        linhaC("− Perda por faltas", function (c) { return moeda(c.perda) + '<div class="cen-sub">' + (c.proj > 0 ? fmtPct(c.perda / c.proj) + " do projetado" : "—") + "</div>"; }) +
+        linhaC("± Dias trabalhados acima/abaixo da meta", function (c) { return sinal(c.resid); }) +
+        linhaC("= Realizado", function (c) { return moeda(c.real); }, "cen-real") +
+        linhaC("Falta (−) ou sobra (+) para a meta", function (c) { return sinal(c.gap); }) +
+        linhaC("Atingimento", function (c) { return '<b class="cen-ating">' + fmtPct(c.ating) + "</b>" + dpp(c); }, "cen-ating-linha") +
+        "</tbody>";
     }
 
     // ---- ranking de motivos (R$ perdido) ----
@@ -3335,10 +3390,10 @@ function iniciarPainel(DATA) {
   // fixo ao rolar, valores em R$ mil sempre no mesmo formato e fundo mais forte onde dói mais.
   function fmtMilCel(v) {
     if (!v) return "—";
-    if (v >= 1e6) return (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    if (v >= 1e6) return "R$ " + (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    if (v < 1e3) return "R$ " + Math.round(v).toLocaleString("pt-BR");
     var k = v / 1e3;
-    if (k < 0.05) return "<0,1";
-    return k.toLocaleString("pt-BR", { minimumFractionDigits: k >= 10 ? 0 : 1, maximumFractionDigits: k >= 10 ? 0 : 1 });
+    return "R$ " + k.toLocaleString("pt-BR", { minimumFractionDigits: k >= 10 ? 0 : 1, maximumFractionDigits: k >= 10 ? 0 : 1 }) + " mil";
   }
   var IMPACTO_TABELA_TOP = 12;
   function desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot) {
@@ -3363,7 +3418,7 @@ function iniciarPainel(DATA) {
       var forca = Math.round(6 + 44 * Math.sqrt(v / (maxCel || 1)));   // % de cor: mais escuro = mais perda
       return '<td class="cell-plain im-cel" style="background:color-mix(in srgb, var(--status-crit) ' + forca + '%, transparent)" title="' + fmtFullBRL(v) + '">' + fmtMilCel(v) + "</td>";
     };
-    var thead = '<thead><tr><th>Motivo <span class="im-un">(R$ mil)</span></th><th class="im-tot">Total</th><th class="im-tot">% do projetado</th>' +
+    var thead = '<thead><tr><th>Motivo</th><th class="im-tot">Total</th><th class="im-tot">% do projetado</th>' +
       mks.map(function (mk) { return '<th class="im-mes' + (selMes.has(mk) ? " sel" : "") + '" data-im-mes="' + mk + '" title="Clique para filtrar o mês">' + mesLabel(mk) + "</th>"; }).join("") + "</tr></thead>";
     var linha = function (rotulo, cor, totK, porMes) {
       return '<tr><td class="cell-txt"><span class="legenda-motivos" style="margin:0"><span><i style="background:' + cor + '"></i>' + rotulo + "</span></span></td>" +
@@ -3397,7 +3452,6 @@ function iniciarPainel(DATA) {
   }
 
   function renderFaltas(group, suf) {
-    renderImpactoMotivo(group, suf);
     renderFaltasPorMotivo(group, suf);
     renderFaltasPorProcesso(group, suf);
     renderFaltasPorSupervisor(group, suf);
@@ -4211,6 +4265,8 @@ function iniciarPainel(DATA) {
       renderEscalado("ec", "chartDiaFat", "tblEscaladoCentroDiaFat", "tblTrabalhadoCentroDiaFat");
     } else if (activePage === "faltasFat") {
       renderFaltas("ec", "Fat");
+    } else if (activePage === "impactoFat") {
+      renderImpactoMotivo("ec", "Fat");
     } else if (activePage === "consolidadoCentro") {
       renderConsolidadoCentro();
     } else if (activePage === "rankingProdutividade") {
@@ -4230,6 +4286,8 @@ function iniciarPainel(DATA) {
       renderEscalado("ob", "chartDiaOb", "tblEscaladoCentroDia", "tblTrabalhadoCentroDia");
     } else if (activePage === "faltasOb") {
       renderFaltas("ob", "Ob");
+    } else if (activePage === "impactoOb") {
+      renderImpactoMotivo("ob", "Ob");
     }
     reconferirEscala();
   }
