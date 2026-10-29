@@ -106,6 +106,32 @@
   .impacto-ponte .ip-val { font-size: 20px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; margin-top: 2px; }
   .impacto-ponte .ip-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
   .impacto-ponte .ip-card.perda .ip-val { color: var(--status-crit); }
+  .impacto-desc { margin: 10px 0 0; }
+  .impacto-desc details { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 0; }
+  .impacto-desc details[open] { padding-bottom: 12px; }
+  .impacto-desc summary { cursor: pointer; padding: 9px 12px; font-size: 12px; font-weight: 800; color: var(--text-primary); list-style: none; }
+  .impacto-desc summary::-webkit-details-marker { display: none; }
+  .impacto-desc summary::before { content: "\25B8"; display: inline-block; width: 14px; color: var(--text-muted); transition: transform .15s; }
+  .impacto-desc details[open] summary::before { transform: rotate(90deg); }
+  .impacto-desc summary .id-n { margin-left: 6px; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 1px 8px; font-size: 11px; }
+  .id-corpo { padding: 0 12px; }
+  .id-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 14px; max-height: 240px; overflow: auto; margin: 8px 0; }
+  .id-lista label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-primary); cursor: pointer; }
+  .id-lista label span.v { margin-left: auto; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .id-limpar { font: inherit; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .id-resultado { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--text-primary); font-size: 13px; line-height: 1.5; }
+  .id-resultado b { font-size: 16px; font-variant-numeric: tabular-nums; }
+  .id-resultado em { font-style: normal; font-weight: 800; color: var(--status-good); }
+  .impacto-matriz { border-collapse: separate; border-spacing: 0; }
+  .impacto-matriz th:first-child, .impacto-matriz td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface-1); min-width: 190px; box-shadow: 1px 0 0 var(--border); }
+  .impacto-matriz tr.total td:first-child { background: var(--surface-2); }
+  .impacto-matriz .im-tot { background: var(--surface-2); }
+  .impacto-matriz td.im-cel { font-variant-numeric: tabular-nums; }
+  .impacto-matriz td.im-zero { color: var(--text-muted); opacity: .55; }
+  .impacto-matriz th.im-mes { cursor: pointer; }
+  .impacto-matriz th.im-mes.sel { color: var(--accent-ink); background: var(--accent-soft); }
+  .impacto-matriz .im-un { font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
+  .impacto-matriz .im-mais { font: inherit; font-size: 11px; font-weight: 700; margin-left: 8px; padding: 1px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
   .impacto-sub { font-size: 12px; font-weight: 800; color: var(--text-secondary); margin: 16px 0 6px; }
   .impacto-rank { display: grid; grid-template-columns: minmax(120px, 210px) 1fr minmax(150px, auto); gap: 6px 12px; align-items: center; font-size: 12px; }
   .impacto-rank .ir-nome { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text-primary); min-width: 0; }
@@ -762,6 +788,7 @@
           <div class="panel" id="panelImpactoMotivoFat" style="margin-bottom:14px">
             <p class="panel-title">Impacto financeiro das faltas por motivo</p>
             <p class="panel-caption" id="impactoCaptionFat"></p>
+            <div class="impacto-desc" id="impactoDescFat"></div>
             <div class="impacto-ponte" id="impactoPonteFat"></div>
             <p class="impacto-sub">Quanto cada motivo custou da meta</p>
             <div class="impacto-rank" id="impactoRankFat"></div>
@@ -905,6 +932,7 @@
           <div class="panel" id="panelImpactoMotivoOb" style="margin-bottom:14px">
             <p class="panel-title">Impacto financeiro das faltas por motivo</p>
             <p class="panel-caption" id="impactoCaptionOb"></p>
+            <div class="impacto-desc" id="impactoDescOb"></div>
             <div class="impacto-ponte" id="impactoPonteOb"></div>
             <p class="impacto-sub">Quanto cada motivo custou da meta</p>
             <div class="impacto-rank" id="impactoRankOb"></div>
@@ -1210,6 +1238,8 @@ function iniciarPainel(DATA) {
   function weekdayIdx(dateStr) { var d = new Date(dateStr + "T00:00:00"); return (d.getDay() + 6) % 7; }
 
   // ---------- filters (independent per dataset group) ----------
+  // motivos marcados em "Descontar motivos da meta" (aba Faltas): as faltas deles saem do projetado e do realizado
+  var descontoMotivos = { ec: new Set(), ob: new Set() };
   var filters = {
     ec: { ano: new Set(), mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() },
     ob: { ano: new Set(), mes: new Set(), dia: new Set(), sup: new Set(), centro: new Set(), proc: new Set(), equipe: new Set(), excluir: new Set() }
@@ -3099,13 +3129,15 @@ function iniciarPainel(DATA) {
   // atual (filtros e mês) ganham cor; os demais ficam em cinza ("Outros"). O ranking, o
   // gráfico mensal e a tabela usam o mesmo mapa, então a cor muda ao trocar de mês.
   var MOTIVO_SLOTS = 6;
+  // motivos que o usuário marcou pra "descontar da meta": as faltas deles saem do projetado e do realizado
+  function foiDescontada(group, rows, i) { return descontoMotivos[group].size > 0 && descontoMotivos[group].has(rows.motivo[i]) && isFaltou(group, rows, i); }
   function perdaDaFalta(rows, i) { return Math.max(0, rows.meta[i] - rows.valor[i]); }
   function corDoSlot(slot) { return slot === "sem" ? cv("--mot-sem") : slot === "outros" ? cv("--mot-outros") : cv("--mot-" + (slot + 1)); }
   function slotsDeMotivo(group) {
     var rows = GROUPS[group].rows, tot = {};
     for (var i = 0; i < rows.date.length; i++) {
       if (!isFaltou(group, rows, i) || rows.motivo[i] < 0) continue;
-      if (!matchAll(group, i)) continue;   // o recorte inteiro, mês incluído: o maior motivo do que se vê sempre tem cor
+      if (!matchAll(group, i) || foiDescontada(group, rows, i)) continue;   // o recorte inteiro, mês incluído: o maior motivo do que se vê sempre tem cor
       tot[rows.motivo[i]] = (tot[rows.motivo[i]] || 0) + perdaDaFalta(rows, i);
     }
     var slots = {};
@@ -3127,7 +3159,14 @@ function iniciarPainel(DATA) {
     // ---- ponte do recorte atual (respeita Mês/Dia) ----
     var idxs = currentIdxs(group);
     var projetado = 0, realizado = 0, perdaTotal = 0, nFaltas = 0, porMot = {};
+    var projOrig = 0, realOrig = 0, descMeta = 0, descN = 0, todosMot = {};
     idxs.forEach(function (i) {
+      projOrig += rows.meta[i]; realOrig += rows.valor[i];
+      if (isFaltou(group, rows, i)) {
+        var tm = todosMot[rows.motivo[i]] || (todosMot[rows.motivo[i]] = { perda: 0, n: 0 });
+        tm.perda += perdaDaFalta(rows, i); tm.n++;
+      }
+      if (foiDescontada(group, rows, i)) { descMeta += rows.meta[i]; descN++; return; }   // sai da conta inteira
       projetado += rows.meta[i]; realizado += rows.valor[i];
       if (!isFaltou(group, rows, i)) return;
       var p = perdaDaFalta(rows, i), k = rows.motivo[i];
@@ -3137,13 +3176,43 @@ function iniciarPainel(DATA) {
     });
     var datas = Array.from(new Set(idxs.map(function (i) { return rows.date[i]; }))).sort();
     var cap = document.getElementById("impactoCaption" + suf);
-    if (cap) cap.textContent = recorteAtual(datas) + " · para ver um mês, escolha o filtro Mês ou clique numa barra do gráfico abaixo";
+    if (cap) cap.textContent = recorteAtual(datas) + " · para ver um mês, escolha o filtro Mês ou clique numa barra do gráfico abaixo" +
+      (descontoMotivos[group].size ? " · com motivos descontados da meta (ver acima)" : "");
     var resid = realizado - (projetado - perdaTotal);   // dias trabalhados acima (+) ou abaixo (-) da meta
     var pct = function (v) { return projetado > 0 ? fmtPct(v / projetado) : "—"; };
+    // ---- filtro "descontar motivos da meta" ----
+    var sel = descontoMotivos[group];
+    var boxDesc = document.getElementById("impactoDesc" + suf);
+    if (boxDesc) {
+      var antigo = boxDesc.querySelector("details"), aberto = !!(antigo && antigo.open);
+      var opts = Object.keys(todosMot).map(Number).sort(function (a, b) { return todosMot[b].perda - todosMot[a].perda; });
+      var ating0 = projOrig > 0 ? realOrig / projOrig : null, ating1 = projetado > 0 ? realizado / projetado : null;
+      var resultado = "";
+      if (sel.size) {
+        var nomes = Array.from(sel).filter(function (c) { return todosMot[c]; }).map(nomeMot).join(", ");
+        var delta = ating0 != null && ating1 != null ? (ating1 - ating0) * 100 : null;
+        resultado = '<div class="id-resultado">Atingimento hoje <b>' + fmtPct(ating0) + "</b> → sem " + (sel.size === 1 ? "esse motivo" : "esses motivos") + ' <b>' + fmtPct(ating1) + "</b>" +
+          (delta != null ? ' <em>' + (delta >= 0 ? "+" : "") + delta.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " p.p.</em>" : "") +
+          "<br>Meta descontada: <b>" + fmtCompactBRL(descMeta) + "</b> (" + fmtInt.format(descN) + " faltas por " + (nomes || "—") + ") · projetado " + fmtCompactBRL(projOrig) + " → " + fmtCompactBRL(projetado) + "</div>";
+      }
+      boxDesc.innerHTML = '<details' + (aberto ? " open" : "") + "><summary>Descontar motivos da meta" + (sel.size ? '<span class="id-n">' + sel.size + "</span>" : "") +
+        '</summary><div class="id-corpo"><p class="impacto-nota" style="margin-top:0">Marque os motivos que não devem pesar no atingimento (atestado, licença, férias...). As faltas deles saem do projetado, o realizado continua o mesmo.</p>' +
+        '<div class="id-lista">' + opts.map(function (c) {
+          return '<label><input type="checkbox" data-mot="' + c + '"' + (sel.has(c) ? " checked" : "") + "><span>" + nomeMot(c) + '</span><span class="v">' + fmtCompactBRL(todosMot[c].perda) + " · " + fmtInt.format(todosMot[c].n) + "</span></label>";
+        }).join("") + '</div><button type="button" class="id-limpar">Limpar seleção</button></div></details>' + resultado;
+      boxDesc.querySelectorAll("input[data-mot]").forEach(function (cb) {
+        cb.addEventListener("change", function () {
+          var c = parseInt(cb.getAttribute("data-mot"), 10);
+          if (cb.checked) sel.add(c); else sel.delete(c);
+          renderImpactoMotivo(group, suf);
+        });
+      });
+      boxDesc.querySelector(".id-limpar").addEventListener("click", function () { sel.clear(); renderImpactoMotivo(group, suf); });
+    }
     var ponte = document.getElementById("impactoPonte" + suf);
     if (ponte) {
       ponte.innerHTML =
-        '<div class="ip-card"><div class="ip-rot">Projetado (meta)</div><div class="ip-val">' + fmtCompactBRL(projetado) + '</div><div class="ip-sub">' + fmtFullBRL(projetado) + "</div></div>" +
+        '<div class="ip-card"><div class="ip-rot">Projetado' + (sel.size ? " ajustado" : "") + ' (meta)</div><div class="ip-val">' + fmtCompactBRL(projetado) + '</div><div class="ip-sub">' + (sel.size && descN ? "original " + fmtCompactBRL(projOrig) : fmtFullBRL(projetado)) + "</div></div>" +
         '<div class="ip-op">−</div>' +
         '<div class="ip-card perda"><div class="ip-rot">Perda por faltas</div><div class="ip-val">' + fmtCompactBRL(perdaTotal) + '</div><div class="ip-sub">' + pct(perdaTotal) + " do projetado · " + fmtInt.format(nFaltas) + " faltas</div></div>" +
         '<div class="ip-op">' + (resid < 0 ? "−" : "+") + "</div>" +
@@ -3177,7 +3246,7 @@ function iniciarPainel(DATA) {
     // ---- mês a mês (ignora Mês/Dia, respeita o resto) ----
     var meses = {};
     for (var i = 0; i < rows.date.length; i++) {
-      if (!matchDims(group, i) || isExcluido(group, rows, i)) continue;
+      if (!matchDims(group, i) || isExcluido(group, rows, i) || foiDescontada(group, rows, i)) continue;
       if (f.ano.size && !f.ano.has(rows.date[i].slice(0, 4))) continue;
       var mk = rows.date[i].slice(0, 7);
       var mm = meses[mk] || (meses[mk] = { proj: 0, perda: 0, porMot: {} });
@@ -3262,9 +3331,20 @@ function iniciarPainel(DATA) {
     });
   }
 
+  // Tabela motivo x mês: totais logo depois do motivo (não ficam cortados à direita), motivo
+  // fixo ao rolar, valores em R$ mil sempre no mesmo formato e fundo mais forte onde dói mais.
+  function fmtMilCel(v) {
+    if (!v) return "—";
+    if (v >= 1e6) return (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    var k = v / 1e3;
+    if (k < 0.05) return "<0,1";
+    return k.toLocaleString("pt-BR", { minimumFractionDigits: k >= 10 ? 0 : 1, maximumFractionDigits: k >= 10 ? 0 : 1 });
+  }
+  var IMPACTO_TABELA_TOP = 12;
   function desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot) {
     var tbl = document.getElementById("impactoTbl" + suf);
     if (!tbl) return;
+    tbl.classList.add("impacto-matriz");
     if (!mks.length) { tbl.innerHTML = '<tbody><tr><td class="cell-empty">Sem dados com os filtros atuais</td></tr></tbody>'; return; }
     var tot = {}, totMes = {}, projTot = 0, perdaTot = 0;
     mks.forEach(function (mk) {
@@ -3272,16 +3352,48 @@ function iniciarPainel(DATA) {
       Object.keys(meses[mk].porMot).forEach(function (k) { tot[k] = (tot[k] || 0) + meses[mk].porMot[k]; });
     });
     var ks = Object.keys(tot).map(Number).sort(function (a, b) { return (tot[b] - tot[a]); });
-    var thead = "<thead><tr><th>Motivo</th>" + mks.map(function (mk) { return "<th>" + mesLabel(mk) + "</th>"; }).join("") + "<th>Total</th><th>% do projetado</th></tr></thead>";
-    var cel = function (v) { return '<td class="cell-plain">' + (v ? fmtCompactBRL(v, true) : "—") + "</td>"; };
-    var corpo = ks.map(function (k) {
-      return '<tr><td class="cell-txt"><span class="legenda-motivos" style="margin:0"><span><i style="background:' + corDoSlot(slotDe(slots, k)) + '"></i>' + nomeMot(k) + "</span></span></td>" +
-        mks.map(function (mk) { return cel(meses[mk].porMot[k]); }).join("") +
-        '<td class="falta-n">' + fmtCompactBRL(tot[k], true) + '</td><td class="cell-plain">' + (projTot > 0 ? fmtPct(tot[k] / projTot) : "—") + "</td></tr>";
+    var todos = tbl.dataset.todos === "1";
+    var vis = todos ? ks : ks.slice(0, IMPACTO_TABELA_TOP), resto = todos ? [] : ks.slice(IMPACTO_TABELA_TOP);
+    var maxCel = 0;
+    vis.forEach(function (k) { mks.forEach(function (mk) { maxCel = Math.max(maxCel, meses[mk].porMot[k] || 0); }); });
+    var selMes = filters[group].mes;
+    var pctProj = function (v) { return projTot > 0 ? fmtPct(v / projTot) : "—"; };
+    var cel = function (v) {
+      if (!v) return '<td class="cell-plain im-zero">—</td>';
+      var forca = Math.round(6 + 44 * Math.sqrt(v / (maxCel || 1)));   // % de cor: mais escuro = mais perda
+      return '<td class="cell-plain im-cel" style="background:color-mix(in srgb, var(--status-crit) ' + forca + '%, transparent)" title="' + fmtFullBRL(v) + '">' + fmtMilCel(v) + "</td>";
+    };
+    var thead = '<thead><tr><th>Motivo <span class="im-un">(R$ mil)</span></th><th class="im-tot">Total</th><th class="im-tot">% do projetado</th>' +
+      mks.map(function (mk) { return '<th class="im-mes' + (selMes.has(mk) ? " sel" : "") + '" data-im-mes="' + mk + '" title="Clique para filtrar o mês">' + mesLabel(mk) + "</th>"; }).join("") + "</tr></thead>";
+    var linha = function (rotulo, cor, totK, porMes) {
+      return '<tr><td class="cell-txt"><span class="legenda-motivos" style="margin:0"><span><i style="background:' + cor + '"></i>' + rotulo + "</span></span></td>" +
+        '<td class="falta-n im-tot">' + fmtMilCel(totK) + '</td><td class="cell-plain im-tot">' + pctProj(totK) + "</td>" +
+        mks.map(function (mk) { return cel(porMes(mk)); }).join("") + "</tr>";
+    };
+    var corpo = vis.map(function (k) {
+      return linha(nomeMot(k), corDoSlot(slotDe(slots, k)), tot[k], function (mk) { return meses[mk].porMot[k]; });
     }).join("");
-    var rodape = '<tr class="total"><td>Total</td>' + mks.map(function (mk) { return '<td class="cell-plain">' + (totMes[mk] ? fmtCompactBRL(totMes[mk], true) : "—") + "</td>"; }).join("") +
-      '<td class="falta-n">' + fmtCompactBRL(perdaTot, true) + '</td><td class="cell-plain">' + (projTot > 0 ? fmtPct(perdaTot / projTot) : "—") + "</td></tr>";
+    if (resto.length) {
+      var somaResto = resto.reduce(function (a, k) { return a + tot[k]; }, 0);
+      corpo += linha('Outros ' + resto.length + ' motivos <button type="button" class="im-mais">mostrar todos</button>', corDoSlot("outros"), somaResto,
+        function (mk) { return resto.reduce(function (a, k) { return a + (meses[mk].porMot[k] || 0); }, 0); });
+    } else if (todos && ks.length > IMPACTO_TABELA_TOP) {
+      corpo += '<tr><td colspan="' + (mks.length + 3) + '" class="cell-txt"><button type="button" class="im-mais">mostrar só os ' + IMPACTO_TABELA_TOP + " maiores</button></td></tr>";
+    }
+    var rodape = '<tr class="total"><td>Total</td><td class="falta-n im-tot">' + fmtMilCel(perdaTot) + '</td><td class="cell-plain im-tot">' + pctProj(perdaTot) + "</td>" +
+      mks.map(function (mk) { return '<td class="cell-plain">' + fmtMilCel(totMes[mk]) + "</td>"; }).join("") + "</tr>";
     tbl.innerHTML = thead + "<tbody>" + corpo + rodape + "</tbody>";
+    var mais = tbl.querySelector(".im-mais");
+    if (mais) mais.addEventListener("click", function () { tbl.dataset.todos = todos ? "0" : "1"; desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot); });
+    tbl.querySelectorAll("[data-im-mes]").forEach(function (th) {
+      th.addEventListener("click", function () {
+        var mk = th.getAttribute("data-im-mes"), conj = filters[group].mes;
+        if (conj.has(mk) && conj.size === 1) conj.clear(); else { conj.clear(); conj.add(mk); }
+        filters[group].dia.clear();
+        buildDateFilterUI("mes"); buildDateFilterUI("dia");
+        renderAll();
+      });
+    });
   }
 
   function renderFaltas(group, suf) {
