@@ -148,7 +148,8 @@
   .impacto-radios { margin: 12px 0 4px; }
   .impacto-subs button, .impacto-radios button { font: inherit; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; }
   .impacto-subs button.on, .impacto-radios button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .impacto-mesmes th, .impacto-mesmes td { text-align: center; }
+  .impacto-mesmes th, .impacto-mesmes td { text-align: center; white-space: nowrap; }
+  .impacto-cen td { white-space: nowrap; }
   .impacto-mesmes th:first-child, .impacto-mesmes td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface-1); z-index: 1; }
   .impacto-mesmes th.gr { border-bottom: 1px solid var(--baseline); }
   .impacto-mesmes th.gr1, .impacto-mesmes td.gr1 { background: var(--accent-soft); }
@@ -3326,7 +3327,7 @@ function iniciarPainel(DATA) {
     });
     var ponte = document.getElementById("impactoPonte" + suf);
     if (ponte) {
-      var moeda = function (v) { return '<span title="' + fmtFullBRL(v) + '">' + fmtCompactBRL(v) + "</span>"; };
+      var moeda = function (v) { return '<span title="' + fmtFullBRL(v) + '">' + fmtFullBRL(v) + "</span>"; };
       var sinal = function (v) { return (v < 0 ? "−" : "+") + " " + moeda(Math.abs(v)); };
       // o que vai pra área de transferência: valor cheio (R$ 12.600.000,00), sem "=", "±" nem "+" na frente
       var cp = function (v) { return (v < 0 ? "-" : "") + fmtFullBRL(Math.abs(v)); };
@@ -3504,9 +3505,12 @@ function iniciarPainel(DATA) {
     document.querySelectorAll("#impactoRadios" + suf + " button").forEach(function (b) { b.classList.toggle("on", parseInt(b.getAttribute("data-impacto-cen"), 10) === cen); });
     var nota = document.getElementById("impactoMesNota" + suf);
     var semSel = cen === 1 && !sel.size;
+    var totCen = [0, 0];
+    mks.forEach(function (mk) { totCen[0] += meses[mk][cen * 2]; totCen[1] += meses[mk][cen * 2 + 1]; });
     if (nota) nota.textContent = semSel ? "Marque motivos em \"Descontar motivos da meta\" (acima) para ver este cenário."
       : "Barra escura = projetado (meta) · barra clara = realizado · linha = atingimento · " +
-        (cen === 0 ? "tudo como está." : cen === 1 ? "sem as faltas dos motivos marcados." : "contando só os dias em que a equipe trabalhou.");
+        (cen === 0 ? "tudo como está" : cen === 1 ? "sem as faltas dos motivos marcados" : "contando só os dias em que a equipe trabalhou") +
+        " · total do período: projetado " + fmtFullBRL(totCen[0]) + ", realizado " + fmtFullBRL(totCen[1]) + (totCen[0] > 0 ? " (" + fmtPct(totCen[1] / totCen[0]) + ")" : "");
     if (semSel || !mks.length) {
       graf.innerHTML = ""; if (!mks.length) emptyChart(graf, 980, 360);
     } else {
@@ -3519,7 +3523,7 @@ function iniciarPainel(DATA) {
     var bloco = function (p, r, k, vazio) {
       var a = p > 0 ? r / p : null, cls = k === 1 ? " gr1" : "";
       if (vazio) return '<td class="sep' + cls + '" data-copia="">—</td><td class="' + cls.trim() + '" data-copia="">—</td><td class="at' + cls + '" data-copia="">—</td>';
-      return '<td class="sep' + cls + '" data-copia="' + fmtFullBRL(p) + '" title="' + fmtFullBRL(p) + '">' + fmtCompactBRL(p) + '</td><td class="' + cls.trim() + '" data-copia="' + fmtFullBRL(r) + '" title="' + fmtFullBRL(r) + '">' + fmtCompactBRL(r) + '</td><td class="at' + cls + '"' + corAt(a) + ">" + fmtPct(a) + "</td>";
+      return '<td class="sep' + cls + '" data-copia="' + fmtFullBRL(p) + '" title="' + fmtFullBRL(p) + '">' + fmtFullBRL(p) + '</td><td class="' + cls.trim() + '" data-copia="' + fmtFullBRL(r) + '" title="' + fmtFullBRL(r) + '">' + fmtFullBRL(r) + '</td><td class="at' + cls + '"' + corAt(a) + ">" + fmtPct(a) + "</td>";
     };
     var vazio1 = !sel.size;
     var thead = '<thead><tr><th class="gr"></th><th class="gr sep" colspan="3">Hoje</th><th class="gr sep gr1" colspan="3">Descontando os motivos marcados' + (sel.size ? " (" + sel.size + ")" : "") + '</th><th class="gr sep" colspan="3">Sem nenhuma falta</th></tr>' +
