@@ -139,6 +139,7 @@
   .impacto-cen tr.cen-proj td, .impacto-cen tr.cen-real td { font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
   .impacto-cen tr.cen-ating-linha td { border-top: 2px solid var(--baseline); }
   .impacto-cen .cen-ating { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .impacto-cen tr.cen-sublinha td { font-size: 11px; color: var(--text-muted); padding-top: 2px; padding-bottom: 6px; border-top: 0; }
   .impacto-cen .cen-sub, .impacto-cen .cen-delta { font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .impacto-cen .cen-delta { color: var(--status-good); font-weight: 800; }
   .impacto-cen .cen-vazio { font-size: 11px; font-weight: 600; color: var(--text-muted); }
@@ -826,17 +827,23 @@
               <button type="button" class="on" data-impacto-sub="geral" data-suf="Fat">Visão geral</button>
               <button type="button" data-impacto-sub="mes" data-suf="Fat">Mês a mês: projetado × realizado</button>
             </div>
-            <div id="impactoSubGeralFat">
-            <div class="tablewrap" style="margin-top:12px"><table class="datatable impacto-cen" id="impactoPonteFat"></table></div>
-            <p class="impacto-nota"><b>Hoje</b>: tudo como está. <b>Descontando os motivos marcados</b>: as faltas desses motivos saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
           </div>
-            <div id="impactoSubMesFat" hidden>
+          <div id="impactoSubGeralFat">
+            <div class="panel" id="panelImpactoCenFat" style="margin-bottom:14px">
+              <p class="panel-title">Hoje × descontando os motivos marcados × sem nenhuma falta</p>
+              <p class="panel-caption"><b>Descontando</b>: as faltas dos motivos marcados saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
+              <div class="tablewrap"><table class="datatable impacto-cen" id="impactoPonteFat"></table></div>
+            </div>
+          </div>
+          <div id="impactoSubMesFat" hidden>
+            <div class="panel" id="panelImpactoMesAMesFat" style="margin-bottom:14px">
+              <p class="panel-title">Projetado × realizado, mês a mês</p>
+              <p class="panel-caption" id="impactoMesNotaFat"></p>
               <div class="impacto-radios" id="impactoRadiosFat">
                 <button type="button" class="on" data-impacto-cen="0" data-suf="Fat">Hoje</button>
                 <button type="button" data-impacto-cen="1" data-suf="Fat">Descontando os motivos marcados</button>
                 <button type="button" data-impacto-cen="2" data-suf="Fat">Sem nenhuma falta</button>
               </div>
-              <p class="impacto-nota" id="impactoMesNotaFat"></p>
               <div class="chart-scroll"><svg class="chart" id="impactoMesGrafFat" viewBox="0 0 980 360"></svg></div>
               <div class="tablewrap" style="margin-top:10px"><table class="datatable impacto-mesmes" id="impactoMesTblFat"></table></div>
             </div>
@@ -868,17 +875,23 @@
               <button type="button" class="on" data-impacto-sub="geral" data-suf="Ob">Visão geral</button>
               <button type="button" data-impacto-sub="mes" data-suf="Ob">Mês a mês: projetado × realizado</button>
             </div>
-            <div id="impactoSubGeralOb">
-            <div class="tablewrap" style="margin-top:12px"><table class="datatable impacto-cen" id="impactoPonteOb"></table></div>
-            <p class="impacto-nota"><b>Hoje</b>: tudo como está. <b>Descontando os motivos marcados</b>: as faltas desses motivos saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
           </div>
-            <div id="impactoSubMesOb" hidden>
+          <div id="impactoSubGeralOb">
+            <div class="panel" id="panelImpactoCenOb" style="margin-bottom:14px">
+              <p class="panel-title">Hoje × descontando os motivos marcados × sem nenhuma falta</p>
+              <p class="panel-caption"><b>Descontando</b>: as faltas dos motivos marcados saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
+              <div class="tablewrap"><table class="datatable impacto-cen" id="impactoPonteOb"></table></div>
+            </div>
+          </div>
+          <div id="impactoSubMesOb" hidden>
+            <div class="panel" id="panelImpactoMesAMesOb" style="margin-bottom:14px">
+              <p class="panel-title">Projetado × realizado, mês a mês</p>
+              <p class="panel-caption" id="impactoMesNotaOb"></p>
               <div class="impacto-radios" id="impactoRadiosOb">
                 <button type="button" class="on" data-impacto-cen="0" data-suf="Ob">Hoje</button>
                 <button type="button" data-impacto-cen="1" data-suf="Ob">Descontando os motivos marcados</button>
                 <button type="button" data-impacto-cen="2" data-suf="Ob">Sem nenhuma falta</button>
               </div>
-              <p class="impacto-nota" id="impactoMesNotaOb"></p>
               <div class="chart-scroll"><svg class="chart" id="impactoMesGrafOb" viewBox="0 0 980 360"></svg></div>
               <div class="tablewrap" style="margin-top:10px"><table class="datatable impacto-mesmes" id="impactoMesTblOb"></table></div>
             </div>
@@ -1884,12 +1897,22 @@ function iniciarPainel(DATA) {
     if (/[",\t\n]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
     return text;
   }
+  // Texto de uma célula pra colar: data-copia (valor limpo, ex.: número inteiro em R$ em vez de
+  // "R$ 1,2 mi") quando existe; senão o texto, com espaço entre blocos (<div>) da mesma célula,
+  // pra "R$ 633 mil" e "5,0% do projetado" não saírem grudados.
+  function textoDaCelula(c) {
+    if (c.hasAttribute("data-copia")) return c.getAttribute("data-copia");
+    var partes = [];
+    c.childNodes.forEach(function (n) { partes.push(n.nodeType === 1 && (n.tagName === "DIV" || n.tagName === "BR") ? " " + n.textContent + " " : n.textContent); });
+    return partes.join("").replace(/\s+/g, " ").trim();
+  }
   function tableToTSV(table) {
     var lines = [];
     table.querySelectorAll("tr").forEach(function (tr) {
-      var cells = tr.querySelectorAll("th,td");
-      var vals = Array.prototype.map.call(cells, function (c) {
-        return tsvEscape(c.textContent.replace(/\s+/g, " ").trim());
+      var vals = [];
+      tr.querySelectorAll("th,td").forEach(function (c) {
+        vals.push(tsvEscape(textoDaCelula(c)));
+        for (var k = 1; k < (parseInt(c.getAttribute("colspan"), 10) || 1); k++) vals.push("");   // célula mesclada ocupa as colunas dela
       });
       lines.push(vals.join("\t"));
     });
@@ -3305,23 +3328,28 @@ function iniciarPainel(DATA) {
     if (ponte) {
       var moeda = function (v) { return '<span title="' + fmtFullBRL(v) + '">' + fmtCompactBRL(v) + "</span>"; };
       var sinal = function (v) { return (v < 0 ? "−" : "+") + " " + moeda(Math.abs(v)); };
-      var linhaC = function (rot, fn, cls) {
-        return "<tr" + (cls ? ' class="' + cls + '"' : "") + '><td class="cell-txt">' + rot + "</td>" + cen.map(function (c, k) {
-          return '<td class="cell-plain cen-' + k + '">' + (c ? fn(c, k) : (cls === "cen-proj" ? '<span class="cen-vazio">marque motivos acima</span>' : "—")) + "</td>";
+      // o que vai pra área de transferência: valor cheio (R$ 12.600.000,00), sem "=", "±" nem "+" na frente
+      var cp = function (v) { return (v < 0 ? "-" : "") + fmtFullBRL(Math.abs(v)); };
+      var linhaC = function (rot, rotCopia, fn, cp_, cls) {
+        return "<tr" + (cls ? ' class="' + cls + '"' : "") + '><td class="cell-txt" data-copia="' + escapeAttr(rotCopia) + '">' + rot + "</td>" + cen.map(function (c, k) {
+          if (!c) return '<td class="cell-plain cen-' + k + '" data-copia="">' + (cls === "cen-proj" ? '<span class="cen-vazio">marque motivos acima</span>' : "—") + "</td>";
+          var v = fn(c, k);
+          return '<td class="cell-plain cen-' + k + '" data-copia="' + escapeAttr(cp_(c, k)) + '">' + (v == null ? "—" : v) + "</td>";
         }).join("") + "</tr>";
       };
-      var dpp = function (c) {
-        if (!c || c === cen[0] || c.ating == null || cen[0].ating == null) return "";
-        var d = (c.ating - cen[0].ating) * 100;
-        return '<div class="cen-delta">' + (d >= 0 ? "+" : "") + d.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " p.p. vs hoje</div>";
-      };
+      var ppDe = function (c) { return c.ating == null || cen[0].ating == null ? null : (c.ating - cen[0].ating) * 100; };
+      var ppTxt = function (d) { return d.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
       ponte.innerHTML = "<thead><tr><th></th><th>Hoje</th><th>Descontando os motivos marcados" + (sel.size ? " (" + sel.size + ")" : "") + "</th><th>Sem nenhuma falta</th></tr></thead><tbody>" +
-        linhaC("Projetado (meta)", function (c) { return moeda(c.proj); }, "cen-proj") +
-        linhaC("− Perda por faltas", function (c) { return moeda(c.perda) + '<div class="cen-sub">' + (c.proj > 0 ? fmtPct(c.perda / c.proj) + " do projetado" : "—") + "</div>"; }) +
-        linhaC("± Dias trabalhados acima/abaixo da meta", function (c) { return sinal(c.resid); }) +
-        linhaC("= Realizado", function (c) { return moeda(c.real); }, "cen-real") +
-        linhaC("Falta (−) ou sobra (+) para a meta", function (c) { return sinal(c.gap); }) +
-        linhaC("Atingimento", function (c) { return '<b class="cen-ating">' + fmtPct(c.ating) + "</b>" + dpp(c); }, "cen-ating-linha") +
+        linhaC("Projetado (meta)", "Projetado (meta)", function (c) { return moeda(c.proj); }, function (c) { return cp(c.proj); }, "cen-proj") +
+        linhaC("− Perda por faltas", "Perda por faltas", function (c) { return moeda(c.perda); }, function (c) { return cp(c.perda); }) +
+        linhaC("&nbsp;&nbsp;% do projetado", "Perda por faltas (% do projetado)", function (c) { return c.proj > 0 ? fmtPct(c.perda / c.proj) : null; }, function (c) { return c.proj > 0 ? fmtPct(c.perda / c.proj) : ""; }, "cen-sublinha") +
+        linhaC("± Dias trabalhados acima/abaixo da meta", "Dias trabalhados acima (+) ou abaixo (-) da meta", function (c) { return sinal(c.resid); }, function (c) { return cp(c.resid); }) +
+        linhaC("= Realizado", "Realizado", function (c) { return moeda(c.real); }, function (c) { return cp(c.real); }, "cen-real") +
+        linhaC("Falta (−) ou sobra (+) para a meta", "Falta (-) ou sobra (+) para a meta", function (c) { return sinal(c.gap); }, function (c) { return cp(c.gap); }) +
+        linhaC("Atingimento", "Atingimento", function (c) { return '<b class="cen-ating">' + fmtPct(c.ating) + "</b>"; }, function (c) { return fmtPct(c.ating); }, "cen-ating-linha") +
+        linhaC("&nbsp;&nbsp;vs hoje (pontos percentuais)", "Atingimento: variação vs hoje (p.p.)",
+          function (c, k) { var d = k === 0 ? null : ppDe(c); return d == null ? null : '<span class="cen-delta">' + (d >= 0 ? "+" : "") + ppTxt(d) + " p.p.</span>"; },
+          function (c, k) { var d = k === 0 ? null : ppDe(c); return d == null ? "" : ppTxt(d); }, "cen-sublinha") +
         "</tbody>";
     }
 
@@ -3490,8 +3518,8 @@ function iniciarPainel(DATA) {
     var corAt = function (a) { return a == null ? "" : ' style="color:var(' + (a >= 1 ? "--status-good" : a >= 0.9 ? "--status-warn" : "--status-crit") + ')"'; };
     var bloco = function (p, r, k, vazio) {
       var a = p > 0 ? r / p : null, cls = k === 1 ? " gr1" : "";
-      if (vazio) return '<td class="sep' + cls + '">—</td><td class="' + cls.trim() + '">—</td><td class="at' + cls + '">—</td>';
-      return '<td class="sep' + cls + '">' + fmtCompactBRL(p) + '</td><td class="' + cls.trim() + '">' + fmtCompactBRL(r) + '</td><td class="at' + cls + '"' + corAt(a) + ">" + fmtPct(a) + "</td>";
+      if (vazio) return '<td class="sep' + cls + '" data-copia="">—</td><td class="' + cls.trim() + '" data-copia="">—</td><td class="at' + cls + '" data-copia="">—</td>';
+      return '<td class="sep' + cls + '" data-copia="' + fmtFullBRL(p) + '" title="' + fmtFullBRL(p) + '">' + fmtCompactBRL(p) + '</td><td class="' + cls.trim() + '" data-copia="' + fmtFullBRL(r) + '" title="' + fmtFullBRL(r) + '">' + fmtCompactBRL(r) + '</td><td class="at' + cls + '"' + corAt(a) + ">" + fmtPct(a) + "</td>";
     };
     var vazio1 = !sel.size;
     var thead = '<thead><tr><th class="gr"></th><th class="gr sep" colspan="3">Hoje</th><th class="gr sep gr1" colspan="3">Descontando os motivos marcados' + (sel.size ? " (" + sel.size + ")" : "") + '</th><th class="gr sep" colspan="3">Sem nenhuma falta</th></tr>' +
@@ -3533,15 +3561,15 @@ function iniciarPainel(DATA) {
     var selMes = filters[group].mes;
     var pctProj = function (v) { return projTot > 0 ? fmtPct(v / projTot) : "—"; };
     var cel = function (v) {
-      if (!v) return '<td class="cell-plain im-zero">—</td>';
+      if (!v) return '<td class="cell-plain im-zero" data-copia="">—</td>';
       var forca = Math.round(6 + 44 * Math.sqrt(v / (maxCel || 1)));   // % de cor: mais escuro = mais perda
-      return '<td class="cell-plain im-cel" style="background:color-mix(in srgb, var(--status-crit) ' + forca + '%, transparent)" title="' + fmtFullBRL(v) + '">' + fmtMilCel(v) + "</td>";
+      return '<td class="cell-plain im-cel" style="background:color-mix(in srgb, var(--status-crit) ' + forca + '%, transparent)" title="' + fmtFullBRL(v) + '" data-copia="' + fmtFullBRL(v) + '">' + fmtMilCel(v) + "</td>";
     };
     var thead = '<thead><tr><th>Motivo</th><th class="im-tot">Total</th><th class="im-tot">% do projetado</th>' +
       mks.map(function (mk) { return '<th class="im-mes' + (selMes.has(mk) ? " sel" : "") + '" data-im-mes="' + mk + '" title="Clique para filtrar o mês">' + mesLabel(mk) + "</th>"; }).join("") + "</tr></thead>";
     var linha = function (rotulo, cor, totK, porMes) {
       return '<tr><td class="cell-txt"><span class="legenda-motivos" style="margin:0"><span><i style="background:' + cor + '"></i>' + rotulo + "</span></span></td>" +
-        '<td class="falta-n im-tot">' + fmtMilCel(totK) + '</td><td class="cell-plain im-tot">' + pctProj(totK) + "</td>" +
+        '<td class="falta-n im-tot" data-copia="' + fmtFullBRL(totK) + '">' + fmtMilCel(totK) + '</td><td class="cell-plain im-tot">' + pctProj(totK) + "</td>" +
         mks.map(function (mk) { return cel(porMes(mk)); }).join("") + "</tr>";
     };
     var corpo = vis.map(function (k) {
@@ -3554,8 +3582,8 @@ function iniciarPainel(DATA) {
     } else if (todos && ks.length > IMPACTO_TABELA_TOP) {
       corpo += '<tr><td colspan="' + (mks.length + 3) + '" class="cell-txt"><button type="button" class="im-mais">mostrar só os ' + IMPACTO_TABELA_TOP + " maiores</button></td></tr>";
     }
-    var rodape = '<tr class="total"><td>Total</td><td class="falta-n im-tot">' + fmtMilCel(perdaTot) + '</td><td class="cell-plain im-tot">' + pctProj(perdaTot) + "</td>" +
-      mks.map(function (mk) { return '<td class="cell-plain">' + fmtMilCel(totMes[mk]) + "</td>"; }).join("") + "</tr>";
+    var rodape = '<tr class="total"><td>Total</td><td class="falta-n im-tot" data-copia="' + fmtFullBRL(perdaTot) + '">' + fmtMilCel(perdaTot) + '</td><td class="cell-plain im-tot">' + pctProj(perdaTot) + "</td>" +
+      mks.map(function (mk) { return '<td class="cell-plain" data-copia="' + (totMes[mk] ? fmtFullBRL(totMes[mk]) : "") + '">' + fmtMilCel(totMes[mk]) + "</td>"; }).join("") + "</tr>";
     tbl.innerHTML = thead + "<tbody>" + corpo + rodape + "</tbody>";
     var mais = tbl.querySelector(".im-mais");
     if (mais) mais.addEventListener("click", function () { tbl.dataset.todos = todos ? "0" : "1"; desenharImpactoTabela(group, suf, mks, meses, slots, nomeMot); });
