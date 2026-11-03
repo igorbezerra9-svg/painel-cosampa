@@ -830,6 +830,11 @@
             </div>
           </div>
           <div id="impactoSubGeralFat">
+            <div class="panel" id="panelImpactoCardsFat" style="margin-bottom:14px">
+              <p class="panel-title">Resumo do período</p>
+              <p class="panel-caption" id="impactoCardsCapFat"></p>
+              <div class="impacto-ponte" id="impactoCardsFat"></div>
+            </div>
             <div class="panel" id="panelImpactoCenFat" style="margin-bottom:14px">
               <p class="panel-title">Hoje × descontando os motivos marcados × sem nenhuma falta</p>
               <p class="panel-caption"><b>Descontando</b>: as faltas dos motivos marcados saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
@@ -878,6 +883,11 @@
             </div>
           </div>
           <div id="impactoSubGeralOb">
+            <div class="panel" id="panelImpactoCardsOb" style="margin-bottom:14px">
+              <p class="panel-title">Resumo do período</p>
+              <p class="panel-caption" id="impactoCardsCapOb"></p>
+              <div class="impacto-ponte" id="impactoCardsOb"></div>
+            </div>
             <div class="panel" id="panelImpactoCenOb" style="margin-bottom:14px">
               <p class="panel-title">Hoje × descontando os motivos marcados × sem nenhuma falta</p>
               <p class="panel-caption"><b>Descontando</b>: as faltas dos motivos marcados saem do projetado e do realizado. <b>Sem nenhuma falta</b>: como ficaria se nenhum dia de falta contasse na meta, só os dias em que a equipe trabalhou.</p>
@@ -3325,6 +3335,22 @@ function iniciarPainel(DATA) {
       c.ating = c.proj > 0 ? c.real / c.proj : null;
       c.gap = c.real - c.proj;
     });
+    var cards = document.getElementById("impactoCards" + suf), cardsCap = document.getElementById("impactoCardsCap" + suf);
+    if (cards) {
+      var cc = sel.size ? cen[1] : cen[0];
+      var pcc = function (v) { return cc.proj > 0 ? fmtPct(v / cc.proj) : "—"; };
+      if (cardsCap) cardsCap.textContent = sel.size
+        ? "Já descontando " + sel.size + (sel.size === 1 ? " motivo marcado" : " motivos marcados") + " · projetado original " + fmtCompactBRL(projOrig)
+        : "Todos os motivos · para tirar um motivo da meta, use \"Descontar motivos da meta\" acima";
+      cards.innerHTML =
+        '<div class="ip-card"><div class="ip-rot">Projetado' + (sel.size ? " ajustado" : "") + ' (meta)</div><div class="ip-val">' + fmtCompactBRL(cc.proj) + '</div><div class="ip-sub">' + fmtFullBRL(cc.proj) + "</div></div>" +
+        '<div class="ip-op">−</div>' +
+        '<div class="ip-card perda"><div class="ip-rot">Perda por faltas</div><div class="ip-val">' + fmtCompactBRL(cc.perda) + '</div><div class="ip-sub">' + pcc(cc.perda) + " do projetado · " + fmtInt.format(nFaltas) + " faltas</div></div>" +
+        '<div class="ip-op">' + (cc.resid < 0 ? "−" : "+") + "</div>" +
+        '<div class="ip-card"><div class="ip-rot">Dias trabalhados ' + (cc.resid < 0 ? "abaixo" : "acima") + ' da meta</div><div class="ip-val">' + fmtCompactBRL(Math.abs(cc.resid)) + '</div><div class="ip-sub">' + pcc(Math.abs(cc.resid)) + " do projetado</div></div>" +
+        '<div class="ip-op">=</div>' +
+        '<div class="ip-card"><div class="ip-rot">Realizado</div><div class="ip-val">' + fmtCompactBRL(cc.real) + '</div><div class="ip-sub">' + pcc(cc.real) + " do projetado</div></div>";
+    }
     var ponte = document.getElementById("impactoPonte" + suf);
     if (ponte) {
       var moeda = function (v) { return '<span title="' + fmtFullBRL(v) + '">' + fmtFullBRL(v) + "</span>"; };
