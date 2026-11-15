@@ -558,7 +558,9 @@
   .gridnv .c4{grid-column:span 4} .gridnv .c5{grid-column:span 5} .gridnv .c6{grid-column:span 6}
   .gridnv .c7{grid-column:span 7} .gridnv .c8{grid-column:span 8} .gridnv .c12{grid-column:span 12}
   @media (max-width:1150px){ .gridnv .c4,.gridnv .c5,.gridnv .c6,.gridnv .c7,.gridnv .c8{grid-column:span 12} }
-  .nv-h { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:11px; }
+  .nv-h { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:11px;
+          padding-right:44px; }
+  .gridnv .panel.dois-botoes > .nv-h { padding-right:80px; }
   .nv-t { margin:0; font-size:13px; font-weight:800; letter-spacing:-.01em; color:var(--text-primary); }
   .nv-c { margin:3px 0 0; font-size:11px; color:var(--text-muted); }
   .seg-nv { display:flex; gap:1px; background:var(--surface-2); border:1px solid var(--baseline);
@@ -569,12 +571,12 @@
                       box-shadow:0 1px 1px rgba(23,19,8,.09); }
 
   .nv-stats { display:flex; flex-wrap:wrap; }
-  .nv-stat { flex:1; min-width:150px; padding:0 16px; border-left:1px solid var(--grid); }
+  .nv-stat { flex:1; min-width:168px; padding:0 16px; border-left:1px solid var(--grid); }
   .nv-stat:first-child { padding-left:0; border-left:0; }
   .nv-stat-l { font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
   .nv-stat-v { margin:4px 0 0; font-size:21px; font-weight:800; letter-spacing:-.035em; white-space:nowrap;
                font-variant-numeric:tabular-nums; color:var(--text-primary); }
-  .nv-stat-s { margin:3px 0 0; font-size:10.5px; color:var(--text-muted); white-space:nowrap; }
+  .nv-stat-s { margin:3px 0 0; font-size:10.5px; color:var(--text-muted); line-height:1.45; }
   .nv-stat-s b { color:var(--text-secondary); font-weight:700; }
 
   .nvpill { display:inline-block; font-size:10.5px; font-weight:800; border-radius:999px; padding:1px 7px;
@@ -592,6 +594,7 @@
   .cons .gtot { color:var(--text-primary); }
   .cons .sep { border-left:1px solid var(--baseline); }
   .cons tbody td:first-child { font-weight:600; }
+  .gridnv .tablewrap { margin:0 -4px; padding:0 4px; }
 
   .nv-leg { display:flex; gap:14px; margin-top:7px; font-size:11px; color:var(--text-secondary); flex-wrap:wrap; }
   .nv-leg span { display:flex; align-items:center; gap:5px; }
@@ -4887,9 +4890,9 @@ function iniciarPainel(DATA) {
       '<span class="nvpill ' + nvCls(p) + '">' + nvPct(p) + "</span></td>";
   }
   function nvTabela(cabs, linhas, total) {
-    return '<table class="datatable" id="nvtbl' + (++nvSeq) + '"><thead><tr>' +
+    return '<div class="tablewrap"><table class="datatable" id="nvtbl' + (++nvSeq) + '"><thead><tr>' +
       cabs.map(function (h) { return "<th>" + h + "</th>"; }).join("") +
-      "</tr></thead><tbody>" + linhas.join("") + (total || "") + "</tbody></table>";
+      "</tr></thead><tbody>" + linhas.join("") + (total || "") + "</tbody></table></div>";
   }
   function nvLeg(itens, mt) {
     return '<div class="nv-leg" style="margin-top:' + (mt || 7) + 'px">' +
@@ -5133,7 +5136,7 @@ function iniciarPainel(DATA) {
       TC[0] += e[0]; TC[1] += e[1]; TC[2] += b[0]; TC[3] += b[1];
       return lin(c, e, b);
     }).join("") + lin("Contrato Sul", [TC[0], TC[1]], [TC[2], TC[3]], "total");
-    return '<table class="datatable cons" id="nvtbl' + (++nvSeq) + '"><thead>' +
+    return '<div class="tablewrap"><table class="datatable cons sticky-col" id="nvtbl' + (++nvSeq) + '"><thead>' +
       '<tr><th rowspan="2">Centro</th>' +
       '<th colspan="3" class="gec sep">Emergencial + Comercial</th>' +
       '<th colspan="3" class="gob sep">Obras</th>' +
@@ -5141,7 +5144,7 @@ function iniciarPainel(DATA) {
       '<tr><th class="sep">Meta</th><th>Realiz.</th><th>%</th>' +
       '<th class="sep">Meta</th><th>Realiz.</th><th>%</th>' +
       '<th class="sep">Meta</th><th>Realiz.</th><th>Atingimento</th></tr>' +
-      "</thead><tbody>" + corpo + "</tbody></table>";
+      "</thead><tbody>" + corpo + "</tbody></table></div>";
   }
 
   // ================== ABA: OPERAÇÃO (recorte Contrato Sul) ==================
