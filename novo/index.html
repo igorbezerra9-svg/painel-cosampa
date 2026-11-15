@@ -1,0 +1,1208 @@
+<meta charset="utf-8">
+<title>Prévia — Painel Cosampa enxuto</title>
+<style>
+  :root {
+    --plane:#f4f2ec; --surface-1:#fff; --surface-2:#faf8f3;
+    --ink:#17140c; --ink-2:#55503f; --ink-3:#8d8674;
+    --grid:#ece7da; --rule:#e2dccc; --border:rgba(23,20,12,.10);
+    --shadow:0 1px 2px rgba(23,20,12,.04);
+    --accent:#eda100; --accent-ink:#4a3300; --accent-soft:#fbead0;
+    --ec:#d9622c; --ec-soft:#f2cfbc;
+    --ob:#2f6fb8; --ob-soft:#c3d6ea;
+    --tot:#2b2719; --tot-soft:#cfc9b8;
+    --good:#2f7d32; --warn:#9c6b0c; --crit:#b63a3a;
+    --good-bg:#e8f2e6; --warn-bg:#f8eed6; --crit-bg:#f7e2e1;
+    --pill-bg:rgba(15,13,8,.82);
+    --m1:#b63a3a; --m2:#d9622c; --m3:#9c6b0c; --m4:#2f6fb8; --m5:#6b58a8; --m6:#2f7d32; --m0:#b5ae9c;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--plane); color:var(--ink);
+         font:13px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif;
+         -webkit-font-smoothing:antialiased; }
+  .num { font-variant-numeric:tabular-nums; }
+
+  .top { display:flex; align-items:center; justify-content:space-between; gap:20px;
+         padding:12px 20px 9px; background:var(--surface-1); border-bottom:1px solid var(--border); }
+  .brand { display:flex; align-items:baseline; gap:11px; }
+  .brand h1 { margin:0; font-size:19px; letter-spacing:-.02em; font-weight:800; }
+  .eyebrow { font-size:9.5px; font-weight:800; letter-spacing:.15em;
+             text-transform:uppercase; color:var(--accent); }
+  .chip { font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+          background:var(--accent-soft); color:var(--accent-ink);
+          border:1px solid var(--accent); border-radius:5px; padding:2px 7px; }
+  .top-c { display:flex; align-items:center; gap:8px; }
+  .top-c .lbl { font-size:9px; font-weight:800; letter-spacing:.09em;
+                text-transform:uppercase; color:var(--ink-3); }
+  .top-r { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--ink-2); }
+  .btn { display:flex; align-items:center; gap:6px; font:inherit; font-size:12px; font-weight:700;
+         background:var(--surface-2); color:var(--ink); border:1px solid var(--rule);
+         border-radius:7px; padding:6px 11px; cursor:pointer; }
+  .btn svg { width:12px; height:12px; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--good); }
+
+  .tabs { display:flex; gap:1px; padding:0 20px; background:var(--surface-1);
+          border-bottom:1px solid var(--border); }
+  .tab { font:inherit; font-size:12.5px; font-weight:700; background:none; border:0;
+         border-bottom:2px solid transparent; color:var(--ink-3); padding:9px 14px; cursor:pointer; }
+  .tab:hover { color:var(--ink); }
+  .tab.on { color:var(--ink); border-bottom-color:var(--accent); }
+  .tab .n { font-size:8.5px; font-weight:800; background:var(--accent); color:var(--accent-ink);
+            border-radius:3px; padding:1px 3px; margin-left:5px; vertical-align:1.5px; }
+
+  .app { display:grid; grid-template-columns:166px minmax(0,1fr); gap:12px; padding:12px 20px 32px; }
+  .side { background:var(--surface-1); border:1px solid var(--border);
+          border-radius:9px; padding:10px; height:max-content; position:sticky; top:12px; }
+  .fg + .fg { margin-top:8px; }
+  .fg-l { display:block; font-size:9px; font-weight:800; letter-spacing:.07em;
+          text-transform:uppercase; color:var(--ink-3); margin-bottom:3px; }
+  .fg-b { width:100%; font:inherit; font-size:12px; font-weight:600; text-align:left;
+          background:var(--surface-2); border:1px solid var(--rule); border-radius:6px;
+          padding:5px 8px; color:var(--ink-2); cursor:pointer; display:flex; justify-content:space-between; }
+  .fg-b::after { content:"⌄"; color:var(--ink-3); }
+  .fg-s { width:100%; font:inherit; font-size:12px; font-weight:600;
+          background:var(--surface-2); border:1px solid var(--rule); border-radius:6px;
+          padding:5px 7px; color:var(--ink-2); cursor:pointer; }
+  .fg-s.on { border-color:var(--accent); background:#fff; color:var(--ink);
+             box-shadow:0 0 0 2px rgba(201,138,26,.18); }
+  .fg-t { display:block; margin-top:4px; font-size:10px; font-weight:700; color:var(--accent); }
+  .side-n { margin:10px 0 0; padding-top:9px; border-top:1px solid var(--grid);
+            font-size:10.5px; color:var(--ink-3); }
+
+  .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:12px; align-content:start; }
+  .c3{grid-column:span 3} .c4{grid-column:span 4} .c5{grid-column:span 5}
+  .c6{grid-column:span 6} .c7{grid-column:span 7} .c8{grid-column:span 8}
+  .c9{grid-column:span 9} .c12{grid-column:span 12}
+
+  .card { background:var(--surface-1); border:1px solid var(--border); border-radius:9px;
+          box-shadow:var(--shadow); padding:12px 14px; min-width:0; }
+  .card-h { display:flex; align-items:flex-start; justify-content:space-between;
+            gap:12px; margin-bottom:10px; }
+  .card-t { margin:0; font-size:12.5px; font-weight:800; letter-spacing:-.01em; }
+  .card-c { margin:2px 0 0; font-size:11px; color:var(--ink-3); }
+
+  .seg { display:flex; gap:1px; background:var(--surface-2); border:1px solid var(--rule);
+         border-radius:6px; padding:1px; flex:none; }
+  .seg button { font:inherit; font-size:11px; font-weight:700; border:0; cursor:pointer;
+                background:none; color:var(--ink-3); border-radius:5px; padding:3px 9px; }
+  .seg button.on { background:var(--surface-1); color:var(--ink); box-shadow:0 1px 1px rgba(23,20,12,.09); }
+  .seg.big button { font-size:12px; padding:5px 12px; }
+  .seg.big button.on { color:#fff; }
+  .seg.big button.on[data-v="ec"]  { background:var(--ec); }
+  .seg.big button.on[data-v="ob"]  { background:var(--ob); }
+  .seg.big button.on[data-v="sul"] { background:var(--tot); }
+
+  .stats { display:flex; }
+  .stat { flex:1; padding:0 16px; border-left:1px solid var(--grid); min-width:0; }
+  .stat:first-child { padding-left:0; border-left:0; }
+  .stat-l { font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); }
+  .stat-v { margin:4px 0 0; font-size:21px; font-weight:800; letter-spacing:-.035em; white-space:nowrap; }
+  .stat-s { margin:3px 0 0; font-size:10.5px; color:var(--ink-3); white-space:nowrap; }
+  .stat-s b { color:var(--ink-2); font-weight:700; }
+
+  .comp + .comp { margin-top:13px; }
+  .comp-h { font-size:10px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+            color:var(--ink-3); margin-bottom:5px; }
+  .bar { display:flex; height:7px; border-radius:4px; overflow:hidden; background:var(--grid); }
+  .cbtns { display:flex; gap:4px; flex:none; margin-left:10px; }
+  .cb { width:25px; height:25px; display:grid; place-items:center; padding:0; cursor:pointer;
+        border:1px solid var(--rule); background:var(--surface-2); border-radius:6px; color:var(--ink-3); }
+  .cb:hover { color:var(--ink); border-color:var(--ink-3); background:var(--surface-1); }
+  .cb svg { width:14px; height:14px; }
+  .cbar { display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
+  .chk { display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+         color:var(--ink-2); cursor:pointer; }
+  .chk input { accent-color:var(--accent); width:14px; height:14px; }
+  .cbar .comp-k { margin-top:0; }
+  .btn2 { font:inherit; font-size:11.5px; font-weight:700; padding:5px 12px; border-radius:7px; cursor:pointer;
+          border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-ink); }
+  .btn2:hover { background:#f8dfb4; }
+  .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:50;
+           background:var(--ink); color:#fff; font-size:12px; font-weight:700; padding:8px 17px;
+           border-radius:999px; box-shadow:0 6px 20px rgba(23,20,12,.28); }
+  .comp-k { display:flex; gap:14px; margin-top:6px; font-size:11px; color:var(--ink-2); flex-wrap:wrap; }
+  .comp-k span { display:flex; align-items:center; gap:5px; }
+  .sw { width:8px; height:8px; border-radius:2px; flex:none; }
+  .punch { margin:13px 0 0; padding-top:11px; border-top:1px solid var(--grid);
+           font-size:11.5px; color:var(--ink-2); line-height:1.5; }
+  .punch b { color:var(--ink); }
+
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { text-align:right; font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+       color:var(--ink-3); padding:0 7px 6px; border-bottom:1px solid var(--rule); white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; }
+  td { text-align:right; padding:4px 7px; border-bottom:1px solid var(--grid);
+       white-space:nowrap; font-variant-numeric:tabular-nums; }
+  tbody tr:hover td { background:var(--surface-2); }
+  tr.tot td { font-weight:800; border-top:1px solid var(--rule); border-bottom:0; background:var(--surface-2); }
+  .sub { font-size:10.5px; color:var(--ink-3); }
+  .pill { display:inline-block; min-width:46px; border-radius:4px; padding:1px 6px;
+          font-weight:700; font-size:11.5px; }
+  .g{background:var(--good-bg);color:var(--good)} .w{background:var(--warn-bg);color:var(--warn)}
+  .c{background:var(--crit-bg);color:var(--crit)}
+  .mini { display:inline-block; width:34px; height:5px; border-radius:3px; background:var(--grid);
+          overflow:hidden; vertical-align:middle; margin-right:7px; }
+  .mini i { display:block; height:100%; }
+  .heat { text-align:center !important; font-weight:700; font-size:11px; }
+  .cons thead tr:first-child th { font-size:9.5px; text-align:center; padding-bottom:1px; }
+  .cons .gec { color:var(--ec); } .cons .gob { color:var(--ob); } .cons .gtot { color:var(--tot); }
+  .cons .sep { border-left:1px solid var(--rule); }
+  .cons tbody td:first-child { font-weight:600; }
+  text { font-family:inherit; }
+
+  /* ---------- ponte do impacto ---------- */
+  .ip { display:flex; align-items:stretch; gap:7px; }
+  .ip-card { flex:1; background:var(--surface-2); border:1px solid var(--rule);
+             border-radius:8px; padding:9px 11px; min-width:0; }
+  .ip-card.perda { background:var(--crit-bg); border-color:#eccac8; }
+  .ip-card.fim { background:#fff; border-color:var(--ink); }
+  .ip-rot { font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+            color:var(--ink-3); line-height:1.3; min-height:24px; }
+  .ip-val { font-size:19px; font-weight:800; letter-spacing:-.035em; margin-top:3px;
+            font-variant-numeric:tabular-nums; }
+  .ip-card.perda .ip-val { color:var(--crit); }
+  .ip-sub { font-size:10px; color:var(--ink-3); margin-top:2px; font-variant-numeric:tabular-nums; }
+  .ip-op { display:flex; align-items:center; font-size:17px; font-weight:800; color:var(--ink-3); }
+
+  .cen th { text-align:right; }
+  .cen td.cen-1 { color:var(--ink-2); }
+  .cen tr.destaque td { font-weight:800; background:var(--surface-2); }
+  .cen tr.sub2 td { font-size:10.5px; color:var(--ink-3); border-bottom:0; padding-top:0; }
+  .cen tr.sub2 td:first-child { padding-left:18px; }
+  .vazio { color:var(--ink-3); font-style:italic; font-size:11px; }
+
+  .motbox { border:1px solid var(--rule); border-radius:8px; background:var(--surface-2);
+            padding:9px 11px; margin-bottom:11px; }
+  .motbox-h { font-size:10px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+              color:var(--ink-3); margin-bottom:7px; }
+  .motlist { display:grid; grid-template-columns:repeat(auto-fill,minmax(188px,1fr)); gap:2px 12px; }
+  .motlist label { display:flex; align-items:center; gap:6px; font-size:11.5px;
+                   cursor:pointer; padding:2px 0; min-width:0; }
+  .motlist label span.nm { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .motlist label span.v { color:var(--ink-3); font-variant-numeric:tabular-nums; font-size:10.5px; }
+  .motlist input { margin:0; accent-color:var(--crit); }
+  .limpar { font:inherit; font-size:11px; font-weight:700; background:none; border:0;
+            color:var(--ink-3); cursor:pointer; padding:5px 0 0; text-decoration:underline; }
+
+  .ir { display:grid; grid-template-columns:minmax(120px,1.1fr) minmax(60px,1fr) auto;
+        gap:4px 10px; align-items:center; }
+  .ir-nome { display:flex; align-items:center; gap:6px; font-size:11.5px; min-width:0; }
+  .ir-nome i { width:8px; height:8px; border-radius:2px; flex:none; }
+  .ir-nome span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ir-trilho { height:7px; border-radius:4px; background:var(--grid); overflow:hidden; }
+  .ir-barra { height:100%; border-radius:4px; }
+  .ir-val { font-size:10.5px; color:var(--ink-3); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .ir-val b { color:var(--ink); font-size:11.5px; }
+</style>
+
+<div class="top">
+  <div class="brand">
+    <span class="eyebrow">Cosampa</span><h1>Contrato Sul</h1><span class="chip">Prévia</span>
+  </div>
+  <div class="top-c">
+    <span class="lbl">Recorte</span>
+    <div class="seg big" id="segLado"></div>
+  </div>
+  <div class="top-r">
+    <button class="btn"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Apresentação</button>
+    <span class="dot"></span>Dados congelados em <b id="genDate">—</b>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="app">
+  <aside class="side">
+    <div class="fg"><span class="fg-l">Ano</span><button class="fg-b">2026</button></div>
+    <div class="fg"><span class="fg-l">Mês</span><button class="fg-b">Todos</button></div>
+    <div class="fg"><span class="fg-l">Dia</span><button class="fg-b">Dia</button></div>
+    <div class="fg"><span class="fg-l">Processo</span><button class="fg-b">Processo</button></div>
+    <div class="fg"><span class="fg-l">Supervisor</span>
+      <select class="fg-s" id="selSup"></select><span class="fg-t" id="supTag"></span></div>
+    <div class="fg"><span class="fg-l">Centro</span><button class="fg-b">Centro</button></div>
+    <div class="fg"><span class="fg-l">Equipe</span><button class="fg-b">Equipe</button></div>
+    <p class="side-n" id="sideN"></p>
+  </aside>
+  <div id="main"></div>
+</div>
+
+<script src="payload.js"></script>
+<script>
+(function () {
+  "use strict";
+  var MES = MOCK.meses;
+  var brl = function (v){ return "R$ " + v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var mi  = function (v){ return "R$ " + (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi"; };
+  var cp  = function (v,nu){ var a=Math.abs(v), s=v<0?"-":"", p=nu?"":"R$ ";
+      if (a>=1e6) return s+p+(a/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" mi";
+      if (a>=1e3) return s+p+(a/1e3).toLocaleString("pt-BR",{maximumFractionDigits:0})+" mil";
+      return s+p+a.toLocaleString("pt-BR",{maximumFractionDigits:0}); };
+  var mil = function (v){ return cp(v); };
+  var int = function (v){ return v.toLocaleString("pt-BR"); };
+  var ok  = function (v){ return v!=null && isFinite(v); };
+  var n2  = function (v){ return ok(v)?v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"; };
+  var pct = function (v,d){ return ok(v)?(v*100).toLocaleString("pt-BR",{minimumFractionDigits:d==null?1:d,maximumFractionDigits:d==null?1:d})+"%":"—"; };
+  var cls = function (p){ return p>=.95?"g":p>=.85?"w":"c"; };
+  var cor = function (p){ return p>=.95?"var(--good)":p>=.85?"var(--warn)":"var(--crit)"; };
+  var div = function (a,b){ return b?a/b:null; };
+  var esc = function (s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); };
+  document.getElementById("genDate").textContent = MOCK.geradoEm;
+
+  /* ===================== camada de dados ===================== */
+  var LADOS = {
+    ec:  { nome:"Emergencial + Comercial", curto:"Emerg. + Com.",
+           cor:"var(--ec)",  soft:"var(--ec-soft)" },
+    ob:  { nome:"Obras",        curto:"Obras",
+           cor:"var(--ob)",  soft:"var(--ob-soft)" },
+    sul: { nome:"Contrato Sul", curto:"Contrato Sul",
+           cor:"var(--tot)", soft:"var(--tot-soft)" }
+  };
+  var lado = "ec", sup = "";
+
+  function somaArr(a, b) {
+    var o = a.slice();
+    for (var i=0;i<b.length;i++) o[i] = (o[i]||0) + b[i];
+    return o;
+  }
+  function somaMapa(A, B) {
+    var o = {}, k;
+    for (k in A) o[k] = A[k].slice();
+    for (k in B) o[k] = o[k] ? somaArr(o[k], B[k]) : B[k].slice();
+    return o;
+  }
+  function somaMapa2(A, B) {
+    var o = {}, k;
+    for (k in A) o[k] = somaMapa(A[k], {});
+    for (k in B) o[k] = o[k] ? somaMapa(o[k], B[k]) : somaMapa(B[k], {});
+    return o;
+  }
+  function somaNum2(A, B) {
+    var o = {}, k, j;
+    for (k in A) { o[k] = {}; for (j in A[k]) o[k][j] = A[k][j]; }
+    for (k in B) { if(!o[k]) o[k]={}; for (j in B[k]) o[k][j] = (o[k][j]||0) + B[k][j]; }
+    return o;
+  }
+
+  var CACHE = {};
+  var VAZIO = { mes:{}, centro:{}, centroMes:{}, proc:{}, equipes:[], equipesMes:{},
+                faltaMes:{}, mot:{}, faltaSup:{}, motMes:{}, turnoDia:{}, turnoCentro:{},
+                imp:[0,0,0,0,0] };
+  // sem supervisor escolhido lê o bloco global; com supervisor, o bloco dele
+  function bruto(l) { return sup ? (MOCK.S[l][sup] || VAZIO) : MOCK.G[l]; }
+  function DS(l) {
+    var ck = l+"|"+sup;
+    if (CACHE[ck]) return CACHE[ck];
+    var o;
+    if (l !== "sul") {
+      o = bruto(l);
+      o = { mes:o.mes, centro:o.centro, centroMes:o.centroMes, proc:o.proc,
+            equipes:o.equipes, equipesMes:o.equipesMes, faltaMes:o.faltaMes, mot:o.mot,
+            faltaSup:o.faltaSup, motMes:o.motMes, turnoDia:o.turnoDia,
+            turnoCentro:o.turnoCentro, imp:o.imp };
+    } else {
+      var e = DS("ec"), b = DS("ob");
+      o = { mes:somaMapa(e.mes,b.mes), centro:somaMapa(e.centro,b.centro),
+            centroMes:somaMapa2(e.centroMes,b.centroMes), proc:somaMapa(e.proc,b.proc),
+            equipes:e.equipes.concat(b.equipes).sort(function(a,c){return c.v-a.v;}).slice(0,sup?40:14),
+            equipesMes:somaMapa2(e.equipesMes,b.equipesMes),
+            faltaMes:somaMapa(e.faltaMes,b.faltaMes), mot:somaMapa(e.mot,b.mot),
+            faltaSup:somaMapa(e.faltaSup,b.faltaSup), motMes:somaNum2(e.motMes,b.motMes),
+            turnoDia:somaMapa(e.turnoDia,b.turnoDia), turnoCentro:somaMapa(e.turnoCentro,b.turnoCentro),
+            imp:somaArr(e.imp,b.imp) };
+      var sp = Object.keys(o.faltaSup).sort(function(a,c){return o.faltaSup[c][2]-o.faltaSup[a][2];}).slice(0,8);
+      var f2={}; sp.forEach(function(k){f2[k]=o.faltaSup[k];}); o.faltaSup=f2;
+    }
+    o.L = Object.keys(o.mes).sort().map(function (k) {
+      var m = o.mes[k];
+      return { k:k, mes:MES[+k.slice(5,7)-1], valor:m[0], meta:m[1], qtd:m[2] };
+    });
+    o.T = o.L.reduce(function (a,r) { a.valor+=r.valor; a.meta+=r.meta; a.qtd+=r.qtd; return a; },
+                     {valor:0,meta:0,qtd:0});
+    o.perdaTot = 0; Object.keys(o.mot).forEach(function(k){ o.perdaTot += o.mot[k][1]; });
+    o.nFal = 0; o.escTot = 0;
+    Object.keys(o.faltaMes).forEach(function(k){ o.nFal += o.faltaMes[k][0]; o.escTot += o.faltaMes[k][1]; });
+    CACHE[ck] = o; return o;
+  }
+  // total do contrato inteiro — não muda com o filtro de supervisor
+  var TOT = (function () {
+    var t = {tm:0, tv:0};
+    ["ec","ob"].forEach(function (g) { t.tm += MOCK.G[g].imp[0]; t.tv += MOCK.G[g].imp[1]; });
+    return t;
+  })();
+  var D, SUL, EC, OB, LS;
+  function recarrega() {
+    D = DS(lado); SUL = DS("sul"); EC = DS("ec"); OB = DS("ob");
+    LS = SUL.L.map(function (r) {
+      var e = EC.mes[r.k]||[0,0,0], b = OB.mes[r.k]||[0,0,0];
+      return { k:r.k, mes:r.mes, ev:e[0],em:e[1], ov:b[0],om:b[1], tv:r.valor, tm:r.meta };
+    });
+  }
+  recarrega();
+
+  /* ===================== helpers de UI ===================== */
+  var SEG = {};
+  function segv(nome, padrao) { return SEG[nome] == null ? (SEG[nome]=padrao) : SEG[nome]; }
+  function pillCel(p){ return '<td><span class="pill '+cls(p)+'">'+pct(p)+"</span></td>"; }
+  function barCel(p){
+    return '<td><span class="mini"><i style="width:'+Math.min(100,(p||0)*100)+'%;background:'+cor(p)+'"></i></span>' +
+           '<span class="pill '+cls(p)+'">'+pct(p)+"</span></td>";
+  }
+  function card(cls_, titulo, cap, corpo, seg) {
+    var s = "";
+    if (seg) {
+      var at = segv(seg.id, seg.opts[0]);
+      s = '<div class="seg" data-seg="'+seg.id+'">' + seg.opts.map(function (o) {
+        return '<button data-v="'+esc(o)+'"'+(o===at?' class="on"':"")+">"+o+"</button>";
+      }).join("") + "</div>";
+    }
+    return '<div class="card '+cls_+'"><div class="card-h"><div><p class="card-t">'+titulo+"</p>" +
+      (cap?'<p class="card-c">'+cap+"</p>":"") + "</div>" + s + "</div>" + corpo + "</div>";
+  }
+  function tabela(cabs, linhas, total, kl) {
+    return '<table'+(kl?' class="'+kl+'"':"")+"><thead><tr>" + cabs.map(function(h){return "<th>"+h+"</th>";}).join("") +
+      "</tr></thead><tbody>" + linhas.join("") + (total||"") + "</tbody></table>";
+  }
+  function st(l,v,s,c) {
+    return '<div class="stat"><div class="stat-l">'+l+'</div><p class="stat-v num"' +
+      (c?' style="color:'+c+'"':'')+">"+v+'</p><p class="stat-s num">'+s+"</p></div>";
+  }
+  function legenda(itens, mt) {
+    return '<div class="comp-k" style="margin-top:'+(mt||6)+'px">' +
+      itens.map(function(i){ return '<span><i class="sw" style="background:'+i.cor+'"></i>'+i.nome+"</span>"; }).join("") + "</div>";
+  }
+  function fundo(p){ return p>=.95?"var(--good-bg)":p>=.85?"var(--warn-bg)":"var(--crit-bg)"; }
+  function escala(max, alvo) {
+    if (!(max>0)) return { max:1, step:.25 };
+    var bruto = max/(alvo||6), mag = Math.pow(10, Math.floor(Math.log(bruto)/Math.LN10));
+    var r = bruto/mag, step = (r<=1?1:r<=2?2:r<=2.5?2.5:r<=5?5:10)*mag;
+    return { max: Math.ceil(max/step)*step, step: step };
+  }
+  // pílula escura por cima da barra — mesmo recurso do painel real: o <text>
+  // entra no SVG e o retângulo é medido e inserido atrás depois de renderizar
+  function pz(x, y, txt, bg) {
+    return '<text class="pz" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="middle"' +
+      (bg?' data-bg="'+bg+'"':"") + ' fill="#fff" font-size="9.5" font-weight="800">'+esc(txt)+"</text>";
+  }
+  function pillify(root) {
+    var NS = "http://www.w3.org/2000/svg";
+    root.querySelectorAll("text.pz").forEach(function (t) {
+      var b = t.getBBox(), px = 4, py = 2.5;
+      var r = document.createElementNS(NS, "rect");
+      r.setAttribute("x", b.x-px); r.setAttribute("y", b.y-py);
+      r.setAttribute("width", b.width+px*2); r.setAttribute("height", b.height+py*2);
+      r.setAttribute("rx", (b.height+py*2)/2);
+      r.setAttribute("fill", t.getAttribute("data-bg") || "var(--pill-bg)");
+      t.parentNode.insertBefore(r, t);
+    });
+  }
+
+  /* ========== exportar gráfico como PNG ========== */
+  var ICOC = '<svg viewBox="0 0 16 16" fill="none"><rect x="5.3" y="5.3" width="8.2" height="8.2" rx="1.8"' +
+    ' stroke="currentColor" stroke-width="1.5"/><path d="M10.7 5V3.9c0-.8-.6-1.4-1.4-1.4H3.9c-.8 0-1.4.6-1.4 1.4v5.4' +
+    'c0 .8.6 1.4 1.4 1.4H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  var ICOD = '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2.6v6.8m0 0L5.4 6.8M8 9.4l2.6-2.6M3 12.6h10"' +
+    ' stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function corVar(txt) {
+    var cs = getComputedStyle(document.documentElement);
+    return txt.replace(/var\(--([a-z0-9-]+)\)/g, function (m,k) {
+      return (cs.getPropertyValue("--"+k)||"").trim() || "#888";
+    });
+  }
+  function aviso(t) {
+    var d = document.createElement("div");
+    d.className = "toast"; d.textContent = t;
+    document.body.appendChild(d);
+    setTimeout(function(){ d.remove(); }, 2000);
+  }
+  function montaPng(cards, cb, erro) {
+    var ESC=2, PAD=16, TIT=24, LEG=20, GAP=16, W=0, H=0, bl=[];
+    cards.forEach(function (c) {
+      var sv = null;   // o primeiro svg do cartão é o ícone do botão — pular
+      c.querySelectorAll("svg").forEach(function (q) { if (!sv && !q.closest(".cbtns")) sv = q; });
+      if (!sv) return;
+      var r = sv.getBoundingClientRect(), tt = c.querySelector(".card-t"), lg = c.querySelector(".comp-k");
+      bl.push({ tit: tt?tt.textContent:"", svg:sv, w:Math.round(r.width), h:Math.round(r.height),
+        leg: lg ? [].slice.call(lg.querySelectorAll("span")).map(function (sp) {
+               var sw = sp.querySelector(".sw");
+               return { t:sp.textContent.trim(), c: sw?getComputedStyle(sw).backgroundColor:"#888" };
+             }) : null });
+      W = Math.max(W, Math.round(r.width));
+    });
+    if (!bl.length) { aviso("esse cartão não tem gráfico"); return erro && erro(); }
+    bl.forEach(function (b) { b.y = H; H += (b.tit?TIT:0) + b.h + (b.leg?LEG:0) + GAP; });
+    H -= GAP;
+    var cv = document.createElement("canvas");
+    cv.width = (W+PAD*2)*ESC; cv.height = (H+PAD*2)*ESC;
+    var x = cv.getContext("2d"); x.scale(ESC,ESC);
+    x.fillStyle = "#fff"; x.fillRect(0,0,W+PAD*2,H+PAD*2);
+    var falta = bl.length, FONTE = "ui-sans-serif,system-ui,'Segoe UI',sans-serif";
+    bl.forEach(function (b) {
+      var y = PAD+b.y;
+      if (b.tit) {
+        x.fillStyle="#17140c"; x.textAlign="left";
+        x.font = "700 14px "+FONTE; x.fillText(b.tit, PAD, y+14); y += TIT;
+      }
+      var cl = b.svg.cloneNode(true);
+      cl.setAttribute("width", b.w*ESC); cl.setAttribute("height", b.h*ESC);
+      cl.setAttribute("xmlns","http://www.w3.org/2000/svg");
+      cl.setAttribute("style","font-family:"+FONTE);
+      var im = new Image(), yy = y;
+      im.onload = function () {
+        x.drawImage(im, PAD, yy, b.w, b.h);
+        if (b.leg) {
+          var lx = PAD, ly = yy+b.h+13;
+          x.font = "600 11px "+FONTE;
+          b.leg.forEach(function (it) {
+            x.fillStyle = it.c; x.fillRect(lx, ly-8, 8, 8);
+            x.fillStyle = "#4a4435"; x.textAlign = "left"; x.fillText(it.t, lx+12, ly);
+            lx += 12 + x.measureText(it.t).width + 16;
+          });
+        }
+        if (!--falta) cb(cv);
+      };
+      im.onerror = function () { if (!--falta) cb(cv); };
+      im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(corVar(new XMLSerializer().serializeToString(cl)));
+    });
+  }
+  function baixarPng(cards, nome, recado) {
+    montaPng(cards, function (cv) {
+      var a = document.createElement("a");
+      a.download = (nome||"painel-cosampa")+".png";
+      a.href = cv.toDataURL("image/png"); a.click();
+      aviso(recado || "PNG baixado");
+    });
+  }
+  function exportar(cards, modo, nome) {
+    if (modo === "baixar") return baixarPng(cards, nome);
+    if (!navigator.clipboard || !window.ClipboardItem)
+      return baixarPng(cards, nome, "esse navegador não copia imagem — baixei o PNG");
+    // o ClipboardItem precisa nascer dentro do clique: entrega a promessa do blob,
+    // senão o Chrome perde a permissão enquanto o gráfico vira imagem
+    var blob = new Promise(function (ok, nao) {
+      montaPng(cards, function (cv) { cv.toBlob(function (b) { b ? ok(b) : nao(); }, "image/png"); }, nao);
+    });
+    navigator.clipboard.write([new ClipboardItem({"image/png": blob})]).then(
+      function () { aviso(cards.length>1 ? cards.length+" gráficos copiados — é só colar" : "gráfico copiado — é só colar"); },
+      function () { baixarPng(cards, nome, "a área de transferência está bloqueada — baixei o PNG"); });
+  }
+
+  /* ========== gráfico de linhas ========== */
+  function chartLinhas(series, lo, hi, marcos, base) {
+    var dd = base||LS;
+    var W=860,H=250,pL=40,pR=52,pT=16,pB=26, iw=W-pL-pR, ih=H-pT-pB, n=dd.length;
+    var y=function(p){ return pT+ih-((p-lo)/(hi-lo))*ih; };
+    var x=function(i){ return n>1 ? pL+(iw/(n-1))*i : pL+iw/2; };
+    var o="";
+    marcos.forEach(function (p) {
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+y(p)+'" y2="'+y(p)+'" stroke="var(--grid)"/>' +
+           '<text x="'+(pL-7)+'" y="'+(y(p)+3.5)+'" font-size="10" fill="var(--ink-3)" text-anchor="end">'+Math.round(p*100)+"%</text>";
+    });
+    o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+y(1)+'" y2="'+y(1)+'" stroke="var(--rule)" stroke-width="1.5"/>';
+    var fins=[];
+    series.forEach(function (s) {
+      var p=dd.map(function(r,i){ var v=s.f(r); return [x(i), y(Math.max(lo,Math.min(hi,ok(v)?v:lo)))]; });
+      o += '<path d="'+p.map(function(q,i){return (i?"L":"M")+q[0].toFixed(1)+" "+q[1].toFixed(1);}).join(" ") +
+           '" fill="none" stroke="'+s.cor+'" stroke-width="'+s.w+'" stroke-linejoin="round" stroke-linecap="round"/>';
+      if (s.pontos) p.forEach(function(q){ o += '<circle cx="'+q[0]+'" cy="'+q[1]+'" r="2.6" fill="'+s.cor+'"/>'; });
+      fins.push({ y:p[p.length-1][1], cor:s.cor, txt:pct(s.f(dd[dd.length-1]),0) });
+    });
+    fins.sort(function(a,b){return a.y-b.y;});
+    for (var f=1; f<fins.length; f++) if (fins[f].y-fins[f-1].y<12) fins[f].y=fins[f-1].y+12;
+    fins.forEach(function (f) {
+      o += '<text x="'+(W-pR+7)+'" y="'+(f.y+3.5)+'" font-size="10.5" font-weight="800" fill="'+f.cor+'">'+f.txt+"</text>";
+    });
+    dd.forEach(function (r,i) {
+      o += '<text x="'+x(i)+'" y="'+(H-8)+'" font-size="10" fill="var(--ink-3)" text-anchor="middle">'+r.mes+"</text>";
+    });
+    return '<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;display:block">'+o+"</svg>";
+  }
+
+  /* ========== Realizado vs. Meta — estilo do painel real ========== */
+  function chartMeta(dados, cfg) {
+    cfg = cfg || {};
+    var corR = cfg.cor || LADOS[lado].cor, corM = cfg.soft || LADOS[lado].soft;
+    var W=1010, H=340, pL=66, pR=18, pT=46, pB=30, iw=W-pL-pR, ih=H-pT-pB, n=dados.length;
+    var rawMax=0, maxPct=1;
+    dados.forEach(function(d){ rawMax=Math.max(rawMax,d.valor,d.meta); maxPct=Math.max(maxPct,div(d.valor,d.meta)||0); });
+    var sc = escala(rawMax*1.55, 6);
+    var pctCeil = Math.max(1, Math.ceil(maxPct*1.06*10)/10);
+    var gw = iw/n, bw = Math.min(30, gw*0.25), gap = Math.max(8, Math.min(24, gw-2*bw-30));
+    var o="";
+    for (var g=0; g*sc.step <= sc.max+1e-6; g++) {
+      var v=g*sc.step, gy=pT+ih-(v/sc.max)*ih;
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--grid)"/>' +
+           '<text x="'+(pL-10)+'" y="'+(gy+4)+'" font-size="10" fill="var(--ink-3)" text-anchor="end">'+cp(v)+"</text>";
+    }
+    var pts=[], tops=[];
+    dados.forEach(function (d,i) {
+      var cx = pL+gw*i+gw/2;
+      var hm=(d.meta/sc.max)*ih, ym=pT+ih-hm;
+      var hv=(d.valor/sc.max)*ih, yv=pT+ih-hv;
+      o += '<rect x="'+(cx-bw-gap/2)+'" y="'+ym+'" width="'+bw+'" height="'+Math.max(hm,1)+'" rx="4" fill="'+corM+'"/>' +
+           '<rect x="'+(cx+gap/2)+'" y="'+yv+'" width="'+bw+'" height="'+Math.max(hv,1)+'" rx="4" fill="'+corR+'"/>';
+      o += pz(cx-bw/2-gap/2, ym-11, cp(d.meta,true)) + pz(cx+bw/2+gap/2, yv-11, cp(d.valor,true));
+      var p = div(d.valor,d.meta);
+      var ly = pT+ih-((p||0)/pctCeil)*ih;
+      pts.push([cx, ly, p]);
+      tops.push(Math.min(ym,yv)-22);
+      o += '<text x="'+cx+'" y="'+(H-10)+'" font-size="10" fill="var(--ink-3)" text-anchor="middle">'+d.l+"</text>";
+    });
+    o += '<path d="'+pts.map(function(p,i){return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1);}).join(" ") +
+         '" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(function (p,i) {
+      o += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="2.5"/>';
+      var ly = Math.max(16, Math.min(p[1]-14, tops[i]-15));
+      o += pz(p[0], ly, pct(p[2],1), "var(--accent)");
+    });
+    return '<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;display:block">'+o+"</svg>" +
+      legenda([{nome:"Meta",cor:corM},{nome:"Realizado",cor:corR},{nome:"% da Meta",cor:"var(--accent)"}]);
+  }
+
+  /* ========== barras empilhadas ========== */
+  function chartPilha(mks, cats, mapa) {
+    var W=1010,H=280,pL=66,pR=18,pT=20,pB=28, iw=W-pL-pR, ih=H-pT-pB, n=mks.length;
+    var tot = mks.map(function (mk) {
+      var s=0; cats.forEach(function(c){ s += (mapa[c.nome]&&mapa[c.nome][mk])||0; }); return s;
+    });
+    var sc = escala(Math.max.apply(null, tot.concat([1]))*1.14, 5);
+    var gw=iw/n, bw=Math.min(40, gw*0.56), o="";
+    for (var g=0; g*sc.step<=sc.max+1e-6; g++) {
+      var v=g*sc.step, gy=pT+ih-(v/sc.max)*ih;
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--grid)"/>' +
+           '<text x="'+(pL-10)+'" y="'+(gy+4)+'" font-size="10" fill="var(--ink-3)" text-anchor="end">'+cp(v)+"</text>";
+    }
+    mks.forEach(function (mk,i) {
+      var cx=pL+gw*i+gw/2, y0=pT+ih;
+      cats.forEach(function (c) {
+        var v=(mapa[c.nome]&&mapa[c.nome][mk])||0; if(!v) return;
+        var h=(v/sc.max)*ih; y0-=h;
+        o += '<rect x="'+(cx-bw/2)+'" y="'+y0+'" width="'+bw+'" height="'+h+'" fill="'+c.cor+'"/>';
+      });
+      if (tot[i]) o += pz(cx, y0-9, cp(tot[i],true));
+      o += '<text x="'+cx+'" y="'+(H-9)+'" font-size="10" fill="var(--ink-3)" text-anchor="middle">' +
+           MES[+mk.slice(5,7)-1]+"</text>";
+    });
+    return '<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;display:block">'+o+"</svg>" +
+      legenda(cats.map(function(c){return {nome:c.nome,cor:c.cor};}), 8);
+  }
+
+  /* ========== projetado × realizado, mês a mês ========== */
+  function chartProj(rows) {
+    var W=1010,H=300,pL=66,pR=18,pT=34,pB=28, iw=W-pL-pR, ih=H-pT-pB, n=rows.length;
+    var mx=0; rows.forEach(function(r){ mx=Math.max(mx,r.proj,r.real); });
+    var sc=escala(mx*1.3,5);
+    var gw=iw/n, bw=Math.min(26,gw*0.22), gap=Math.max(6,Math.min(18,gw-2*bw-30)), o="";
+    for (var g=0; g*sc.step<=sc.max+1e-6; g++) {
+      var v=g*sc.step, gy=pT+ih-(v/sc.max)*ih;
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--grid)"/>' +
+           '<text x="'+(pL-10)+'" y="'+(gy+4)+'" font-size="10" fill="var(--ink-3)" text-anchor="end">'+cp(v)+"</text>";
+    }
+    rows.forEach(function (r,i) {
+      var cx=pL+gw*i+gw/2;
+      var hp=(r.proj/sc.max)*ih, yp=pT+ih-hp;
+      var hperda=(r.perda/sc.max)*ih;
+      var hr=(r.real/sc.max)*ih, yr=pT+ih-hr;
+      o += '<rect x="'+(cx-bw-gap/2)+'" y="'+yp+'" width="'+bw+'" height="'+Math.max(hp,1)+'" rx="4" fill="var(--tot-soft)"/>' +
+           '<rect x="'+(cx-bw-gap/2)+'" y="'+yp+'" width="'+bw+'" height="'+Math.max(hperda,1)+'" rx="4" fill="var(--crit)" opacity=".85"/>' +
+           '<rect x="'+(cx+gap/2)+'" y="'+yr+'" width="'+bw+'" height="'+Math.max(hr,1)+'" rx="4" fill="'+LADOS[lado].cor+'"/>';
+      o += pz(cx-bw/2-gap/2, yp-10, cp(r.proj,true)) + pz(cx+bw/2+gap/2, yr-10, cp(r.real,true));
+      o += '<text x="'+cx+'" y="'+(H-9)+'" font-size="10" fill="var(--ink-3)" text-anchor="middle">'+r.mes+"</text>";
+    });
+    return '<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;display:block">'+o+"</svg>" +
+      legenda([{nome:"Projetado (meta)",cor:"var(--tot-soft)"},
+               {nome:"Perda por faltas, dentro do projetado",cor:"var(--crit)"},
+               {nome:"Realizado",cor:LADOS[lado].cor}], 8);
+  }
+
+  /* =============== ABA 1 — CONTRATO SUL =============== */
+  function pgContrato() {
+    var T={ev:0,em:0,ov:0,om:0,tv:0,tm:0};
+    LS.forEach(function(r){ ["ev","em","ov","om","tv","tm"].forEach(function(c){ T[c]+=r[c]; }); });
+    var gap=T.tm-T.tv, gEc=div(T.em-T.ev,gap), gOb=div(T.om-T.ov,gap);
+    var stats = '<div class="stats">' +
+      st("Meta do contrato", mi(T.tm), brl(T.tm)) +
+      st("Realizado", mi(T.tv), brl(T.tv)) +
+      st("Atingimento", pct(div(T.tv,T.tm)), 'Emerg. + Com. <b>'+pct(div(T.ev,T.em))+'</b> · Obras <b>'+pct(div(T.ov,T.om))+'</b>', cor(div(T.tv,T.tm))) +
+      st("Falta para a meta", mi(gap), 'Obras responde por <b>'+pct(gOb,0)+"</b>", "var(--crit)") + "</div>";
+
+    var comp = barraComp("Peso na meta", div(T.em,T.tm)||0, div(T.om,T.tm)||0) +
+               barraComp("Peso no buraco", gEc||0, gOb||0) +
+               '<p class="punch">' + (sup ? esc(sup)+" responde por <b>"+pct(div(T.tm,TOT.tm),0)+
+                 "</b> da meta do contrato.<br>Aqui dentro, Obras pesa <b>"+pct(div(T.om,T.tm),0)+
+                 "</b> da meta e <b>"+pct(gOb,0)+"</b> do que falta."
+               : "Obras responde por <b>"+pct(div(T.om,T.tm),0)+'</b> da meta, mas por <b>'+
+                 pct(gOb,0)+'</b> do que falta.<br>É o lado que decide a saúde do contrato.') + "</p>";
+
+    var modo = segv("sulGraf","% da Meta");
+    var graf;
+    if (modo === "% da Meta") {
+      graf = chartLinhas([
+        {f:function(r){return div(r.ev,r.em);}, cor:"var(--ec)",  w:1.7},
+        {f:function(r){return div(r.ov,r.om);}, cor:"var(--ob)",  w:1.7},
+        {f:function(r){return div(r.tv,r.tm);}, cor:"var(--tot)", w:2.4, pontos:true}
+      ], .58, 1.04, [.6,.7,.8,.9,1]) +
+        legenda([{nome:"Emergencial + Comercial",cor:"var(--ec)"},{nome:"Obras",cor:"var(--ob)"},{nome:"Contrato Sul",cor:"var(--tot)"}]);
+    } else {
+      graf = chartMeta(LS.map(function(r){ return {l:r.mes, meta:r.tm, valor:r.tv}; }),
+                       {cor:"var(--tot)", soft:"var(--tot-soft)"});
+    }
+
+    var linhas = LS.map(function (r) {
+      return "<tr><td>"+r.mes+"</td><td>"+mi(r.tm)+"</td><td>"+mi(r.tv)+"</td>" +
+             pillCel(div(r.ev,r.em))+pillCel(div(r.ov,r.om))+barCel(div(r.tv,r.tm))+"</tr>";
+    });
+    var tot = '<tr class="tot"><td>Total</td><td>'+mi(T.tm)+"</td><td>"+mi(T.tv)+"</td>" +
+              pillCel(div(T.ev,T.em))+pillCel(div(T.ov,T.om))+barCel(div(T.tv,T.tm))+"</tr>";
+
+
+    return '<div class="card c12">'+stats+"</div>" +
+      card("c8","Atingimento mês a mês","Emergencial + Comercial e Obras separados, e o contrato que os dois formam",
+           graf, {id:"sulGraf", opts:["% da Meta","Realizado vs. Meta"]}) +
+      card("c4","Composição","Peso de cada lado",comp) +
+      card("c12","Mês a mês","% da meta nos dois lados e no consolidado",
+           tabela(["Mês","Meta","Realizado","Emerg. + Com.","Obras","Contrato"],linhas,tot));
+  }
+  function barraComp(tit,a,b) {
+    return '<div class="comp"><div class="comp-h">'+tit+"</div>" +
+      '<div class="bar"><i style="width:'+(a*100)+'%;background:var(--ec)"></i>' +
+      '<i style="width:'+(b*100)+'%;background:var(--ob)"></i></div>' +
+      '<div class="comp-k"><span><i class="sw" style="background:var(--ec)"></i>Emerg. + Com. <b class="num">'+pct(a,0)+"</b></span>" +
+      '<span><i class="sw" style="background:var(--ob)"></i>Obras <b class="num">'+pct(b,0)+"</b></span></div></div>";
+  }
+
+  /* =============== ABA 2 — POR CENTRO =============== */
+  var CENTROS = ["Campos Sales","Juazeiro do Norte","Milagres"];
+  var MKS = (function () {
+    var m = {};
+    ["ec","ob"].forEach(function (g) {
+      CENTROS.forEach(function (c) {
+        var x = MOCK.CM[g][c]; if (x) Object.keys(x).forEach(function (k) { m[k]=1; });
+      });
+    });
+    return Object.keys(m).sort();
+  })();
+  var rotMes = function (mk) { return MES[+mk.slice(5,7)-1]+"/"+mk.slice(2,4); };
+  var VALORES = true;
+  function serieCentro(nome, mk) {
+    var pega = function (g) {
+      if (nome) { var x=MOCK.CM[g][nome]; return (x&&x[mk])||[0,0,0]; }
+      var t=[0,0,0];
+      CENTROS.forEach(function (c) {
+        var x=MOCK.CM[g][c]&&MOCK.CM[g][c][mk]; if(x){ t[0]+=x[0]; t[1]+=x[1]; t[2]+=x[2]; }
+      });
+      return t;
+    };
+    return { e:pega("ec"), b:pega("ob") };
+  }
+  // um gráfico por centro, série inteira — no espírito do Consolidado por Centro antigo
+  function chartCentro(nome, modo) {
+    var W=1180, H=300, pL=58, pR=14, pT=34, pB=28, iw=W-pL-pR, ih=H-pT-pB, nb=MKS.length;
+    var pcts = modo==="% da Meta";
+    var dados = MKS.map(function (mk) {
+      var s2 = serieCentro(nome, mk);
+      var ev=s2.e[0], bv=s2.b[0], em=s2.e[1], bm=s2.b[1];
+      if (modo==="Emerg. + Com.") return { a:ev, b:0, tot:ev, p:div(ev,em) };
+      if (modo==="Obras")         return { a:0, b:bv, tot:bv, p:div(bv,bm) };
+      if (pcts)                   return { p:div(ev+bv, em+bm) };
+      return { a:ev, b:bv, tot:ev+bv, p:div(ev+bv, em+bm) };
+    });
+    var mx = 0;
+    dados.forEach(function (d) { mx = Math.max(mx, pcts ? (d.p||0) : d.tot); });
+    var sc = pcts ? { max:Math.max(1.1, Math.ceil(mx*5)/5), step:.2 } : escala(mx*1.22, 5);
+    var gw = iw/nb, bw = Math.min(34, gw*0.56), o = "";
+    for (var g=0; g*sc.step <= sc.max+1e-6; g++) {
+      var v=g*sc.step, gy=pT+ih-(v/sc.max)*ih;
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--grid)"/>' +
+           '<text x="'+(pL-8)+'" y="'+(gy+3.5)+'" font-size="9.5" fill="var(--ink-3)" text-anchor="end">' +
+           (pcts?Math.round(v*100)+"%":cp(v))+"</text>";
+    }
+    if (pcts) {
+      var y1=pT+ih-(1/sc.max)*ih;
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+y1+'" y2="'+y1+'" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="6 4"/>';
+    }
+    var vir = -1;
+    MKS.forEach(function (mk,i) { if (vir<0 && mk.slice(0,4)!==MKS[0].slice(0,4)) vir=i; });
+    if (vir>0) {
+      var vx = pL+gw*vir;
+      o += '<line x1="'+vx+'" x2="'+vx+'" y1="'+(pT-13)+'" y2="'+(pT+ih)+'" stroke="var(--rule)" stroke-dasharray="3 3"/>' +
+           '<text x="'+(vx-5)+'" y="'+(pT-16)+'" font-size="9" font-weight="800" fill="var(--ink-3)" text-anchor="end">'+MKS[0].slice(0,4)+"</text>" +
+           '<text x="'+(vx+5)+'" y="'+(pT-16)+'" font-size="9" font-weight="800" fill="var(--ink-3)">'+MKS[vir].slice(0,4)+"</text>";
+    }
+    dados.forEach(function (d,i) {
+      var cx = pL+gw*i+gw/2, y0 = pT+ih;
+      if (pcts) {
+        var h = ((d.p||0)/sc.max)*ih;
+        o += '<rect x="'+(cx-bw/2)+'" y="'+(y0-h)+'" width="'+bw+'" height="'+Math.max(h,1)+'" rx="3" fill="'+cor(d.p)+'"/>';
+        if (d.p!=null && VALORES) o += pz(cx, y0-h-9, pct(d.p,0));
+      } else {
+        if (d.a) { var ha=(d.a/sc.max)*ih; y0-=ha;
+          o += '<rect x="'+(cx-bw/2)+'" y="'+y0+'" width="'+bw+'" height="'+Math.max(ha,1)+'" rx="3" fill="var(--ec)"/>'; }
+        if (d.b) { var hb=(d.b/sc.max)*ih; y0-=hb;
+          o += '<rect x="'+(cx-bw/2)+'" y="'+y0+'" width="'+bw+'" height="'+Math.max(hb,1)+'" rx="3" fill="var(--ob)"/>'; }
+        if (d.tot && VALORES) o += pz(cx, y0-9, cp(d.tot,true));
+      }
+      o += '<text x="'+cx+'" y="'+(H-9)+'" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">'+rotMes(MKS[i])+"</text>";
+    });
+    var leg = pcts ? [{nome:"95% ou mais",cor:"var(--good)"},{nome:"85% a 95%",cor:"var(--warn)"},{nome:"abaixo de 85%",cor:"var(--crit)"}]
+            : modo==="Obras" ? [{nome:"Obras",cor:"var(--ob)"}]
+            : modo==="Emerg. + Com." ? [{nome:"Emergencial + Comercial",cor:"var(--ec)"}]
+            : [{nome:"Emergencial + Comercial",cor:"var(--ec)"},{nome:"Obras",cor:"var(--ob)"}];
+    return '<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;display:block">'+o+"</svg>" + legenda(leg, 7);
+  }
+
+  function pgCentro() {
+    var cset = {};
+    Object.keys(EC.centro).forEach(function(c){ cset[c]=1; });
+    Object.keys(OB.centro).forEach(function(c){ cset[c]=1; });
+    var mt = function (c) { return ((EC.centro[c]||[0,0])[1])+((OB.centro[c]||[0,0])[1]); };
+    var ordc = Object.keys(cset).sort(function(a,b){ return mt(b)-mt(a); });
+    var TC = [0,0,0,0];
+    var cLin = function (rot, e, b, kl) {
+      return "<tr"+(kl?' class="'+kl+'"':"")+"><td>"+rot+"</td>" +
+        '<td class="sep">'+mi(e[1])+"</td><td>"+mi(e[0])+"</td>"+pillCel(div(e[0],e[1])) +
+        '<td class="sep">'+mi(b[1])+"</td><td>"+mi(b[0])+"</td>"+pillCel(div(b[0],b[1])) +
+        '<td class="sep">'+mi(e[1]+b[1])+"</td><td>"+mi(e[0]+b[0])+"</td>" +
+        barCel(div(e[0]+b[0], e[1]+b[1])) + "</tr>";
+    };
+    var lc = ordc.map(function (c) {
+      var e=EC.centro[c]||[0,0], b=OB.centro[c]||[0,0];
+      TC[0]+=e[0]; TC[1]+=e[1]; TC[2]+=b[0]; TC[3]+=b[1];
+      return cLin(c, e, b);
+    }).join("") + cLin("Contrato Sul", [TC[0],TC[1]], [TC[2],TC[3]], "tot");
+    var cons =
+      '<table class="cons"><thead>' +
+      '<tr><th rowspan="2">Centro</th>' +
+      '<th colspan="3" class="gec sep">Emergencial + Comercial</th>' +
+      '<th colspan="3" class="gob sep">Obras</th>' +
+      '<th colspan="3" class="gtot sep">Contrato Sul</th></tr>' +
+      '<tr><th class="sep">Meta</th><th>Realiz.</th><th>%</th>' +
+      '<th class="sep">Meta</th><th>Realiz.</th><th>%</th>' +
+      '<th class="sep">Meta</th><th>Realiz.</th><th>Atingimento</th></tr>' +
+      "</thead><tbody>" + lc + "</tbody></table>";
+
+    var modo = segv("cenModo","Contrato");
+    var opts = ["Contrato","Emerg. + Com.","Obras","% da Meta"];
+    var cab = '<div class="card c12"><div class="card-h"><div>' +
+      '<p class="card-t">Consolidado mês a mês por centro de serviço</p>' +
+      '<p class="card-c">Série inteira, '+rotMes(MKS[0])+" até "+rotMes(MKS[MKS.length-1]) +
+      ' · Sul = soma dos três centros</p></div>' +
+      '<div class="seg" data-seg="cenModo">' + opts.map(function (o) {
+        return '<button data-v="'+esc(o)+'"'+(o===modo?' class="on"':"")+">"+o+"</button>";
+      }).join("") + "</div></div>" +
+      '<div class="cbar"><label class="chk"><input type="checkbox" data-val="1"'+(VALORES?" checked":"") +
+      "> Mostrar valores</label>" +
+      '<button class="btn2" data-png4="copiar">Copiar os 4 gráficos</button>' +
+      '<button class="btn2" data-png4="baixar">Baixar os 4 em PNG</button>' +
+      '<span class="card-c" style="margin:0">cada gráfico tem os botões de copiar e baixar no canto</span></div></div>';
+
+    var gr = CENTROS.map(function (c) { return card("c12 cgraf", c, "", chartCentro(c, modo)); }).join("") +
+             card("c12 cgraf", "Sul", "os três centros somados", chartCentro(null, modo));
+
+    return cab + gr +
+      card("c12","Consolidado por centro — total de "+MOCK.ano,
+           "Os dois lados e a soma, centro por centro — é a conta que fecha o contrato",
+           cons +
+           '<p class="punch">Soma só os três centros reais: '+mi(TC[1]+TC[3])+" de meta." +
+           " A diferença para os "+mi(TOT.tm)+" do contrato são <i>Cessão M.D.O Sul</i> e <i>Sul LT/SED</i>," +
+           " que ficam fora da conta por centro.</p>");
+  }
+
+  /* =============== ABA 3 — OPERAÇÃO =============== */
+  function pgOperacao() {
+    var T=D.T, tk=div(T.valor,T.qtd), sul=lado==="sul";
+    var stats='<div class="stats">' +
+      st("Meta", mi(T.meta), brl(T.meta)) +
+      st("Realizado", mi(T.valor), brl(T.valor)) +
+      st("Atingimento", pct(T.valor/T.meta), "falta <b>"+mil(T.meta-T.valor)+"</b> para a meta", cor(T.valor/T.meta)) +
+      (sul ? st("Perda por faltas", mi(D.perdaTot), pct(div(D.perdaTot,T.meta))+" da meta", "var(--crit)")
+           : st("Serviços", int(T.qtd), "ticket médio <b>"+n2(tk)+"</b>")) + "</div>";
+
+    var barras = chartMeta(D.L.map(function(r){ return {l:r.mes, meta:r.meta, valor:r.valor}; }));
+
+    var P=D.proc;
+    var ordP=Object.keys(P).sort(function(a,b){return P[b][0]-P[a][0];});
+    var lp=ordP.map(function (k) {
+      var v=P[k], prod=v[3]?v[2]/v[3]:null;
+      return "<tr><td>"+k+"</td><td>"+mil(v[0])+"</td>"+pillCel(div(v[0],v[1])) +
+             (sul ? "<td>"+mil(v[1]-v[0])+"</td>"
+                  : "<td>"+int(v[2])+"</td><td>"+(prod==null?"—":n2(prod))+"</td>") + "</tr>";
+    });
+
+    var CM=D.centroMes, centros=Object.keys(CM).sort();
+    var lm=D.L.map(function (r) {
+      return "<tr><td>"+r.mes+"</td>" + centros.map(function (c) {
+        var v=CM[c][r.k], p=v?div(v[0],v[1]):null;
+        return p==null?'<td class="heat">—</td>' :
+          '<td class="heat" style="background:'+fundo(p)+';color:'+cor(p)+'">'+pct(p,0)+"</td>";
+      }).join("") + "</tr>";
+    });
+    var tmz=centros.map(function (c) {
+      var v=0,m=0; D.L.forEach(function(r){ var x=CM[c][r.k]; if(x){v+=x[0];m+=x[1];} });
+      return '<td class="heat" style="color:'+cor(div(v,m))+'">'+pct(div(v,m),0)+"</td>";
+    }).join("");
+
+    return '<div class="card c12">'+stats+"</div>" +
+      card("c12","Realizado vs. Meta por mês",
+           "Barra clara = meta · barra cheia = realizado · pílula escura = valor · linha tracejada = % da meta",
+           barras, {id:"opModo", opts:["Mensal","Semanal","Diário"]}) +
+      card("c5","Por processo",
+           sul ? "No consolidado só valor: serviços e produtividade contam unidades diferentes nos dois lados"
+               : "Valor, atingimento e produtividade",
+           tabela(sul ? ["Processo","Realizado","% Meta","Falta"]
+                      : ["Processo","Realizado","% Meta","Serviços","Produt."], lp)) +
+      card("c7","% da meta por centro e mês","Matriz: a cor mostra onde o mês apertou",
+           tabela(["Mês"].concat(centros),lm,'<tr class="tot"><td>Total</td>'+tmz+"</tr>"));
+  }
+
+  /* =============== ABA 3 — EQUIPES =============== */
+  function pgEquipes() {
+    var E=D.equipes, sul=lado==="sul";
+    var tv=0,tm=0,tq=0,tpd=0,ttr=0,tes=0;
+    E.forEach(function(e){ tv+=e.v; tm+=e.m; tq+=e.q; tpd+=e.pd; ttr+=e.trab; tes+=e.esc; });
+    var stats='<div class="stats">' +
+      st(sup?"Equipes de "+sup.split(" ")[0]:"Equipes no topo", String(E.length),
+         sup?"todas as equipes do supervisor":"as maiores por valor realizado") +
+      st("Realizado", mi(tv), sul ? "de uma meta de <b>"+mi(tm)+"</b>" : "ticket médio <b>"+n2(div(tv,tq))+"</b>") +
+      (sul ? st("Atingimento", pct(div(tv,tm)), "das equipes listadas", cor(div(tv,tm)))
+           : st("Produtividade", n2(div(tq,tpd)), "serviços por turno produtivo")) +
+      st("Comparecimento", pct(div(ttr,tes)), int(tes-ttr)+" faltas em "+int(tes)+" turnos",
+         cor(div(ttr,tes))) + "</div>";
+
+    var ordem = sul ? segv("eqOrdS","% Meta") : segv("eqOrd","% Meta");
+    var lista = E.slice().sort(function (a,b) {
+      if (ordem==="% Meta") return (div(b.v,b.m)||0)-(div(a.v,a.m)||0);
+      if (ordem==="Produtividade") return (div(b.q,b.pd)||0)-(div(a.q,a.pd)||0);
+      if (ordem==="Ticket") return (div(b.v,b.q)||0)-(div(a.v,a.q)||0);
+      return b.v-a.v;
+    });
+    var l=lista.map(function (e) {
+      var p=div(e.v,e.m), prod=div(e.q,e.pd), comp=div(e.trab,e.esc);
+      return "<tr><td>"+e.nome+'<div class="sub">'+e.cen+" · "+e.sup+"</div></td>" +
+        "<td>"+mil(e.v)+"</td>"+barCel(p) +
+        (sul ? "<td>"+int(e.esc-e.trab)+"</td>"
+             : "<td>"+n2(div(e.v,e.q))+"</td><td>"+(prod==null?"—":n2(prod))+"</td>") +
+        pillCel(comp)+"</tr>";
+    });
+
+    var EM=D.equipesMes, nomes=E.slice(0,6).map(function(e){return e.nome;});
+    var lm=nomes.map(function (nm) {
+      return "<tr><td>"+nm+"</td>" + D.L.map(function (r) {
+        var v=EM[nm]&&EM[nm][r.k], p=v?div(v[0],v[1]):null;
+        return p==null?'<td class="heat">—</td>' :
+          '<td class="heat" style="background:'+fundo(p)+';color:'+cor(p)+'">'+pct(p,0)+"</td>";
+      }).join("") + "</tr>";
+    });
+
+    return '<div class="card c12">'+stats+"</div>" +
+      card("c12", sup ? "Equipes de "+sup : "Análise de equipes",
+           sup ? "Filtro de supervisor ligado: só as equipes dele, no recorte "+LADOS[lado].nome
+               : sul ? "Os dois lados somados — sem ticket nem produtividade, que contam unidades diferentes"
+               : "Análise Equipes + Produtividade-Mensal + Comparativo Mensal numa tabela só",
+           tabela(sul ? ["Equipe","Realizado","% Meta","Faltas","Compar."]
+                      : ["Equipe","Realizado","% Meta","Ticket","Produt.","Compar."], l),
+           sul ? {id:"eqOrdS", opts:["% Meta","Valor"]}
+               : {id:"eqOrd", opts:["% Meta","Produtividade","Ticket","Valor"]}) +
+      card("c12","Evolução mensal — 6 maiores equipes",
+           sup ? "As 6 maiores de "+sup+" — o que era o Comparativo Mensal"
+               : "O que era o Comparativo Mensal, agora como matriz",
+           tabela(["Equipe"].concat(D.L.map(function(r){return r.mes;})),lm));
+  }
+
+  /* =============== ABA 4 — ESCALA =============== */
+  function pgEscala() {
+    var Dd=D.turnoDia, dias=Object.keys(Dd).sort(function(a,b){return a-b;});
+    var te=0,tt=0; dias.forEach(function(k){ te+=Dd[k][0]; tt+=Dd[k][1]; });
+    var mesNome=MES[+MOCK.turnosMes.slice(5,7)-1]+"/"+MOCK.turnosMes.slice(2,4);
+    if (!te) return '<div class="card c12"><p class="card-t">Sem turnos em '+mesNome+'</p>' +
+      '<p class="card-c">'+(sup?sup+" não teve escala neste recorte em "+mesNome:"Nada escalado no período")+
+      ". Troque o recorte lá em cima ou tire o filtro de supervisor.</p></div>";
+    var stats='<div class="stats">' +
+      st("Turnos escalados", int(te), mesNome) +
+      st("Turnos trabalhados", int(tt), int(te-tt)+" não comparecidos") +
+      st("Comparecimento", pct(div(tt,te)), "do que foi escalado", cor(div(tt,te))) +
+      st("Média por dia", n2(div(tt,dias.length)), "turnos trabalhados") + "</div>";
+
+    var W=1010,H=240,pL=38,pR=14,pT=24,pB=24, iw=W-pL-pR, ih=H-pT-pB, n=dias.length;
+    var sc=escala(Math.max.apply(null,dias.map(function(k){return Dd[k][0];}).concat([1]))*1.18,4);
+    var gw=iw/n, bw=Math.min(22,gw*.62), o="";
+    for (var g=0; g*sc.step<=sc.max+1e-6; g++) {
+      var v=g*sc.step, gy=pT+ih-(v/sc.max)*ih;
+      o += '<line x1="'+pL+'" x2="'+(W-pR)+'" y1="'+gy+'" y2="'+gy+'" stroke="var(--grid)"/>' +
+           '<text x="'+(pL-6)+'" y="'+(gy+3.5)+'" font-size="10" fill="var(--ink-3)" text-anchor="end">'+Math.round(v)+"</text>";
+    }
+    dias.forEach(function (k,i) {
+      var cx=pL+gw*i+gw/2, e=Dd[k][0], t=Dd[k][1];
+      var he=(e/sc.max)*ih, ht=(t/sc.max)*ih;
+      o += '<rect x="'+(cx-bw/2)+'" y="'+(pT+ih-he)+'" width="'+bw+'" height="'+Math.max(he,1)+'" rx="3" fill="'+LADOS[lado].soft+'"/>' +
+           '<rect x="'+(cx-bw/2)+'" y="'+(pT+ih-ht)+'" width="'+bw+'" height="'+Math.max(ht,1)+'" rx="3" fill="'+LADOS[lado].cor+'"/>' +
+           pz(cx, pT+ih-he-9, e===t?String(t):(t+"/"+e)) +
+           '<text x="'+cx+'" y="'+(H-7)+'" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">'+k+"</text>";
+    });
+    var graf='<svg viewBox="0 0 '+W+" "+H+'" style="width:100%;display:block">'+o+"</svg>" +
+      legenda([{nome:"Escalado",cor:LADOS[lado].soft},{nome:"Trabalhado",cor:LADOS[lado].cor}]);
+
+    var C=D.turnoCentro;
+    var ordC=Object.keys(C).sort(function(a,b){return C[b][0]-C[a][0];});
+    var lc=ordC.map(function (c) {
+      return "<tr><td>"+c+"</td><td>"+int(C[c][0])+"</td><td>"+int(C[c][1])+"</td>" +
+             "<td>"+int(C[c][0]-C[c][1])+"</td>"+barCel(div(C[c][1],C[c][0]))+"</tr>";
+    });
+    var ec=0,tc=0; ordC.forEach(function(c){ ec+=C[c][0]; tc+=C[c][1]; });
+
+    var FM=D.faltaMes;
+    var tend = chartLinhas([{ f:function(r){ var f=FM[r.k]; return f&&f[1] ? (f[1]-f[0])/f[1] : null; },
+                              cor:LADOS[lado].cor, w:2.2, pontos:true }], .70, 1.0, [.75,.8,.85,.9,.95,1], D.L) +
+      legenda([{nome:"Comparecimento — "+LADOS[lado].nome, cor:LADOS[lado].cor}]);
+
+    return '<div class="card c12">'+stats+"</div>" +
+      card("c8","Turnos escalados e trabalhados por dia",
+           "Barra clara = escalado · cheia = trabalhado · pílula = trabalhado/escalado · "+mesNome, graf) +
+      card("c4","Por centro de serviço","Onde o comparecimento aperta",
+           tabela(["Centro","Escalado","Trab.","Faltas","Compar."],lc,
+                  '<tr class="tot"><td>Total</td><td>'+int(ec)+"</td><td>"+int(tc)+"</td><td>" +
+                  int(ec-tc)+"</td>"+barCel(div(tc,ec))+"</tr>")) +
+      card("c12","Comparecimento mês a mês",
+           "A escala vem perdendo gente ao longo do ano — o dia a dia acima é só o último mês", tend);
+  }
+
+  /* =============== ABA 5 — FALTAS & IMPACTO =============== */
+  var motSel = { ec:{}, ob:{}, sul:{} };
+  function selAtual() { return motSel[lado]; }
+
+  function pgFaltas() {
+    var imp=D.imp, M=D.mot, sel=selAtual();
+    var selKeys=Object.keys(sel).filter(function(k){ return sel[k] && M[k]; });
+    var dProj=0,dPerda=0,dReal=0;
+    selKeys.forEach(function(k){ dPerda+=M[k][1]; dProj+=M[k][2]; dReal+=M[k][3]; });
+
+    var cen=[
+      { proj:imp[0], perda:D.perdaTot, real:imp[1] },
+      selKeys.length ? { proj:imp[0]-dProj, perda:D.perdaTot-dPerda, real:imp[1]-dReal } : null,
+      { proj:imp[0]-imp[2], perda:0, real:imp[1]-imp[3] }
+    ];
+    cen.forEach(function (c) {
+      if(!c) return;
+      c.resid = c.real-(c.proj-c.perda);
+      c.ating = c.proj>0 ? c.real/c.proj : null;
+      c.gap   = c.real-c.proj;
+    });
+    var cc = cen[1] || cen[0];
+    var pcc = function (v){ return cc.proj>0 ? pct(v/cc.proj) : "—"; };
+
+    var stats='<div class="stats">' +
+      st("Faltas", int(D.nFal), "em "+int(D.escTot)+" turnos escalados") +
+      st("Taxa de falta", pct(div(D.nFal,D.escTot)), "quanto da escala não compareceu", cor(1-div(D.nFal,D.escTot))) +
+      st("Perda por faltas", mi(D.perdaTot), pct(div(D.perdaTot,imp[0]))+" do projetado", "var(--crit)") +
+      st("Peso no buraco", pct(div(D.perdaTot, imp[0]-imp[1]),0),
+         "do que falta para a meta ("+mi(imp[0]-imp[1])+")") + "</div>";
+
+    var ponte = '<div class="ip">' +
+      '<div class="ip-card"><div class="ip-rot">Projetado'+(selKeys.length?" ajustado":"")+' (meta)</div>' +
+        '<div class="ip-val">'+cp(cc.proj)+'</div><div class="ip-sub">'+brl(cc.proj)+"</div></div>" +
+      '<div class="ip-op">−</div>' +
+      '<div class="ip-card perda"><div class="ip-rot">Perda por faltas</div>' +
+        '<div class="ip-val">'+cp(cc.perda)+'</div><div class="ip-sub">'+pcc(cc.perda)+" do projetado</div></div>" +
+      '<div class="ip-op">'+(cc.resid<0?"−":"+")+"</div>" +
+      '<div class="ip-card"><div class="ip-rot">Dias trabalhados '+(cc.resid<0?"abaixo":"acima")+' da meta</div>' +
+        '<div class="ip-val">'+cp(Math.abs(cc.resid))+'</div><div class="ip-sub">'+pcc(Math.abs(cc.resid))+" do projetado</div></div>" +
+      '<div class="ip-op">=</div>' +
+      '<div class="ip-card fim"><div class="ip-rot">Realizado</div>' +
+        '<div class="ip-val">'+cp(cc.real)+'</div><div class="ip-sub">'+pcc(cc.real)+" do projetado</div></div>" +
+      "</div>";
+
+    var ordM=Object.keys(M).sort(function(a,b){return M[b][1]-M[a][1];});
+    var caixa = '<div class="motbox"><div class="motbox-h">Descontar motivos da meta' +
+      (selKeys.length?" — "+selKeys.length+" marcado"+(selKeys.length>1?"s":""):"") + "</div>" +
+      '<div class="motlist">' + ordM.slice(0,12).map(function (k) {
+        return '<label><input type="checkbox" data-mot="'+esc(k)+'"'+(sel[k]?" checked":"") +
+          '><span class="nm" title="'+esc(k)+'">'+esc(k)+'</span><span class="v">'+cp(M[k][1],true)+"</span></label>";
+      }).join("") + "</div>" +
+      (selKeys.length?'<button class="limpar" data-limpar="1">limpar seleção</button>':"") + "</div>";
+
+    var linhaC = function (rot, fn, kl) {
+      return "<tr"+(kl?' class="'+kl+'"':"")+"><td>"+rot+"</td>" + cen.map(function (c,i) {
+        if(!c) return '<td class="cen-'+i+'"><span class="vazio">marque motivos</span></td>';
+        return '<td class="cen-'+i+'">'+fn(c,i)+"</td>";
+      }).join("") + "</tr>";
+    };
+    var sinal = function (v){ return (v<0?"−":"+")+" "+cp(Math.abs(v)); };
+    var ppDe = function (c){ return c.ating==null||cen[0].ating==null?null:(c.ating-cen[0].ating)*100; };
+    var cenario =
+      '<table class="cen"><thead><tr><th></th><th>Hoje</th>' +
+      "<th>Descontando os motivos marcados"+(selKeys.length?" ("+selKeys.length+")":"")+"</th>" +
+      "<th>Sem nenhuma falta</th></tr></thead><tbody>" +
+      linhaC("Projetado (meta)", function(c){return cp(c.proj);}) +
+      linhaC("− Perda por faltas", function(c){return cp(c.perda);}) +
+      linhaC("% do projetado", function(c){return c.proj>0?pct(c.perda/c.proj):"—";}, "sub2") +
+      linhaC("± Dias trabalhados acima/abaixo da meta", function(c){return sinal(c.resid);}) +
+      linhaC("= Realizado", function(c){return cp(c.real);}) +
+      linhaC("Falta (−) ou sobra (+) para a meta", function(c){return sinal(c.gap);}) +
+      linhaC("Atingimento", function(c){return "<b>"+pct(c.ating)+"</b>";}, "destaque") +
+      linhaC("vs hoje (pontos percentuais)", function (c,i) {
+        var d=i===0?null:ppDe(c);
+        return d==null?"—":(d>=0?"+":"")+d.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" p.p.";
+      }, "sub2") + "</tbody></table>";
+
+    var maxP = ordM.length ? M[ordM[0]][1] : 0;
+    var top = ordM.slice(0,10), resto = ordM.slice(10);
+    var itens = top.map(function (k,i) {
+      return { nome:k, perda:M[k][1], n:M[k][0], cor:"var(--m"+(i<6?i+1:0)+")" };
+    });
+    if (resto.length) {
+      var rr={nome:"Outros "+resto.length+" motivos", perda:0, n:0, cor:"var(--m0)"};
+      resto.forEach(function(k){ rr.perda+=M[k][1]; rr.n+=M[k][0]; });
+      itens.push(rr);
+    }
+    var rank='<div class="ir">' + itens.map(function (d) {
+      return '<div class="ir-nome" title="'+esc(d.nome)+'"><i style="background:'+d.cor+'"></i><span>'+esc(d.nome)+"</span></div>" +
+        '<div class="ir-trilho"><div class="ir-barra" style="width:'+(maxP?(d.perda/maxP*100).toFixed(1):0)+'%;background:'+d.cor+'"></div></div>' +
+        '<div class="ir-val"><b>'+cp(d.perda)+"</b> · "+pct(div(d.perda,imp[0]))+" da meta · "+int(d.n)+" faltas</div>";
+    }).join("") + "</div>";
+
+    var rowsP = D.L.map(function (r) {
+      var f=D.faltaMes[r.k];
+      return { mes:r.mes, proj:r.meta, real:r.valor, perda:f?f[2]:0 };
+    });
+    var graf4 = chartProj(rowsP);
+
+    var MM=D.motMes, cats=Object.keys(MM)
+      .map(function (k) { var s=0; Object.keys(MM[k]).forEach(function(m){s+=MM[k][m];}); return {nome:k,s:s}; })
+      .sort(function(a,b){return b.s-a.s;})
+      .map(function (c,i) { return { nome:c.nome, cor:c.nome.indexOf("Outros")===0?"var(--m0)":"var(--m"+((i%6)+1)+")" }; });
+    var graf5 = chartPilha(D.L.map(function(r){return r.k;}), cats, MM);
+
+    var lmes = D.L.map(function (r) {
+      var f=D.faltaMes[r.k]; if(!f) return "";
+      return "<tr><td>"+r.mes+"</td><td>"+int(f[1])+"</td><td>"+int(f[0])+"</td>" +
+             '<td><span class="pill '+cls(1-div(f[0],f[1]))+'">'+pct(div(f[0],f[1]))+"</span></td>" +
+             "<td>"+mil(f[2])+"</td></tr>";
+    });
+    var tpd=0; Object.keys(D.faltaMes).forEach(function(k){ tpd+=D.faltaMes[k][2]; });
+    var tmes='<tr class="tot"><td>Total</td><td>'+int(D.escTot)+"</td><td>"+int(D.nFal)+"</td>" +
+      '<td><span class="pill '+cls(1-div(D.nFal,D.escTot))+'">'+pct(div(D.nFal,D.escTot))+"</span></td><td>"+mil(tpd)+"</td></tr>";
+
+    var FS=D.faltaSup;
+    var lsup=Object.keys(FS).sort(function(a,b){return FS[b][2]-FS[a][2];}).map(function (k) {
+      var v=FS[k];
+      return "<tr><td>"+k+"</td><td>"+int(v[1])+"</td><td>"+int(v[0])+"</td>" +
+        '<td><span class="pill '+cls(1-div(v[0],v[1]))+'">'+pct(div(v[0],v[1]))+"</span></td>" +
+        "<td>"+mil(v[2])+"</td></tr>";
+    });
+
+    return '<div class="card c12">'+stats+"</div>" +
+      card("c12","Impacto financeiro das faltas",
+           "Do projetado ao realizado: o que as faltas levaram e o que os dias trabalhados compensaram",
+           caixa + ponte) +
+      card("c7","Hoje · descontando os motivos marcados · sem nenhuma falta",
+           "Marque motivos acima para preencher a coluna do meio", cenario) +
+      card("c5","Quanto cada motivo custou da meta","Os 10 maiores; o resto soma numa linha",rank) +
+      card("c12","Projetado × realizado, mês a mês",
+           "A faixa vermelha dentro do projetado é a parte que as faltas levaram", graf4) +
+      card("c12","Perda por motivo, mês a mês","Onde o dinheiro escapou e quando", graf5) +
+      card("c6","Faltas mês a mês","Contagem, taxa e o que custaram",
+           tabela(["Mês","Escalado","Faltas","Taxa","Perda"],lmes,tmes)) +
+      card("c6","Por supervisor","Quem tem mais escala perdida",
+           tabela(["Supervisor","Escalado","Faltas","Taxa","Perda"],lsup));
+  }
+
+  /* ===================== navegação ===================== */
+  var ABAS = [
+    { id:"contrato", nome:"Contrato Sul", novo:true, global:true, render:pgContrato },
+    { id:"centro",   nome:"Por Centro",   global:true, render:pgCentro },
+    { id:"op",       nome:"Operação",      render:pgOperacao },
+    { id:"equipes",  nome:"Equipes",       render:pgEquipes },
+    { id:"escala",   nome:"Escala",        render:pgEscala },
+    { id:"faltas",   nome:"Faltas &amp; Impacto", render:pgFaltas }
+  ];
+  var atual = 0;
+
+  document.getElementById("tabs").innerHTML = ABAS.map(function (a,i) {
+    return '<button class="tab'+(i===0?" on":"")+'" data-i="'+i+'">'+a.nome +
+           (a.novo?'<span class="n">NOVO</span>':"")+"</button>";
+  }).join("");
+  document.getElementById("tabs").addEventListener("click", function (e) {
+    var b=e.target.closest(".tab"); if(!b) return;
+    atual=+b.dataset.i;
+    document.querySelectorAll(".tab").forEach(function(t,i){ t.classList.toggle("on", i===atual); });
+    desenhar(true);
+  });
+
+  var segLado = document.getElementById("segLado");
+  function pintaLado() {
+    segLado.innerHTML = ["ec","ob","sul"].map(function (k) {
+      return '<button data-v="'+k+'"'+(k===lado?' class="on"':"")+">"+LADOS[k].curto+"</button>";
+    }).join("");
+    var off = !!ABAS[atual].global;
+    segLado.style.opacity = off ? ".35" : "1";
+    segLado.style.pointerEvents = off ? "none" : "auto";
+  }
+  segLado.addEventListener("click", function (e) {
+    var b=e.target.closest("button"); if(!b) return;
+    lado=b.dataset.v; recarrega(); desenhar();
+  });
+
+  // ---- filtro de supervisor: de verdade, igual ao painel real ----
+  var selSup = document.getElementById("selSup"), supTag = document.getElementById("supTag");
+  var SUPS = (function () {
+    var m = {};
+    ["ec","ob"].forEach(function (g) {
+      Object.keys(MOCK.S[g]).forEach(function (k) { m[k] = (m[k]||0) + MOCK.S[g][k].imp[1]; });
+    });
+    return Object.keys(m).sort(function (a,b) { return m[b]-m[a]; });
+  })();
+  selSup.innerHTML = '<option value="">Todos ('+SUPS.length+")</option>" +
+    SUPS.map(function (k) { return '<option value="'+esc(k)+'">'+esc(k)+"</option>"; }).join("");
+  selSup.addEventListener("change", function () {
+    sup = selSup.value; recarrega(); desenhar(true);
+  });
+
+  var main = document.getElementById("main");
+  main.addEventListener("click", function (e) {
+    var p4=e.target.closest("[data-png4]");
+    if (p4) return exportar([].slice.call(main.querySelectorAll(".card.cgraf")),
+                            p4.dataset.png4, "consolidado-por-centro");
+    var p1=e.target.closest("[data-png]");
+    if (p1) {
+      var cd=p1.closest(".card"), t=cd.querySelector(".card-t");
+      return exportar([cd], p1.dataset.png,
+        (t?t.textContent:"grafico").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""));
+    }
+    var sb=e.target.closest(".seg[data-seg] button");
+    if (sb) { SEG[sb.parentNode.dataset.seg]=sb.dataset.v; return desenhar(); }
+    if (e.target.closest("[data-limpar]")) { motSel[lado]={}; return desenhar(); }
+  });
+  main.addEventListener("change", function (e) {
+    if (e.target.closest("input[data-val]")) { VALORES = e.target.checked; return desenhar(); }
+    var cb=e.target.closest("input[data-mot]");
+    if (cb) { selAtual()[cb.getAttribute("data-mot")]=cb.checked; desenhar(); }
+  });
+
+  function botoesPng() {
+    main.querySelectorAll(".card").forEach(function (c) {
+      if (!c.querySelector("svg") || c.querySelector(".cbtns")) return;
+      var h = c.querySelector(".card-h"); if (!h) return;
+      var d = document.createElement("div");
+      d.className = "cbtns";
+      d.innerHTML = '<button class="cb" data-png="copiar" title="Copiar o gráfico como imagem">'+ICOC+"</button>" +
+                    '<button class="cb" data-png="baixar" title="Baixar o gráfico em PNG">'+ICOD+"</button>";
+      h.appendChild(d);
+    });
+  }
+
+  function desenhar(topo) {
+    var y=window.scrollY;
+    pintaLado();
+    main.innerHTML = '<div class="grid">'+ABAS[atual].render()+"</div>";
+    pillify(main);
+    botoesPng();
+    selSup.className = sup ? "fg-s on" : "fg-s";
+    supTag.textContent = sup ? D.equipes.length+" equipes neste recorte" : "";
+    document.getElementById("sideN").innerHTML =
+      D.L.length+" meses de "+MOCK.ano+" · recorte: <b>" +
+      LADOS[ABAS[atual].global?"sul":lado].curto+"</b>" +
+      (sup ? " · supervisor: <b>"+esc(sup)+"</b>" : "");
+    window.scrollTo(0, topo?0:y);
+  }
+  desenhar(true);
+})();
+</script>
