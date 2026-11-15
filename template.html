@@ -699,10 +699,8 @@
   <div class="tabs" id="tabsAntigas" hidden>
     <button class="tab-btn active" data-page="geral" type="button">Painel Geral</button>
     <button class="tab-btn" data-page="fat" type="button">Faturamento</button>
-    <button class="tab-btn" data-page="procSup" type="button">Processo - Supervisor</button>
     <button class="tab-btn" data-page="analiseEquipes" type="button">Análise Equipes</button>
     <button class="tab-btn" data-page="produtividadeMensal" type="button">Produtividade - Mensal</button>
-    <button class="tab-btn" data-page="rankingProdutividade" type="button">Ranking de Produtividade</button>
     <button class="tab-btn" data-page="comparativoMensal" type="button">Comparativo Mensal</button>
     <button class="tab-btn" data-page="escaladoFat" type="button">Requerido x Escalado</button>
     <button class="tab-btn" data-page="faltasFat" type="button">Faltas</button>
@@ -844,22 +842,6 @@
         </div>
       </section>
 
-      <section class="page" id="page-procSup">
-        <div class="proc-tabs" id="procTabs"></div>
-        <div class="grid-2">
-          <div class="panel">
-            <p class="panel-title">Por Supervisor</p>
-            <p class="panel-caption">Cor = status vs. meta do supervisor no processo selecionado</p>
-            <div class="tablewrap"><table class="datatable" id="tblProcSupervisor"></table></div>
-          </div>
-          <div class="panel">
-            <p class="panel-title">Por Equipe</p>
-            <p class="panel-caption">Cor = status vs. meta da equipe no processo selecionado</p>
-            <div class="tablewrap"><table class="datatable" id="tblProcEquipe"></table></div>
-          </div>
-        </div>
-      </section>
-
       <section class="page" id="page-analiseEquipes">
         <div class="panel">
           <p class="panel-title">Análise de Equipes</p>
@@ -873,36 +855,6 @@
           <p class="panel-title">Produtividade de Equipes — Mensal</p>
           <p class="panel-caption">Linhas = equipe · colunas = mês</p>
           <div class="tablewrap"><table class="datatable" id="tblProdutividadeMensal"></table></div>
-        </div>
-      </section>
-
-      <section class="page" id="page-rankingProdutividade">
-        <div class="panel" style="margin-bottom:14px">
-          <div class="seg-toggle" data-ranking-toggle>
-            <button type="button" class="seg-btn active" data-metric="produtividade">Produtividade</button>
-            <button type="button" class="seg-btn" data-metric="faturamento">Faturamento</button>
-            <button type="button" class="seg-btn" data-metric="ticket">Ticket Médio</button>
-          </div>
-          <p class="panel-title" id="rankingProdutividadeTitle">Ranking de Produtividade</p>
-          <p class="panel-caption" id="rankingProdutividadeCaption">Cada equipe comparada à média do centro no mês · linha tracejada = 100% da média · segue o filtro de Processo · selecione um único Mês no filtro lateral</p>
-          <button type="button" class="btn-toggle-values" id="btnToggleValoresRanking">Mostrar valores</button>
-        </div>
-        <div class="panel" style="margin-bottom:14px">
-          <p class="panel-title" id="rankingTitleJN">Juazeiro do Norte — Atingimento de Produtividade</p>
-          <div class="chart-scroll"><svg class="chart" id="chartRankJN" viewBox="0 0 900 320"></svg></div>
-          <div class="tablewrap" hidden><table class="datatable" id="tblRankJN"></table></div>
-        </div>
-        <div class="grid-2">
-          <div class="panel">
-            <p class="panel-title" id="rankingTitleMI">Milagres — Atingimento de Produtividade</p>
-            <div class="chart-scroll"><svg class="chart" id="chartRankMI" viewBox="0 0 480 320"></svg></div>
-            <div class="tablewrap" hidden><table class="datatable" id="tblRankMI"></table></div>
-          </div>
-          <div class="panel">
-            <p class="panel-title" id="rankingTitleCS">Campos Sales — Atingimento de Produtividade</p>
-            <div class="chart-scroll"><svg class="chart" id="chartRankCS" viewBox="0 0 480 320"></svg></div>
-            <div class="tablewrap" hidden><table class="datatable" id="tblRankCS"></table></div>
-          </div>
         </div>
       </section>
 
@@ -1351,7 +1303,6 @@ function iniciarPainel(DATA) {
     });
   }
   ligaToggleDeValores("btnToggleValoresCentro", "page-consolidadoCentro");
-  ligaToggleDeValores("btnToggleValoresRanking", "page-rankingProdutividade");
 
   // copia os quatro quadros numa imagem só, no mesmo 2x2 da tela -- é o print
   // que eu fazia na mão pra jogar no PowerPoint, só que já recortado e nítido
@@ -1676,6 +1627,12 @@ function iniciarPainel(DATA) {
       for (var i = 0; i < rows[dim].length; i++) {
         var code = rows[dim][i];
         if (code >= 0 && matchDimsExcept(activeGroup, i, dim)) available.add(code);
+      }
+      // No recorte somado a lista e a uniao dos dois lados: quem so trabalha
+      // em Obras tambem precisa aparecer aqui.
+      if (nvLadoDaTela() === "sul") {
+        nvEspelharSul();
+        nvDisponiveisNoOb(dim, FILTER_DICT_KEY[dim]).forEach(function (ix) { available.add(ix); });
       }
       items = items.filter(function (it) { return available.has(it.idx); });
       sel.forEach(function (idx) { if (!available.has(idx)) sel.delete(idx); });
@@ -4677,6 +4634,7 @@ function iniciarPainel(DATA) {
 
   var NV_MES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
   var nvLado = "ec";
+  var nvSulAnterior = null;
   // lado que a tela está realmente mostrando: a aba Contrato Sul trava em "sul"
   function nvLadoDaTela() {
     var a = NV_ABAS && NV_ABAS.filter(function (x) { return x.id === nvAba; })[0];
@@ -4738,6 +4696,39 @@ function iniciarPainel(DATA) {
     });
     fb.excluir = exc;
     invalidarExcecoes();
+  }
+
+  // No recorte somado a barra lateral precisa oferecer tambem quem so existe
+  // em Obras. Os filtros guardam indices do dicionario do ec, entao os nomes
+  // que faltam sao anexados no fim dele: como nenhuma linha de ec aponta pra
+  // esses indices, o lado ec fica vazio -- que e a resposta certa -- e o
+  // espelhamento por nome manda a escolha pro indice correspondente em ob.
+  var nvSoDeObras = {};
+  (function () {
+    NV_DIMS.forEach(function (par) {
+      var chave = par[1], dec = GROUPS.ec.dicts[chave], dob = GROUPS.ob.dicts[chave];
+      if (!dec || !dob) return;
+      var tem = {}; dec.forEach(function (nm) { tem[nm] = 1; });
+      dob.forEach(function (nm) {
+        if (!tem[nm]) { tem[nm] = 1; nvSoDeObras[par[0] + "|" + (dec.push(nm) - 1)] = 1; }
+      });
+    });
+  })();
+
+  // devolve os codigos (ja no dicionario do ec) que o lado Obras tem a oferecer
+  // nesse filtro, respeitando os outros filtros que o usuario ja aplicou
+  function nvDisponiveisNoOb(dim, chave) {
+    var rows = GROUPS.ob.rows, dob = GROUPS.ob.dicts[chave], dec = GROUPS.ec.dicts[chave];
+    var vistos = {}, out = [];
+    for (var i = 0; i < rows[dim].length; i++) {
+      var c = rows[dim][i];
+      if (c < 0 || vistos[c]) continue;
+      if (!matchDimsExcept("ob", i, dim)) continue;
+      vistos[c] = 1;
+      var ix = dec.indexOf(dob[c]);
+      if (ix >= 0) out.push(ix);
+    }
+    return out;
   }
 
   // ---------- os números, sempre com os filtros da barra lateral ----------
@@ -5430,7 +5421,7 @@ function iniciarPainel(DATA) {
       subs: { ec: [["Por centro", "consolidadoCentro"]], ob: [["Por centro", "consolidadoCentro"]], sul: [["Por centro", "consolidadoCentro"]] } },
     { id: "equipes", nome: "Equipes",
       subs: { ec: [["Análise", "analiseEquipes"], ["Produtividade mensal", "produtividadeMensal"],
-        ["Comparativo mensal", "comparativoMensal"], ["Ranking", "rankingProdutividade"], ["Processo-Supervisor", "procSup"]],
+        ["Comparativo mensal", "comparativoMensal"]],
         ob: [["Análise", "nv"]], sul: [["Análise", "nv"]] } },
     { id: "escala", nome: "Escala",
       subs: { ec: [["Requerido x Escalado", "escaladoFat"]], ob: [["Requerido x Escalado", "escaladoOb"]], sul: [["Requerido x Escalado", "nv"]] } },
@@ -5491,6 +5482,8 @@ function iniciarPainel(DATA) {
     PAGE_GROUP.nv = nvGrupo();
     PAGE_GROUP.consolidadoCentro = nvGrupo();
     nvPintarAbas();
+    var sulAgora = nvLadoDaTela() === "sul";
+    if (sulAgora !== nvSulAnterior) { nvSulAnterior = sulAgora; rebuildSidebar(); }
     var btn = document.querySelector('.tab-btn[data-page="' + page + '"]');
     if (btn) btn.click();
   }
