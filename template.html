@@ -504,6 +504,140 @@
     .fg { flex: 1; min-width: 140px; }
     .grid-2 { grid-template-columns: minmax(0, 1fr); }
   }
+
+  /* ======================= PAINEL ENXUTO =======================
+     Apelidos das cores: o desenho novo foi feito com nomes curtos,
+     e aqui eles apontam pras variáveis que o painel já usava --
+     inclusive no modo escuro, que continua valendo sozinho. */
+  .viz-root {
+    --ink: var(--text-primary); --ink-2: var(--text-secondary); --ink-3: var(--text-muted);
+    --rule: var(--baseline);
+    --ec: var(--series-ec); --ec-soft: var(--series-ec-soft);
+    --ob: var(--series-ob); --ob-soft: var(--series-ob-soft);
+    --tot: var(--text-primary); --tot-soft: var(--grid);
+    --good: var(--status-good); --warn: var(--status-warn); --crit: var(--status-crit);
+    --good-bg: var(--status-good-soft); --warn-bg: var(--status-warn-soft); --crit-bg: var(--status-crit-soft);
+    --m1: var(--mot-1); --m2: var(--mot-2); --m3: var(--mot-3);
+    --m4: var(--mot-4); --m5: var(--mot-5); --m6: var(--mot-6); --m0: var(--mot-outros);
+  }
+
+  /* a barra antiga fica no HTML so pra navegacao; [hidden] nao basta
+     porque .tabs e display:flex */
+  #tabsAntigas { display:none !important; }
+
+  /* ---- barra de recorte + abas novas ---- */
+  .barra-nv { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+              padding:0 20px; border-bottom:1px solid var(--border); }
+  .rec-lbl { font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+             color:var(--text-muted); }
+  .seg-lado { display:flex; gap:1px; background:var(--surface-2); border:1px solid var(--baseline);
+              border-radius:8px; padding:2px; }
+  .seg-lado button { font:inherit; font-size:12px; font-weight:700; border:0; cursor:pointer;
+                     padding:5px 12px; border-radius:6px; background:transparent; color:var(--text-secondary); }
+  .seg-lado button.on { color:#fff; }
+  .seg-lado button.on[data-lado="ec"]  { background:var(--series-ec); }
+  .seg-lado button.on[data-lado="ob"]  { background:var(--series-ob); }
+  /* no escuro --text-primary clareia, entao o texto do "sul" acompanha o fundo do cartao */
+  .seg-lado button.on[data-lado="sul"] { background:var(--text-primary); color:var(--surface-1); }
+  .seg-lado.travado { opacity:.4; pointer-events:none; }
+  .abas-nv { display:flex; gap:2px; flex-wrap:wrap; margin-left:6px; }
+  .tab-nv { font:inherit; font-size:12.5px; font-weight:700; background:none; border:0; cursor:pointer;
+            padding:11px 13px; color:var(--text-secondary); border-bottom:2px solid transparent; }
+  .tab-nv:hover { color:var(--text-primary); }
+  .tab-nv.active { color:var(--text-primary); border-bottom-color:var(--accent); }
+  .tab-nv .nv-novo { font-size:8.5px; font-weight:800; background:var(--accent); color:var(--accent-ink);
+                     border-radius:3px; padding:1px 4px; margin-left:5px; vertical-align:1.5px; }
+  .subtabs { display:flex; gap:2px; padding:7px 20px 0; flex-wrap:wrap; }
+  .subtab { font:inherit; font-size:11.5px; font-weight:700; cursor:pointer; padding:4px 11px;
+            border-radius:999px; border:1px solid transparent; background:transparent; color:var(--text-muted); }
+  .subtab:hover { color:var(--text-primary); }
+  .subtab.active { background:var(--surface-1); border-color:var(--border); color:var(--text-primary); }
+
+  /* ---- grade de cartões das abas novas ---- */
+  .gridnv { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; align-content:start; }
+  .gridnv .c4{grid-column:span 4} .gridnv .c5{grid-column:span 5} .gridnv .c6{grid-column:span 6}
+  .gridnv .c7{grid-column:span 7} .gridnv .c8{grid-column:span 8} .gridnv .c12{grid-column:span 12}
+  @media (max-width:1150px){ .gridnv .c4,.gridnv .c5,.gridnv .c6,.gridnv .c7,.gridnv .c8{grid-column:span 12} }
+  .nv-h { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:11px; }
+  .nv-t { margin:0; font-size:13px; font-weight:800; letter-spacing:-.01em; color:var(--text-primary); }
+  .nv-c { margin:3px 0 0; font-size:11px; color:var(--text-muted); }
+  .seg-nv { display:flex; gap:1px; background:var(--surface-2); border:1px solid var(--baseline);
+            border-radius:7px; padding:2px; flex:none; }
+  .seg-nv button { font:inherit; font-size:11px; font-weight:700; border:0; cursor:pointer;
+                   padding:4px 9px; border-radius:5px; background:transparent; color:var(--text-secondary); }
+  .seg-nv button.on { background:var(--surface-1); color:var(--text-primary);
+                      box-shadow:0 1px 1px rgba(23,19,8,.09); }
+
+  .nv-stats { display:flex; flex-wrap:wrap; }
+  .nv-stat { flex:1; min-width:150px; padding:0 16px; border-left:1px solid var(--grid); }
+  .nv-stat:first-child { padding-left:0; border-left:0; }
+  .nv-stat-l { font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
+  .nv-stat-v { margin:4px 0 0; font-size:21px; font-weight:800; letter-spacing:-.035em; white-space:nowrap;
+               font-variant-numeric:tabular-nums; color:var(--text-primary); }
+  .nv-stat-s { margin:3px 0 0; font-size:10.5px; color:var(--text-muted); white-space:nowrap; }
+  .nv-stat-s b { color:var(--text-secondary); font-weight:700; }
+
+  .nvpill { display:inline-block; font-size:10.5px; font-weight:800; border-radius:999px; padding:1px 7px;
+            font-variant-numeric:tabular-nums; }
+  .nvpill.g { background:var(--status-good-soft); color:var(--status-good); }
+  .nvpill.w { background:var(--status-warn-soft); color:var(--status-warn); }
+  .nvpill.c { background:var(--status-crit-soft); color:var(--status-crit); }
+  .nvmini { display:inline-block; width:46px; height:6px; border-radius:4px; background:var(--grid);
+            overflow:hidden; vertical-align:middle; margin-right:7px; }
+  .nvmini i { display:block; height:100%; border-radius:4px; }
+  .nvheat { text-align:center !important; font-weight:700; font-size:11px; }
+
+  .cons thead tr:first-child th { font-size:9.5px; text-align:center; padding-bottom:1px; }
+  .cons .gec { color:var(--series-ec); } .cons .gob { color:var(--series-ob); }
+  .cons .gtot { color:var(--text-primary); }
+  .cons .sep { border-left:1px solid var(--baseline); }
+  .cons tbody td:first-child { font-weight:600; }
+
+  .nv-leg { display:flex; gap:14px; margin-top:7px; font-size:11px; color:var(--text-secondary); flex-wrap:wrap; }
+  .nv-leg span { display:flex; align-items:center; gap:5px; }
+  .nv-sw { width:8px; height:8px; border-radius:2px; flex:none; }
+  .nv-punch { margin:13px 0 0; padding-top:11px; border-top:1px solid var(--grid);
+              font-size:11.5px; color:var(--text-muted); line-height:1.5; }
+  .nv-punch b { color:var(--text-primary); }
+  .nv-sub { font-size:10.5px; color:var(--text-muted); }
+  .nv-aviso { padding:22px; text-align:center; color:var(--text-muted); font-size:12.5px; line-height:1.6; }
+  .nv-aviso b { color:var(--text-primary); }
+
+  /* ---- ponte do impacto ---- */
+  .nv-ip { display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; }
+  .nv-ip-card { flex:1; min-width:135px; background:var(--surface-2); border:1px solid var(--border);
+                border-radius:9px; padding:10px 12px; }
+  .nv-ip-card.perda { background:var(--status-crit-soft); border-color:var(--status-crit); }
+  .nv-ip-card.fim { background:var(--accent-soft); border-color:var(--accent); }
+  .nv-ip-rot { font-size:9px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); }
+  .nv-ip-val { font-size:17px; font-weight:800; letter-spacing:-.03em; margin-top:4px; color:var(--text-primary);
+               font-variant-numeric:tabular-nums; }
+  .nv-ip-sub { font-size:10px; color:var(--text-muted); margin-top:2px; }
+  .nv-ip-op { display:flex; align-items:center; font-size:17px; font-weight:800; color:var(--text-muted); }
+
+  .nv-motbox { border:1px solid var(--border); border-radius:9px; padding:10px 12px; margin-bottom:13px;
+               background:var(--surface-2); }
+  .nv-motbox-h { font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+                 color:var(--text-muted); margin-bottom:7px; }
+  .nv-motlist { display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:4px 14px; }
+  .nv-motlist label { display:flex; align-items:center; gap:6px; font-size:11.5px; cursor:pointer;
+                      color:var(--text-secondary); }
+  .nv-motlist input { accent-color:var(--accent); width:13px; height:13px; flex:none; }
+  .nv-motlist .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .nv-motlist .v { font-size:10.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .nv-limpar { margin-top:8px; font:inherit; font-size:11px; font-weight:700; cursor:pointer;
+               background:none; border:0; color:var(--accent); padding:0; text-decoration:underline; }
+
+  .nv-rank { display:grid; grid-template-columns:minmax(120px,1.1fr) minmax(60px,1fr) auto;
+             gap:5px 10px; align-items:center; }
+  .nv-rank-n { display:flex; align-items:center; gap:6px; font-size:11.5px; min-width:0; color:var(--text-secondary); }
+  .nv-rank-n i { width:8px; height:8px; border-radius:2px; flex:none; }
+  .nv-rank-n span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nv-trilho { height:7px; border-radius:4px; background:var(--grid); overflow:hidden; }
+  .nv-trilho div { height:100%; border-radius:4px; }
+  .nv-rank-v { font-size:10.5px; color:var(--text-muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .nv-rank-v b { color:var(--text-primary); font-size:11.5px; }
+
 </style>
 
 <div class="viz-root" id="root">
@@ -556,7 +690,10 @@
     </div>
   </header>
 
-  <div class="tabs">
+  <!-- As abas antigas continuam aqui, escondidas: elas e que sabem trocar
+       de pagina, e a barra nova so clica nelas. Assim nada da navegacao
+       precisou ser reescrito. -->
+  <div class="tabs" id="tabsAntigas" hidden>
     <button class="tab-btn active" data-page="geral" type="button">Painel Geral</button>
     <button class="tab-btn" data-page="fat" type="button">Faturamento</button>
     <button class="tab-btn" data-page="procSup" type="button">Processo - Supervisor</button>
@@ -573,7 +710,15 @@
     <button class="tab-btn" data-page="escaladoOb" type="button">Requerido x Escalado - Obras</button>
     <button class="tab-btn" data-page="faltasOb" type="button">Faltas - Obras</button>
     <button class="tab-btn" data-page="impactoOb" type="button">Impacto das Faltas - Obras</button>
+    <button class="tab-btn" data-page="nv" type="button">nv</button>
   </div>
+
+  <div class="barra-nv">
+    <span class="rec-lbl">Recorte</span>
+    <div class="seg-lado" id="segLado"></div>
+    <div class="abas-nv" id="abasNv"></div>
+  </div>
+  <div class="subtabs" id="subTabs"></div>
 
   <div class="app">
     <aside class="sidebar">
@@ -625,6 +770,9 @@
     </aside>
 
     <div class="main">
+
+      <!-- abas montadas pelo codigo novo (contrato somado, equipes de Obras) -->
+      <section class="page" id="page-nv"><div class="gridnv" id="gridNv"></div></section>
 
       <section class="page active" id="page-geral">
         <div class="kpi-grid" id="kpis"></div>
@@ -1102,10 +1250,11 @@ function iniciarPainel(DATA) {
   var PAGE_GROUP = {
     geral: "ec", fat: "ec", procSup: "ec", analiseEquipes: "ec", produtividadeMensal: "ec", comparativoMensal: "ec", escaladoFat: "ec",
     consolidadoCentro: "ec", rankingProdutividade: "ec", faltasFat: "ec", impactoFat: "ec",
-    geralOb: "ob", escaladoOb: "ob", faltasOb: "ob", impactoOb: "ob"
+    geralOb: "ob", escaladoOb: "ob", faltasOb: "ob", impactoOb: "ob",
+    nv: "ec"   // trocado conforme o recorte, em nvIr()
   };
   var PROC_TAB_PAGES = { procSup: true };
-  var EQUIPE_PAGES = { geral: true, geralOb: true, analiseEquipes: true, comparativoMensal: true };
+  var EQUIPE_PAGES = { geral: true, geralOb: true, analiseEquipes: true, comparativoMensal: true, nv: true };
   var procTabSelection = null;
   var chartMode = { ec: "month", ob: "month" };
   var CHART_TITLES = {
@@ -2252,6 +2401,7 @@ function iniciarPainel(DATA) {
 
   function initCopyButtons() {
     document.querySelectorAll(".panel").forEach(function (panel) {
+      if (panel.querySelector(":scope > .copy-btn")) return;   // ja tem; abas novas remontam a cada render
       var table = panel.querySelector("table.datatable");
       var svg = panel.querySelector("svg.chart");
       var temTabela = !!(table && table.id);
@@ -4360,16 +4510,54 @@ function iniciarPainel(DATA) {
     alvo.innerHTML = thead + "<tbody>" + (linhas.length ? linhas.join("")
       : '<tr><td colspan="' + colunas + '" class="cell-empty">Sem dados com os filtros atuais</td></tr>') + "</tbody>";
   }
+  // soma os dois lados centro a centro, pro recorte Contrato Sul
+  function nvCentroMesSul() {
+    var a = centroMonthBreakdown("ec"), b = centroMonthBreakdown("ob"), nomes = {}, res = {};
+    Object.keys(a).forEach(function (k) { nomes[k] = 1; });
+    Object.keys(b).forEach(function (k) { nomes[k] = 1; });
+    Object.keys(nomes).forEach(function (nome) {
+      var por = {};
+      [a[nome] || [], b[nome] || []].forEach(function (lista) {
+        lista.forEach(function (it) {
+          var m = por[it.mk] || (por[it.mk] = { label: it.label, mk: it.mk, valor: 0, qtd: 0, prodDen: 0 });
+          m.valor += it.valor; m.qtd += it.qtd; m.prodDen += it.prodDen;
+        });
+      });
+      res[nome] = Object.keys(por).sort().map(function (mk) {
+        var m = por[mk];
+        m.produtividade = m.prodDen ? m.qtd / m.prodDen : null;
+        m.ticket = m.qtd ? m.valor / m.qtd : null;
+        return m;
+      });
+    });
+    return res;
+  }
+
   function renderConsolidadoCentro() {
+    var sulCen = nvLado === "sul", gCen = nvLado === "ob" ? "ob" : "ec";
+    // somando os dois lados, ticket/produtividade/turnos misturariam unidades
+    // diferentes (serviços de um lado, unidades medidas do outro): so valor vale
+    document.querySelectorAll('#page-consolidadoCentro .seg-btn[data-metric]').forEach(function (b) {
+      b.hidden = sulCen && b.dataset.metric !== "faturamento";
+    });
+    if (sulCen && centroMesMetric !== "faturamento") {
+      centroMesMetric = "faturamento";
+      document.querySelectorAll('#page-consolidadoCentro .seg-btn[data-metric]').forEach(function (b) {
+        b.classList.toggle("active", b.dataset.metric === "faturamento");
+      });
+      document.getElementById("consolidadoCentroTitle").textContent = CENTRO_MES_TITLES.faturamento;
+      document.getElementById("consolidadoCentroCaption").textContent = CENTRO_MES_CAPTIONS.faturamento;
+      document.getElementById("lblTurnosNormais").hidden = true;
+    }
     var colors = centroColors();
     var byCentro, valueKey, fmtLabel, fmtTip;
     if (centroMesMetric === "turnos") {
-      byCentro = centroMonthTurnos("ec");
+      byCentro = centroMonthTurnos(gCen);
       valueKey = "turnos";
       fmtLabel = function (v) { return fmtNum(v, 0); };
       fmtTip = function (v) { return fmtNum(v, 1); };
     } else {
-      byCentro = centroMonthBreakdown("ec");
+      byCentro = sulCen ? nvCentroMesSul() : centroMonthBreakdown(gCen);
       valueKey = centroMesMetric === "produtividade" ? "produtividade" : centroMesMetric === "ticket" ? "ticket" : "valor";
       fmtLabel = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : centroMesMetric === "ticket" ? fmtFullBRL : fmtCompactBRL;
       fmtTip = centroMesMetric === "produtividade" ? function (v) { return fmtNum(v, 2); } : fmtFullBRL;
@@ -4409,12 +4597,18 @@ function iniciarPainel(DATA) {
 
   function renderAll() {
     atualizarLegendaAnos();
+    nvEspelharSul();                     // Contrato Sul: um filtro só, valendo nos dois lados
+    nvInvalidar();                       // filtros mudaram: refaz as contas das abas novas
     var activePage = document.querySelector(".page.active").id.replace("page-", "");
     var group = PAGE_GROUP[activePage];
     var idxs = activePage === "procSup" ? procSupIdxs() : currentIdxs(group);
-    document.getElementById("resultNote").textContent = fmtInt.format(idxs.length) + " linhas no filtro atual";
+    var nLinhas = idxs.length;
+    if (nvLadoDaTela() === "sul") nLinhas = currentIdxs("ec").length + currentIdxs("ob").length;
+    document.getElementById("resultNote").textContent = fmtInt.format(nLinhas) + " linhas no filtro atual";
 
-    if (activePage === "geral") {
+    if (activePage === "nv") {
+      nvRender();
+    } else if (activePage === "geral") {
       renderKpisInto("kpis", "ec");
       var mesItemsEc = periodBreakdown("ec", idxs);
       var procItemsEc = dimBreakdown("ec", idxs, "proc", "processo");
@@ -4469,8 +4663,879 @@ function iniciarPainel(DATA) {
     reconferirEscala();
   }
 
+
+  /* ================== PAINEL ENXUTO: recorte + abas novas ==================
+     As quinze abas viraram seis. O que decide o que aparece é o RECORTE
+     (Emergencial + Comercial, Obras, Contrato Sul) escolhido lá em cima.
+     Quando existe página pronta pro lado escolhido, é ela que aparece --
+     nada foi reescrito à toa. O que não existia (o contrato somado, e as
+     telas de Obras que o painel nunca teve) é montado aqui, a partir dos
+     MESMOS filtros da barra lateral, via nvBundle(). */
+
+  var NV_MES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  var nvLado = "ec";
+  // lado que a tela está realmente mostrando: a aba Contrato Sul trava em "sul"
+  function nvLadoDaTela() {
+    var a = NV_ABAS && NV_ABAS.filter(function (x) { return x.id === nvAba; })[0];
+    return (a && a.travaLado) || nvLado;
+  }
+  var NV_LADOS = {
+    ec:  { nome:"Emergencial + Comercial", curto:"Emerg. + Comercial", cor:"var(--ec)",  soft:"var(--ec-soft)" },
+    ob:  { nome:"Obras",                   curto:"Obras",              cor:"var(--ob)",  soft:"var(--ob-soft)" },
+    sul: { nome:"Contrato Sul",            curto:"Contrato Sul",       cor:"var(--tot)", soft:"var(--tot-soft)" }
+  };
+
+  // ---------- formatadores curtos ----------
+  function nvOk(v) { return v != null && isFinite(v); }
+  function nvPct(v, d) {
+    return nvOk(v) ? (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: d == null ? 1 : d, maximumFractionDigits: d == null ? 1 : d }) + "%" : "—";
+  }
+  function nvN2(v) { return nvOk(v) ? v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"; }
+  function nvInt(v) { return (v || 0).toLocaleString("pt-BR"); }
+  function nvCp(v, semRs) {
+    var a = Math.abs(v || 0), s = (v || 0) < 0 ? "-" : "", p = semRs ? "" : "R$ ";
+    if (a >= 1e6) return s + p + (a / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    if (a >= 1e3) return s + p + (a / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 0 }) + " mil";
+    return s + p + a.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  }
+  function nvMi(v) { return "R$ " + ((v || 0) / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi"; }
+  function nvCls(p) { return p >= .95 ? "g" : p >= .85 ? "w" : "c"; }
+  function nvCor(p) { return p >= .95 ? "var(--good)" : p >= .85 ? "var(--warn)" : "var(--crit)"; }
+  function nvFundo(p) { return p >= .95 ? "var(--good-bg)" : p >= .85 ? "var(--warn-bg)" : "var(--crit-bg)"; }
+  function nvEsc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+
+  // ---------- filtro valendo nos dois lados ----------
+  // Os filtros do painel são por dataset e guardam ÍNDICES do dicionário de
+  // cada lado -- o mesmo supervisor tem número diferente em Faturamento e em
+  // Obras. Pra um filtro só valer nos dois, a cópia é feita pelo NOME.
+  var NV_DIMS = [["sup", "supervisor"], ["centro", "centro"], ["proc", "processo"], ["equipe", "equipe"]];
+  function nvEditor(lado) { return lado === "ob" ? "ob" : "ec"; }
+  // no recorte Contrato Sul a barra lateral edita o lado Emergencial +
+  // Comercial; antes de cada conta o mesmo filtro é copiado pra Obras
+  function nvEspelharSul() { if (nvLadoDaTela() === "sul") nvCopiarFiltros("ec", "ob"); }
+  function nvCopiarFiltros(de, para) {
+    if (de === para) return;
+    var fa = filters[de], fb = filters[para];
+    ["ano", "mes", "dia"].forEach(function (d) { fb[d] = new Set(fa[d]); });
+    NV_DIMS.forEach(function (par) {
+      var dim = par[0], da = GROUPS[de].dicts[par[1]], db = GROUPS[para].dicts[par[1]];
+      var out = new Set();
+      if (fa[dim].size) {
+        var nomes = {};
+        fa[dim].forEach(function (ix) { if (da[ix] != null) nomes[da[ix]] = 1; });
+        db.forEach(function (nome, ix) { if (nomes[nome]) out.add(ix); });
+      }
+      fb[dim] = out;
+    });
+    var exc = new Set();
+    fa.excluir.forEach(function (k) {
+      var pa = k.split("|"), nome = GROUPS[de].dicts.equipe[+pa[0]];
+      var ix = GROUPS[para].dicts.equipe.indexOf(nome);
+      if (ix >= 0) { pa[0] = String(ix); exc.add(pa.join("|")); }
+    });
+    fb.excluir = exc;
+    invalidarExcecoes();
+  }
+
+  // ---------- os números, sempre com os filtros da barra lateral ----------
+  var nvCache = {};
+  function nvInvalidar() { nvCache = {}; }
+
+  function nvBundleDe(group) {
+    var rows = GROUPS[group].rows, dic = GROUPS[group].dicts;
+    var idxs = currentIdxs(group);
+    var mes = {}, centro = {}, centroMes = {}, proc = {}, eq = {}, eqM = {};
+    var falMes = {}, falMot = {}, falSup = {}, motMes = {}, turDia = {}, turCen = {};
+    var imp = [0, 0, 0, 0, 0], ult = "";
+
+    function arr(o, k, n) { return o[k] || (o[k] = n === 2 ? [0, 0] : n === 4 ? [0, 0, 0, 0] : [0, 0, 0]); }
+
+    idxs.forEach(function (i) {
+      var dt = rows.date[i], mk = dt.slice(0, 7);
+      if (mk > ult) ult = mk;
+      var v = rows.valor[i], m = rows.meta[i], q = rows.qtd[i];
+      var c = rows.centro[i] >= 0 ? dic.centro[rows.centro[i]] : "(sem centro)";
+      var sp = rows.sup[i] >= 0 ? dic.supervisor[rows.sup[i]] : "(sem supervisor)";
+      var t = isTrabalhou(group, rows, i), fa = isFaltou(group, rows, i);
+
+      imp[0] += m; imp[1] += v;
+      var a = arr(mes, mk); a[0] += v; a[1] += m; a[2] += q;
+      var cc = arr(centro, c, 2); cc[0] += v; cc[1] += m;
+      if (!centroMes[c]) centroMes[c] = {};
+      var cm = arr(centroMes[c], mk, 2); cm[0] += v; cm[1] += m;
+
+      var p = rows.proc[i] >= 0 ? dic.processo[rows.proc[i]] : "(sem processo)";
+      var pp = arr(proc, p, 4); pp[0] += v; pp[1] += m; pp[2] += q; if (t) pp[3]++;
+
+      var en = rows.equipe[i] >= 0 ? dic.equipe[rows.equipe[i]] : "(sem equipe)";
+      var e = eq[en] || (eq[en] = { nome: en, v: 0, m: 0, q: 0, pd: 0, trab: 0, esc: 0, sup: "", cen: "" });
+      e.v += v; e.m += m; e.q += q; e.sup = sp; e.cen = c;
+      if (t) { e.pd++; e.trab++; }
+      if (t || fa) e.esc++;
+      if (!eqM[en]) eqM[en] = {};
+      var em = arr(eqM[en], mk, 2); em[0] += v; em[1] += m;
+
+      if (t || fa) {
+        arr(falMes, mk)[1]++;
+        arr(falSup, sp)[1]++;
+        var dia = String(parseInt(dt.slice(8, 10), 10));
+        if (!turDia[mk]) turDia[mk] = {};
+        var td = arr(turDia[mk], dia, 2); td[0]++; if (t) td[1]++;
+        var tc = arr(turCen, c, 2); tc[0]++; if (t) tc[1]++;
+      }
+      if (fa) {
+        var perda = Math.max(0, m - v);
+        var mo = rows.motivo[i] >= 0 ? dic.motivo[rows.motivo[i]] : "(sem motivo)";
+        var fm = arr(falMes, mk); fm[0]++; fm[2] += perda;
+        var fs = arr(falSup, sp); fs[0]++; fs[2] += perda;
+        var fo = arr(falMot, mo, 4); fo[0]++; fo[1] += perda; fo[2] += m; fo[3] += v;
+        if (!motMes[mo]) motMes[mo] = {};
+        motMes[mo][mk] = (motMes[mo][mk] || 0) + perda;
+        imp[2] += m; imp[3] += v; imp[4]++;
+      }
+    });
+
+    // turnos do dia a dia: só o último mês que sobrou no filtro
+    var tdUlt = turDia[ult] || {};
+    var turCenUlt = turCen;
+
+    var equipes = Object.keys(eq).map(function (k) { return eq[k]; })
+      .sort(function (a, b) { return b.v - a.v; });
+
+    var o = {
+      mes: mes, centro: centro, centroMes: centroMes, proc: proc,
+      equipes: equipes, equipesMes: eqM, faltaMes: falMes, mot: falMot,
+      faltaSup: falSup, motMes: motMes, turnoDia: tdUlt, turnoCentro: turCenUlt,
+      imp: imp, ultMes: ult, linhas: idxs.length
+    };
+    return o;
+  }
+
+  function nvSomaArr(a, b) { var o = (a || []).slice(); (b || []).forEach(function (x, i) { o[i] = (o[i] || 0) + x; }); return o; }
+  function nvSomaMapa(A, B) {
+    var o = {}, k;
+    for (k in A) o[k] = A[k].slice();
+    for (k in B) o[k] = o[k] ? nvSomaArr(o[k], B[k]) : B[k].slice();
+    return o;
+  }
+  function nvSomaMapa2(A, B) {
+    var o = {}, k;
+    for (k in A) o[k] = nvSomaMapa(A[k], {});
+    for (k in B) o[k] = o[k] ? nvSomaMapa(o[k], B[k]) : nvSomaMapa(B[k], {});
+    return o;
+  }
+  function nvSomaNum2(A, B) {
+    var o = {}, k, j;
+    for (k in A) { o[k] = {}; for (j in A[k]) o[k][j] = A[k][j]; }
+    for (k in B) { if (!o[k]) o[k] = {}; for (j in B[k]) o[k][j] = (o[k][j] || 0) + B[k][j]; }
+    return o;
+  }
+
+  function nvBundle(lado) {
+    if (nvCache[lado]) return nvCache[lado];
+    var o;
+    if (lado !== "sul") {
+      o = nvBundleDe(lado);
+    } else {
+      var e = nvBundle("ec"), b = nvBundle("ob");
+      o = {
+        mes: nvSomaMapa(e.mes, b.mes), centro: nvSomaMapa(e.centro, b.centro),
+        centroMes: nvSomaMapa2(e.centroMes, b.centroMes), proc: nvSomaMapa(e.proc, b.proc),
+        equipes: e.equipes.concat(b.equipes).sort(function (a, c) { return c.v - a.v; }),
+        equipesMes: nvSomaMapa2(e.equipesMes, b.equipesMes),
+        faltaMes: nvSomaMapa(e.faltaMes, b.faltaMes), mot: nvSomaMapa(e.mot, b.mot),
+        faltaSup: nvSomaMapa(e.faltaSup, b.faltaSup), motMes: nvSomaNum2(e.motMes, b.motMes),
+        turnoDia: nvSomaMapa(e.turnoDia, b.turnoDia), turnoCentro: nvSomaMapa(e.turnoCentro, b.turnoCentro),
+        imp: nvSomaArr(e.imp, b.imp), ultMes: e.ultMes > b.ultMes ? e.ultMes : b.ultMes,
+        linhas: e.linhas + b.linhas
+      };
+    }
+    o.L = Object.keys(o.mes).sort().map(function (k) {
+      var m = o.mes[k];
+      return { k: k, mes: NV_MES[+k.slice(5, 7) - 1], ano: k.slice(0, 4), valor: m[0], meta: m[1], qtd: m[2] };
+    });
+    o.T = o.L.reduce(function (a, r) { a.valor += r.valor; a.meta += r.meta; a.qtd += r.qtd; return a; }, { valor: 0, meta: 0, qtd: 0 });
+    o.perdaTot = 0; Object.keys(o.mot).forEach(function (k) { o.perdaTot += o.mot[k][1]; });
+    o.nFal = 0; o.escTot = 0;
+    Object.keys(o.faltaMes).forEach(function (k) { o.nFal += o.faltaMes[k][0]; o.escTot += o.faltaMes[k][1]; });
+    nvCache[lado] = o;
+    return o;
+  }
+
+  // ---------- peças de UI ----------
+  var nvSeq = 0;
+  function nvCard(cls, titulo, cap, corpo, seg) {
+    var s = "";
+    if (seg) {
+      var at = nvSegV(seg.id, seg.opts[0]);
+      s = '<div class="seg-nv" data-segnv="' + seg.id + '">' + seg.opts.map(function (o) {
+        return '<button type="button" data-v="' + nvEsc(o) + '"' + (o === at ? ' class="on"' : "") + ">" + o + "</button>";
+      }).join("") + "</div>";
+    }
+    return '<div class="panel ' + cls + '"><div class="nv-h"><div><p class="nv-t panel-title">' + titulo + "</p>" +
+      (cap ? '<p class="nv-c">' + cap + "</p>" : "") + "</div>" + s + "</div>" + corpo + "</div>";
+  }
+  var nvSeg = {};
+  function nvSegV(nome, padrao) { return nvSeg[nome] == null ? (nvSeg[nome] = padrao) : nvSeg[nome]; }
+  function nvStat(l, v, s, c) {
+    return '<div class="nv-stat"><div class="nv-stat-l">' + l + '</div><p class="nv-stat-v"' +
+      (c ? ' style="color:' + c + '"' : "") + ">" + v + '</p><p class="nv-stat-s">' + s + "</p></div>";
+  }
+  function nvPillCel(p) { return '<td><span class="nvpill ' + nvCls(p) + '">' + nvPct(p) + "</span></td>"; }
+  function nvBarCel(p) {
+    return '<td><span class="nvmini"><i style="width:' + Math.min(100, (p || 0) * 100) + "%;background:" + nvCor(p) + '"></i></span>' +
+      '<span class="nvpill ' + nvCls(p) + '">' + nvPct(p) + "</span></td>";
+  }
+  function nvTabela(cabs, linhas, total) {
+    return '<table class="datatable" id="nvtbl' + (++nvSeq) + '"><thead><tr>' +
+      cabs.map(function (h) { return "<th>" + h + "</th>"; }).join("") +
+      "</tr></thead><tbody>" + linhas.join("") + (total || "") + "</tbody></table>";
+  }
+  function nvLeg(itens, mt) {
+    return '<div class="nv-leg" style="margin-top:' + (mt || 7) + 'px">' +
+      itens.map(function (i) { return '<span><i class="nv-sw" style="background:' + i.cor + '"></i>' + i.nome + "</span>"; }).join("") + "</div>";
+  }
+  function nvEscala(max, alvo) {
+    if (!(max > 0)) return { max: 1, step: .25 };
+    var bruto = max / (alvo || 6), mag = Math.pow(10, Math.floor(Math.log(bruto) / Math.LN10));
+    var r = bruto / mag, step = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+    return { max: Math.ceil(max / step) * step, step: step };
+  }
+  // pílula escura por cima da barra: o <text> entra no SVG e o retângulo é
+  // medido e inserido atrás depois, igual ao drawPill do resto do painel
+  function nvPz(x, y, txt, bg) {
+    return '<text class="nvpz" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="middle"' +
+      (bg ? ' data-bg="' + bg + '"' : "") + ' fill="#fff" font-size="9.5" font-weight="800">' + nvEsc(txt) + "</text>";
+  }
+  function nvPillify(root) {
+    var NS = "http://www.w3.org/2000/svg";
+    root.querySelectorAll("text.nvpz").forEach(function (t) {
+      var b;
+      try { b = t.getBBox(); } catch (e) { return; }
+      if (!b.width) return;
+      var px = 4, py = 2.5;
+      var r = document.createElementNS(NS, "rect");
+      r.setAttribute("x", b.x - px); r.setAttribute("y", b.y - py);
+      r.setAttribute("width", b.width + px * 2); r.setAttribute("height", b.height + py * 2);
+      r.setAttribute("rx", (b.height + py * 2) / 2);
+      r.setAttribute("fill", t.getAttribute("data-bg") || "var(--pill-bg)");
+      t.parentNode.insertBefore(r, t);
+    });
+  }
+  function nvSvg(W, H, dentro) {
+    return '<svg class="chart" id="nvsvg' + (++nvSeq) + '" viewBox="0 0 ' + W + " " + H +
+      '" style="width:100%;display:block">' + dentro + "</svg>";
+  }
+
+  // ---------- gráficos ----------
+  function nvChartMeta(dados, cfg) {
+    cfg = cfg || {};
+    var corR = cfg.cor || NV_LADOS[nvLado].cor, corM = cfg.soft || NV_LADOS[nvLado].soft;
+    var W = 1010, H = 340, pL = 66, pR = 18, pT = 46, pB = 30, iw = W - pL - pR, ih = H - pT - pB, n = dados.length;
+    if (!n) return '<p class="nv-aviso">Sem dados no filtro atual.</p>';
+    var rawMax = 0, maxPct = 1;
+    dados.forEach(function (d) { rawMax = Math.max(rawMax, d.valor, d.meta); maxPct = Math.max(maxPct, div(d.valor, d.meta) || 0); });
+    var sc = nvEscala(rawMax * 1.55, 6);
+    var pctCeil = Math.max(1, Math.ceil(maxPct * 1.06 * 10) / 10);
+    var gw = iw / n, bw = Math.min(30, gw * 0.25), gap = Math.max(8, Math.min(24, gw - 2 * bw - 30));
+    var o = "";
+    for (var g = 0; g * sc.step <= sc.max + 1e-6; g++) {
+      var v = g * sc.step, gy = pT + ih - (v / sc.max) * ih;
+      o += '<line x1="' + pL + '" x2="' + (W - pR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--grid)"/>' +
+        '<text x="' + (pL - 10) + '" y="' + (gy + 4) + '" font-size="10" fill="var(--ink-3)" text-anchor="end">' + nvCp(v) + "</text>";
+    }
+    var pts = [], tops = [];
+    dados.forEach(function (d, i) {
+      var cx = pL + gw * i + gw / 2;
+      var hm = (d.meta / sc.max) * ih, ym = pT + ih - hm;
+      var hv = (d.valor / sc.max) * ih, yv = pT + ih - hv;
+      o += '<rect x="' + (cx - bw - gap / 2) + '" y="' + ym + '" width="' + bw + '" height="' + Math.max(hm, 1) + '" rx="4" fill="' + corM + '"/>' +
+        '<rect x="' + (cx + gap / 2) + '" y="' + yv + '" width="' + bw + '" height="' + Math.max(hv, 1) + '" rx="4" fill="' + corR + '"/>';
+      o += nvPz(cx - bw / 2 - gap / 2, ym - 11, nvCp(d.meta, true)) + nvPz(cx + bw / 2 + gap / 2, yv - 11, nvCp(d.valor, true));
+      var p = div(d.valor, d.meta);
+      pts.push([cx, pT + ih - ((p || 0) / pctCeil) * ih, p]);
+      tops.push(Math.min(ym, yv) - 22);
+      o += '<text x="' + cx + '" y="' + (H - 10) + '" font-size="10" fill="var(--ink-3)" text-anchor="middle">' + d.l + "</text>";
+    });
+    o += '<path d="' + pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ") +
+      '" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(function (p, i) {
+      o += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4.5" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2.5"/>';
+      o += nvPz(p[0], Math.max(16, Math.min(p[1] - 14, tops[i] - 15)), nvPct(p[2], 1), "var(--accent)");
+    });
+    return nvSvg(W, H, o) + nvLeg([{ nome: "Meta", cor: corM }, { nome: "Realizado", cor: corR }, { nome: "% da Meta", cor: "var(--accent)" }]);
+  }
+
+  function nvChartLinhas(dd, series, lo, hi, marcos) {
+    var W = 860, H = 250, pL = 40, pR = 54, pT = 16, pB = 26, iw = W - pL - pR, ih = H - pT - pB, n = dd.length;
+    if (!n) return '<p class="nv-aviso">Sem dados no filtro atual.</p>';
+    var y = function (p) { return pT + ih - ((p - lo) / (hi - lo)) * ih; };
+    var x = function (i) { return n > 1 ? pL + (iw / (n - 1)) * i : pL + iw / 2; };
+    var o = "";
+    marcos.forEach(function (p) {
+      o += '<line x1="' + pL + '" x2="' + (W - pR) + '" y1="' + y(p) + '" y2="' + y(p) + '" stroke="var(--grid)"/>' +
+        '<text x="' + (pL - 7) + '" y="' + (y(p) + 3.5) + '" font-size="10" fill="var(--ink-3)" text-anchor="end">' + Math.round(p * 100) + "%</text>";
+    });
+    o += '<line x1="' + pL + '" x2="' + (W - pR) + '" y1="' + y(1) + '" y2="' + y(1) + '" stroke="var(--rule)" stroke-width="1.5"/>';
+    var fins = [];
+    series.forEach(function (s) {
+      var p = dd.map(function (r, i) { var v = s.f(r); return [x(i), y(Math.max(lo, Math.min(hi, nvOk(v) ? v : lo)))]; });
+      o += '<path d="' + p.map(function (q, i) { return (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1); }).join(" ") +
+        '" fill="none" stroke="' + s.cor + '" stroke-width="' + s.w + '" stroke-linejoin="round" stroke-linecap="round"/>';
+      if (s.pontos) p.forEach(function (q) { o += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="' + s.cor + '"/>'; });
+      fins.push({ y: p[p.length - 1][1], cor: s.cor, txt: nvPct(s.f(dd[dd.length - 1]), 0) });
+    });
+    fins.sort(function (a, b) { return a.y - b.y; });
+    for (var f = 1; f < fins.length; f++) if (fins[f].y - fins[f - 1].y < 12) fins[f].y = fins[f - 1].y + 12;
+    fins.forEach(function (f) {
+      o += '<text x="' + (W - pR + 7) + '" y="' + (f.y + 3.5) + '" font-size="10.5" font-weight="800" fill="' + f.cor + '">' + f.txt + "</text>";
+    });
+    dd.forEach(function (r, i) {
+      o += '<text x="' + x(i) + '" y="' + (H - 8) + '" font-size="10" fill="var(--ink-3)" text-anchor="middle">' + r.mes + "</text>";
+    });
+    return nvSvg(W, H, o);
+  }
+
+  function nvChartProj(rows) {
+    var W = 1010, H = 300, pL = 66, pR = 18, pT = 34, pB = 28, iw = W - pL - pR, ih = H - pT - pB, n = rows.length;
+    if (!n) return '<p class="nv-aviso">Sem dados no filtro atual.</p>';
+    var mx = 0; rows.forEach(function (r) { mx = Math.max(mx, r.proj, r.real); });
+    var sc = nvEscala(mx * 1.3, 5);
+    var gw = iw / n, bw = Math.min(26, gw * 0.22), gap = Math.max(6, Math.min(18, gw - 2 * bw - 30)), o = "";
+    for (var g = 0; g * sc.step <= sc.max + 1e-6; g++) {
+      var v = g * sc.step, gy = pT + ih - (v / sc.max) * ih;
+      o += '<line x1="' + pL + '" x2="' + (W - pR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--grid)"/>' +
+        '<text x="' + (pL - 10) + '" y="' + (gy + 4) + '" font-size="10" fill="var(--ink-3)" text-anchor="end">' + nvCp(v) + "</text>";
+    }
+    rows.forEach(function (r, i) {
+      var cx = pL + gw * i + gw / 2;
+      var hp = (r.proj / sc.max) * ih, yp = pT + ih - hp;
+      var hperda = (r.perda / sc.max) * ih;
+      var hr = (r.real / sc.max) * ih, yr = pT + ih - hr;
+      o += '<rect x="' + (cx - bw - gap / 2) + '" y="' + yp + '" width="' + bw + '" height="' + Math.max(hp, 1) + '" rx="4" fill="var(--tot-soft)"/>' +
+        '<rect x="' + (cx - bw - gap / 2) + '" y="' + yp + '" width="' + bw + '" height="' + Math.max(hperda, 1) + '" rx="4" fill="var(--crit)" opacity=".85"/>' +
+        '<rect x="' + (cx + gap / 2) + '" y="' + yr + '" width="' + bw + '" height="' + Math.max(hr, 1) + '" rx="4" fill="' + NV_LADOS[nvLado].cor + '"/>';
+      o += nvPz(cx - bw / 2 - gap / 2, yp - 10, nvCp(r.proj, true)) + nvPz(cx + bw / 2 + gap / 2, yr - 10, nvCp(r.real, true));
+      o += '<text x="' + cx + '" y="' + (H - 9) + '" font-size="10" fill="var(--ink-3)" text-anchor="middle">' + r.mes + "</text>";
+    });
+    return nvSvg(W, H, o) + nvLeg([{ nome: "Projetado (meta)", cor: "var(--tot-soft)" },
+      { nome: "Perda por faltas, dentro do projetado", cor: "var(--crit)" },
+      { nome: "Realizado", cor: NV_LADOS[nvLado].cor }], 8);
+  }
+
+  function nvChartPilha(mks, cats, mapa) {
+    var W = 1010, H = 280, pL = 66, pR = 18, pT = 20, pB = 28, iw = W - pL - pR, ih = H - pT - pB, n = mks.length;
+    if (!n) return '<p class="nv-aviso">Sem dados no filtro atual.</p>';
+    var tot = mks.map(function (mk) {
+      var s = 0; cats.forEach(function (c) { s += (mapa[c.nome] && mapa[c.nome][mk]) || 0; }); return s;
+    });
+    var sc = nvEscala(Math.max.apply(null, tot.concat([1])) * 1.14, 5);
+    var gw = iw / n, bw = Math.min(40, gw * 0.56), o = "";
+    for (var g = 0; g * sc.step <= sc.max + 1e-6; g++) {
+      var v = g * sc.step, gy = pT + ih - (v / sc.max) * ih;
+      o += '<line x1="' + pL + '" x2="' + (W - pR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--grid)"/>' +
+        '<text x="' + (pL - 10) + '" y="' + (gy + 4) + '" font-size="10" fill="var(--ink-3)" text-anchor="end">' + nvCp(v) + "</text>";
+    }
+    mks.forEach(function (mk, i) {
+      var cx = pL + gw * i + gw / 2, y0 = pT + ih;
+      cats.forEach(function (c) {
+        var v = (mapa[c.nome] && mapa[c.nome][mk]) || 0; if (!v) return;
+        var h = (v / sc.max) * ih; y0 -= h;
+        o += '<rect x="' + (cx - bw / 2) + '" y="' + y0 + '" width="' + bw + '" height="' + h + '" fill="' + c.cor + '"/>';
+      });
+      if (tot[i]) o += nvPz(cx, y0 - 9, nvCp(tot[i], true));
+      o += '<text x="' + cx + '" y="' + (H - 9) + '" font-size="10" fill="var(--ink-3)" text-anchor="middle">' +
+        NV_MES[+mk.slice(5, 7) - 1] + "</text>";
+    });
+    return nvSvg(W, H, o) + nvLeg(cats.map(function (c) { return { nome: c.nome, cor: c.cor }; }), 8);
+  }
+
+  // ================== ABA: CONTRATO SUL ==================
+  function nvPgContrato() {
+    var E = nvBundle("ec"), B = nvBundle("ob"), S = nvBundle("sul");
+    var LS = S.L.map(function (r) {
+      var e = E.mes[r.k] || [0, 0, 0], b = B.mes[r.k] || [0, 0, 0];
+      return { k: r.k, mes: r.mes, ev: e[0], em: e[1], ov: b[0], om: b[1], tv: r.valor, tm: r.meta };
+    });
+    var T = { ev: 0, em: 0, ov: 0, om: 0, tv: 0, tm: 0 };
+    LS.forEach(function (r) { ["ev", "em", "ov", "om", "tv", "tm"].forEach(function (c) { T[c] += r[c]; }); });
+    var gap = T.tm - T.tv, gEc = div(T.em - T.ev, gap), gOb = div(T.om - T.ov, gap);
+
+    var stats = '<div class="nv-stats">' +
+      nvStat("Meta do contrato", nvMi(T.tm), fmtFullBRL(T.tm)) +
+      nvStat("Realizado", nvMi(T.tv), fmtFullBRL(T.tv)) +
+      nvStat("Atingimento", nvPct(div(T.tv, T.tm)),
+        "Emerg. + Com. <b>" + nvPct(div(T.ev, T.em)) + "</b> · Obras <b>" + nvPct(div(T.ov, T.om)) + "</b>",
+        nvCor(div(T.tv, T.tm))) +
+      nvStat("Falta para a meta", nvMi(gap), "Obras responde por <b>" + nvPct(gOb, 0) + "</b>", "var(--crit)") + "</div>";
+
+    function barra(tit, a, b) {
+      return '<div style="margin-bottom:13px"><div class="nv-stat-l" style="margin-bottom:5px">' + tit + "</div>" +
+        '<div style="display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--grid)">' +
+        '<i style="width:' + ((a || 0) * 100) + '%;background:var(--ec)"></i>' +
+        '<i style="width:' + ((b || 0) * 100) + '%;background:var(--ob)"></i></div>' +
+        '<div class="nv-leg"><span><i class="nv-sw" style="background:var(--ec)"></i>Emerg. + Com. <b>' + nvPct(a, 0) + "</b></span>" +
+        '<span><i class="nv-sw" style="background:var(--ob)"></i>Obras <b>' + nvPct(b, 0) + "</b></span></div></div>";
+    }
+    var comp = barra("Peso na meta", div(T.em, T.tm), div(T.om, T.tm)) +
+      barra("Peso no buraco", gEc, gOb) +
+      '<p class="nv-punch">Obras responde por <b>' + nvPct(div(T.om, T.tm), 0) + "</b> da meta, mas por <b>" +
+      nvPct(gOb, 0) + "</b> do que falta.<br>É o lado que decide a saúde do contrato.</p>";
+
+    var modo = nvSegV("sulGraf", "% da Meta"), graf;
+    if (modo === "% da Meta") {
+      graf = nvChartLinhas(LS, [
+        { f: function (r) { return div(r.ev, r.em); }, cor: "var(--ec)", w: 1.7 },
+        { f: function (r) { return div(r.ov, r.om); }, cor: "var(--ob)", w: 1.7 },
+        { f: function (r) { return div(r.tv, r.tm); }, cor: "var(--tot)", w: 2.4, pontos: true }
+      ], .55, 1.08, [.6, .7, .8, .9, 1]) +
+        nvLeg([{ nome: "Emergencial + Comercial", cor: "var(--ec)" }, { nome: "Obras", cor: "var(--ob)" },
+          { nome: "Contrato Sul", cor: "var(--tot)" }]);
+    } else {
+      graf = nvChartMeta(LS.map(function (r) { return { l: r.mes, meta: r.tm, valor: r.tv }; }),
+        { cor: "var(--tot)", soft: "var(--tot-soft)" });
+    }
+
+    var linhas = LS.map(function (r) {
+      return "<tr><td>" + r.mes + "/" + r.k.slice(2, 4) + "</td><td>" + nvMi(r.tm) + "</td><td>" + nvMi(r.tv) + "</td>" +
+        nvPillCel(div(r.ev, r.em)) + nvPillCel(div(r.ov, r.om)) + nvBarCel(div(r.tv, r.tm)) + "</tr>";
+    });
+    var tot = '<tr class="total"><td>Total</td><td>' + nvMi(T.tm) + "</td><td>" + nvMi(T.tv) + "</td>" +
+      nvPillCel(div(T.ev, T.em)) + nvPillCel(div(T.ov, T.om)) + nvBarCel(div(T.tv, T.tm)) + "</tr>";
+
+    return '<div class="panel c12">' + stats + "</div>" +
+      nvCard("c8", "Atingimento mês a mês", "Emergencial + Comercial e Obras separados, e o contrato que os dois formam",
+        graf, { id: "sulGraf", opts: ["% da Meta", "Realizado vs. Meta"] }) +
+      nvCard("c4", "Composição", "Peso de cada lado", comp) +
+      nvCard("c12", "Consolidado por centro de serviço",
+        "Os dois lados e a soma, centro por centro", nvTabelaCentros()) +
+      nvCard("c12", "Mês a mês", "% da meta nos dois lados e no consolidado",
+        nvTabela(["Mês", "Meta", "Realizado", "Emerg. + Com.", "Obras", "Contrato"], linhas, tot));
+  }
+
+  function nvTabelaCentros() {
+    var E = nvBundle("ec"), B = nvBundle("ob");
+    var cset = {};
+    Object.keys(E.centro).forEach(function (c) { cset[c] = 1; });
+    Object.keys(B.centro).forEach(function (c) { cset[c] = 1; });
+    var mt = function (c) { return ((E.centro[c] || [0, 0])[1]) + ((B.centro[c] || [0, 0])[1]); };
+    var ordc = Object.keys(cset).sort(function (a, b) { return mt(b) - mt(a); });
+    var TC = [0, 0, 0, 0];
+    function lin(rot, e, b, kl) {
+      return "<tr" + (kl ? ' class="' + kl + '"' : "") + "><td>" + nvEsc(rot) + "</td>" +
+        '<td class="sep">' + nvMi(e[1]) + "</td><td>" + nvMi(e[0]) + "</td>" + nvPillCel(div(e[0], e[1])) +
+        '<td class="sep">' + nvMi(b[1]) + "</td><td>" + nvMi(b[0]) + "</td>" + nvPillCel(div(b[0], b[1])) +
+        '<td class="sep">' + nvMi(e[1] + b[1]) + "</td><td>" + nvMi(e[0] + b[0]) + "</td>" +
+        nvBarCel(div(e[0] + b[0], e[1] + b[1])) + "</tr>";
+    }
+    var corpo = ordc.map(function (c) {
+      var e = E.centro[c] || [0, 0], b = B.centro[c] || [0, 0];
+      TC[0] += e[0]; TC[1] += e[1]; TC[2] += b[0]; TC[3] += b[1];
+      return lin(c, e, b);
+    }).join("") + lin("Contrato Sul", [TC[0], TC[1]], [TC[2], TC[3]], "total");
+    return '<table class="datatable cons" id="nvtbl' + (++nvSeq) + '"><thead>' +
+      '<tr><th rowspan="2">Centro</th>' +
+      '<th colspan="3" class="gec sep">Emergencial + Comercial</th>' +
+      '<th colspan="3" class="gob sep">Obras</th>' +
+      '<th colspan="3" class="gtot sep">Contrato Sul</th></tr>' +
+      '<tr><th class="sep">Meta</th><th>Realiz.</th><th>%</th>' +
+      '<th class="sep">Meta</th><th>Realiz.</th><th>%</th>' +
+      '<th class="sep">Meta</th><th>Realiz.</th><th>Atingimento</th></tr>' +
+      "</thead><tbody>" + corpo + "</tbody></table>";
+  }
+
+  // ================== ABA: OPERAÇÃO (recorte Contrato Sul) ==================
+  function nvPgOperacao() {
+    var D = nvBundle(nvLado), T = D.T;
+    var stats = '<div class="nv-stats">' +
+      nvStat("Meta", nvMi(T.meta), fmtFullBRL(T.meta)) +
+      nvStat("Realizado", nvMi(T.valor), fmtFullBRL(T.valor)) +
+      nvStat("Atingimento", nvPct(div(T.valor, T.meta)), "falta <b>" + nvCp(T.meta - T.valor) + "</b> para a meta", nvCor(div(T.valor, T.meta))) +
+      nvStat("Perda por faltas", nvMi(D.perdaTot), nvPct(div(D.perdaTot, T.meta)) + " da meta", "var(--crit)") + "</div>";
+
+    var barras = nvChartMeta(D.L.map(function (r) { return { l: r.mes + "/" + r.k.slice(2, 4), meta: r.meta, valor: r.valor }; }),
+      { cor: "var(--tot)", soft: "var(--tot-soft)" });
+
+    var P = D.proc, ordP = Object.keys(P).sort(function (a, b) { return P[b][0] - P[a][0]; });
+    var lp = ordP.map(function (k) {
+      var v = P[k];
+      return "<tr><td>" + nvEsc(k) + "</td><td>" + nvCp(v[0]) + "</td>" + nvPillCel(div(v[0], v[1])) +
+        "<td>" + nvCp(v[1] - v[0]) + "</td></tr>";
+    });
+
+    var CM = D.centroMes, centros = Object.keys(CM).sort();
+    var lm = D.L.map(function (r) {
+      return "<tr><td>" + r.mes + "/" + r.k.slice(2, 4) + "</td>" + centros.map(function (c) {
+        var v = CM[c][r.k], p = v ? div(v[0], v[1]) : null;
+        return p == null ? '<td class="nvheat">—</td>' :
+          '<td class="nvheat" style="background:' + nvFundo(p) + ";color:" + nvCor(p) + '">' + nvPct(p, 0) + "</td>";
+      }).join("") + "</tr>";
+    });
+    var tmz = centros.map(function (c) {
+      var v = 0, m = 0; D.L.forEach(function (r) { var x = CM[c][r.k]; if (x) { v += x[0]; m += x[1]; } });
+      return '<td class="nvheat" style="color:' + nvCor(div(v, m)) + '">' + nvPct(div(v, m), 0) + "</td>";
+    }).join("");
+
+    return '<div class="panel c12">' + stats + "</div>" +
+      nvCard("c12", "Realizado vs. Meta por mês — contrato inteiro",
+        "Barra clara = meta · barra cheia = realizado · pílula escura = valor · linha tracejada = % da meta", barras) +
+      nvCard("c5", "Por processo",
+        "No consolidado só valor: serviços e produtividade contam unidades diferentes nos dois lados",
+        nvTabela(["Processo", "Realizado", "% Meta", "Falta"], lp)) +
+      nvCard("c7", "% da meta por centro e mês", "A cor mostra onde o mês apertou",
+        nvTabela(["Mês"].concat(centros.map(nvEsc)), lm, '<tr class="total"><td>Total</td>' + tmz + "</tr>"));
+  }
+
+  // ================== ABA: EQUIPES (Obras e Contrato Sul) ==================
+  function nvPgEquipes() {
+    var D = nvBundle(nvLado), sul = nvLado === "sul";
+    var E = D.equipes.slice(0, 40);
+    var tv = 0, tm = 0, tq = 0, tpd = 0, ttr = 0, tes = 0;
+    E.forEach(function (e) { tv += e.v; tm += e.m; tq += e.q; tpd += e.pd; ttr += e.trab; tes += e.esc; });
+    var stats = '<div class="nv-stats">' +
+      nvStat("Equipes", nvInt(E.length), D.equipes.length > 40 ? "as 40 maiores por valor" : "no filtro atual") +
+      nvStat("Realizado", nvMi(tv), "de uma meta de <b>" + nvMi(tm) + "</b>") +
+      nvStat("Atingimento", nvPct(div(tv, tm)), "das equipes listadas", nvCor(div(tv, tm))) +
+      nvStat("Comparecimento", nvPct(div(ttr, tes)), nvInt(tes - ttr) + " faltas em " + nvInt(tes) + " turnos", nvCor(div(ttr, tes))) + "</div>";
+
+    var ordem = nvSegV("nvEqOrd", "% Meta");
+    var lista = E.slice().sort(function (a, b) {
+      if (ordem === "% Meta") return (div(b.v, b.m) || 0) - (div(a.v, a.m) || 0);
+      if (ordem === "Produtividade") return (div(b.q, b.pd) || 0) - (div(a.q, a.pd) || 0);
+      return b.v - a.v;
+    });
+    var l = lista.map(function (e) {
+      return "<tr><td>" + nvEsc(e.nome) + '<div class="nv-sub">' + nvEsc(e.cen) + " · " + nvEsc(e.sup) + "</div></td>" +
+        "<td>" + nvCp(e.v) + "</td>" + nvBarCel(div(e.v, e.m)) +
+        (sul ? "<td>" + nvInt(e.esc - e.trab) + "</td>"
+          : "<td>" + nvInt(e.q) + "</td><td>" + nvN2(div(e.q, e.pd)) + "</td>") +
+        nvPillCel(div(e.trab, e.esc)) + "</tr>";
+    });
+
+    var EM = D.equipesMes, nomes = E.slice(0, 6).map(function (e) { return e.nome; });
+    var lm = nomes.map(function (nm) {
+      return "<tr><td>" + nvEsc(nm) + "</td>" + D.L.map(function (r) {
+        var v = EM[nm] && EM[nm][r.k], p = v ? div(v[0], v[1]) : null;
+        return p == null ? '<td class="nvheat">—</td>' :
+          '<td class="nvheat" style="background:' + nvFundo(p) + ";color:" + nvCor(p) + '">' + nvPct(p, 0) + "</td>";
+      }).join("") + "</tr>";
+    });
+
+    return '<div class="panel c12">' + stats + "</div>" +
+      nvCard("c12", "Análise de equipes — " + NV_LADOS[nvLado].nome,
+        sul ? "Os dois lados somados — sem ticket nem produtividade, que contam unidades diferentes nos dois"
+          : "Valor, atingimento, quantidade e comparecimento",
+        nvTabela(sul ? ["Equipe", "Realizado", "% Meta", "Faltas", "Compar."]
+          : ["Equipe", "Realizado", "% Meta", "Qtd.", "Produt.", "Compar."], l),
+        sul ? { id: "nvEqOrd", opts: ["% Meta", "Valor"] } : { id: "nvEqOrd", opts: ["% Meta", "Produtividade", "Valor"] }) +
+      nvCard("c12", "Evolução mensal — 6 maiores equipes", "% da meta de cada equipe, mês a mês",
+        nvTabela(["Equipe"].concat(D.L.map(function (r) { return r.mes + "/" + r.k.slice(2, 4); })), lm));
+  }
+
+  // ================== ABA: ESCALA (recorte Contrato Sul) ==================
+  function nvPgEscala() {
+    var D = nvBundle(nvLado);
+    var Dd = D.turnoDia, dias = Object.keys(Dd).sort(function (a, b) { return a - b; });
+    var te = 0, tt = 0; dias.forEach(function (k) { te += Dd[k][0]; tt += Dd[k][1]; });
+    var mesNome = D.ultMes ? NV_MES[+D.ultMes.slice(5, 7) - 1] + "/" + D.ultMes.slice(2, 4) : "—";
+    if (!te) return '<div class="panel c12"><p class="nv-aviso">Sem turnos no filtro atual.</p></div>';
+
+    var stats = '<div class="nv-stats">' +
+      nvStat("Turnos escalados", nvInt(te), mesNome) +
+      nvStat("Turnos trabalhados", nvInt(tt), nvInt(te - tt) + " não comparecidos") +
+      nvStat("Comparecimento", nvPct(div(tt, te)), "do que foi escalado", nvCor(div(tt, te))) +
+      nvStat("Média por dia", nvN2(div(tt, dias.length)), "turnos trabalhados") + "</div>";
+
+    var W = 1010, H = 240, pL = 38, pR = 14, pT = 24, pB = 24, iw = W - pL - pR, ih = H - pT - pB, n = dias.length;
+    var sc = nvEscala(Math.max.apply(null, dias.map(function (k) { return Dd[k][0]; }).concat([1])) * 1.18, 4);
+    var gw = iw / n, bw = Math.min(22, gw * .62), o = "";
+    for (var g = 0; g * sc.step <= sc.max + 1e-6; g++) {
+      var v = g * sc.step, gy = pT + ih - (v / sc.max) * ih;
+      o += '<line x1="' + pL + '" x2="' + (W - pR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--grid)"/>' +
+        '<text x="' + (pL - 6) + '" y="' + (gy + 3.5) + '" font-size="10" fill="var(--ink-3)" text-anchor="end">' + Math.round(v) + "</text>";
+    }
+    dias.forEach(function (k, i) {
+      var cx = pL + gw * i + gw / 2, e = Dd[k][0], t = Dd[k][1];
+      var he = (e / sc.max) * ih, ht = (t / sc.max) * ih;
+      o += '<rect x="' + (cx - bw / 2) + '" y="' + (pT + ih - he) + '" width="' + bw + '" height="' + Math.max(he, 1) + '" rx="3" fill="' + NV_LADOS[nvLado].soft + '"/>' +
+        '<rect x="' + (cx - bw / 2) + '" y="' + (pT + ih - ht) + '" width="' + bw + '" height="' + Math.max(ht, 1) + '" rx="3" fill="' + NV_LADOS[nvLado].cor + '"/>' +
+        nvPz(cx, pT + ih - he - 9, e === t ? String(t) : (t + "/" + e)) +
+        '<text x="' + cx + '" y="' + (H - 7) + '" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">' + k + "</text>";
+    });
+    var graf = nvSvg(W, H, o) + nvLeg([{ nome: "Escalado", cor: NV_LADOS[nvLado].soft }, { nome: "Trabalhado", cor: NV_LADOS[nvLado].cor }]);
+
+    var C = D.turnoCentro, ordC = Object.keys(C).sort(function (a, b) { return C[b][0] - C[a][0]; });
+    var lc = ordC.map(function (c) {
+      return "<tr><td>" + nvEsc(c) + "</td><td>" + nvInt(C[c][0]) + "</td><td>" + nvInt(C[c][1]) + "</td>" +
+        "<td>" + nvInt(C[c][0] - C[c][1]) + "</td>" + nvBarCel(div(C[c][1], C[c][0])) + "</tr>";
+    });
+    var ec = 0, tc = 0; ordC.forEach(function (c) { ec += C[c][0]; tc += C[c][1]; });
+
+    var FM = D.faltaMes;
+    var tend = nvChartLinhas(D.L, [{ f: function (r) { var f = FM[r.k]; return f && f[1] ? (f[1] - f[0]) / f[1] : null; },
+      cor: NV_LADOS[nvLado].cor, w: 2.2, pontos: true }], .65, 1.02, [.7, .8, .9, 1]) +
+      nvLeg([{ nome: "Comparecimento — " + NV_LADOS[nvLado].nome, cor: NV_LADOS[nvLado].cor }]);
+
+    return '<div class="panel c12">' + stats + "</div>" +
+      nvCard("c8", "Turnos escalados e trabalhados por dia",
+        "Barra clara = escalado · cheia = trabalhado · pílula = trabalhado/escalado · " + mesNome, graf) +
+      nvCard("c4", "Por centro de serviço", "Todo o período do filtro",
+        nvTabela(["Centro", "Escalado", "Trab.", "Faltas", "Compar."], lc,
+          '<tr class="total"><td>Total</td><td>' + nvInt(ec) + "</td><td>" + nvInt(tc) + "</td><td>" +
+          nvInt(ec - tc) + "</td>" + nvBarCel(div(tc, ec)) + "</tr>")) +
+      nvCard("c12", "Comparecimento mês a mês", "O dia a dia acima é só o último mês do filtro", tend);
+  }
+
+  // ================== ABA: FALTAS & IMPACTO (recorte Contrato Sul) ==================
+  var nvMotSel = {};
+  function nvPgFaltas() {
+    var D = nvBundle("sul"), imp = D.imp, M = D.mot, sel = nvMotSel;
+    var selKeys = Object.keys(sel).filter(function (k) { return sel[k] && M[k]; });
+    var dProj = 0, dPerda = 0, dReal = 0;
+    selKeys.forEach(function (k) { dPerda += M[k][1]; dProj += M[k][2]; dReal += M[k][3]; });
+
+    var cen = [
+      { proj: imp[0], perda: D.perdaTot, real: imp[1] },
+      selKeys.length ? { proj: imp[0] - dProj, perda: D.perdaTot - dPerda, real: imp[1] - dReal } : null,
+      { proj: imp[0] - imp[2], perda: 0, real: imp[1] - imp[3] }
+    ];
+    cen.forEach(function (c) {
+      if (!c) return;
+      c.resid = c.real - (c.proj - c.perda);
+      c.ating = c.proj > 0 ? c.real / c.proj : null;
+      c.gap = c.real - c.proj;
+    });
+    var cc = cen[1] || cen[0];
+    var pcc = function (v) { return cc.proj > 0 ? nvPct(v / cc.proj) : "—"; };
+
+    var stats = '<div class="nv-stats">' +
+      nvStat("Faltas", nvInt(D.nFal), "em " + nvInt(D.escTot) + " turnos escalados") +
+      nvStat("Taxa de falta", nvPct(div(D.nFal, D.escTot)), "quanto da escala não compareceu", nvCor(1 - div(D.nFal, D.escTot))) +
+      nvStat("Perda por faltas", nvMi(D.perdaTot), nvPct(div(D.perdaTot, imp[0])) + " do projetado", "var(--crit)") +
+      nvStat("Peso no buraco", nvPct(div(D.perdaTot, imp[0] - imp[1]), 0),
+        "do que falta para a meta (" + nvMi(imp[0] - imp[1]) + ")") + "</div>";
+
+    var ponte = '<div class="nv-ip">' +
+      '<div class="nv-ip-card"><div class="nv-ip-rot">Projetado' + (selKeys.length ? " ajustado" : "") + ' (meta)</div>' +
+      '<div class="nv-ip-val">' + nvCp(cc.proj) + '</div><div class="nv-ip-sub">' + fmtFullBRL(cc.proj) + "</div></div>" +
+      '<div class="nv-ip-op">−</div>' +
+      '<div class="nv-ip-card perda"><div class="nv-ip-rot">Perda por faltas</div>' +
+      '<div class="nv-ip-val">' + nvCp(cc.perda) + '</div><div class="nv-ip-sub">' + pcc(cc.perda) + " do projetado</div></div>" +
+      '<div class="nv-ip-op">' + (cc.resid < 0 ? "−" : "+") + "</div>" +
+      '<div class="nv-ip-card"><div class="nv-ip-rot">Dias trabalhados ' + (cc.resid < 0 ? "abaixo" : "acima") + ' da meta</div>' +
+      '<div class="nv-ip-val">' + nvCp(Math.abs(cc.resid)) + '</div><div class="nv-ip-sub">' + pcc(Math.abs(cc.resid)) + " do projetado</div></div>" +
+      '<div class="nv-ip-op">=</div>' +
+      '<div class="nv-ip-card fim"><div class="nv-ip-rot">Realizado</div>' +
+      '<div class="nv-ip-val">' + nvCp(cc.real) + '</div><div class="nv-ip-sub">' + pcc(cc.real) + " do projetado</div></div>" +
+      "</div>";
+
+    var ordM = Object.keys(M).sort(function (a, b) { return M[b][1] - M[a][1]; });
+    var caixa = '<div class="nv-motbox"><div class="nv-motbox-h">Descontar motivos da meta' +
+      (selKeys.length ? " — " + selKeys.length + " marcado" + (selKeys.length > 1 ? "s" : "") : "") + "</div>" +
+      '<div class="nv-motlist">' + ordM.slice(0, 12).map(function (k) {
+        return '<label><input type="checkbox" data-nvmot="' + nvEsc(k) + '"' + (sel[k] ? " checked" : "") +
+          '><span class="nm" title="' + nvEsc(k) + '">' + nvEsc(k) + '</span><span class="v">' + nvCp(M[k][1], true) + "</span></label>";
+      }).join("") + "</div>" +
+      (selKeys.length ? '<button class="nv-limpar" type="button" data-nvlimpar="1">limpar seleção</button>' : "") + "</div>";
+
+    var linhaC = function (rot, fn, kl) {
+      return "<tr" + (kl ? ' class="' + kl + '"' : "") + "><td>" + rot + "</td>" + cen.map(function (c) {
+        return c ? "<td>" + fn(c) + "</td>" : '<td class="nv-sub">marque motivos</td>';
+      }).join("") + "</tr>";
+    };
+    var sinal = function (v) { return (v < 0 ? "−" : "+") + " " + nvCp(Math.abs(v)); };
+    var cenario = nvTabela(["", "Hoje", "Descontando os motivos marcados" + (selKeys.length ? " (" + selKeys.length + ")" : ""), "Sem nenhuma falta"], [
+      linhaC("Projetado (meta)", function (c) { return nvCp(c.proj); }),
+      linhaC("− Perda por faltas", function (c) { return nvCp(c.perda); }),
+      linhaC("± Dias trabalhados acima/abaixo da meta", function (c) { return sinal(c.resid); }),
+      linhaC("= Realizado", function (c) { return nvCp(c.real); }),
+      linhaC("Falta (−) ou sobra (+) para a meta", function (c) { return sinal(c.gap); }),
+      linhaC("Atingimento", function (c) { return "<b>" + nvPct(c.ating) + "</b>"; }, "total")
+    ]);
+
+    var maxP = ordM.length ? M[ordM[0]][1] : 0;
+    var top = ordM.slice(0, 10), resto = ordM.slice(10);
+    var itens = top.map(function (k, i) { return { nome: k, perda: M[k][1], n: M[k][0], cor: "var(--m" + (i < 6 ? i + 1 : 0) + ")" }; });
+    if (resto.length) {
+      var rr = { nome: "Outros " + resto.length + " motivos", perda: 0, n: 0, cor: "var(--m0)" };
+      resto.forEach(function (k) { rr.perda += M[k][1]; rr.n += M[k][0]; });
+      itens.push(rr);
+    }
+    var rank = '<div class="nv-rank">' + itens.map(function (d) {
+      return '<div class="nv-rank-n" title="' + nvEsc(d.nome) + '"><i style="background:' + d.cor + '"></i><span>' + nvEsc(d.nome) + "</span></div>" +
+        '<div class="nv-trilho"><div style="width:' + (maxP ? (d.perda / maxP * 100).toFixed(1) : 0) + "%;background:" + d.cor + '"></div></div>' +
+        '<div class="nv-rank-v"><b>' + nvCp(d.perda) + "</b> · " + nvPct(div(d.perda, imp[0])) + " da meta · " + nvInt(d.n) + " faltas</div>";
+    }).join("") + "</div>";
+
+    var graf4 = nvChartProj(D.L.map(function (r) {
+      var f = D.faltaMes[r.k];
+      return { mes: r.mes + "/" + r.k.slice(2, 4), proj: r.meta, real: r.valor, perda: f ? f[2] : 0 };
+    }));
+
+    var MM = D.motMes;
+    var cats = Object.keys(MM).map(function (k) {
+      var s = 0; Object.keys(MM[k]).forEach(function (m) { s += MM[k][m]; });
+      return { nome: k, s: s };
+    }).sort(function (a, b) { return b.s - a.s; }).slice(0, 7)
+      .map(function (c, i) { return { nome: c.nome, cor: "var(--m" + ((i % 6) + 1) + ")" }; });
+    var graf5 = nvChartPilha(D.L.map(function (r) { return r.k; }), cats, MM);
+
+    var lmes = D.L.map(function (r) {
+      var f = D.faltaMes[r.k]; if (!f) return "";
+      return "<tr><td>" + r.mes + "/" + r.k.slice(2, 4) + "</td><td>" + nvInt(f[1]) + "</td><td>" + nvInt(f[0]) + "</td>" +
+        '<td><span class="nvpill ' + nvCls(1 - div(f[0], f[1])) + '">' + nvPct(div(f[0], f[1])) + "</span></td>" +
+        "<td>" + nvCp(f[2]) + "</td></tr>";
+    });
+    var tpd = 0; Object.keys(D.faltaMes).forEach(function (k) { tpd += D.faltaMes[k][2]; });
+    var tmes = '<tr class="total"><td>Total</td><td>' + nvInt(D.escTot) + "</td><td>" + nvInt(D.nFal) + "</td>" +
+      '<td><span class="nvpill ' + nvCls(1 - div(D.nFal, D.escTot)) + '">' + nvPct(div(D.nFal, D.escTot)) + "</span></td><td>" + nvCp(tpd) + "</td></tr>";
+
+    var FS = D.faltaSup;
+    var lsup = Object.keys(FS).sort(function (a, b) { return FS[b][2] - FS[a][2]; }).slice(0, 15).map(function (k) {
+      var v = FS[k];
+      return "<tr><td>" + nvEsc(k) + "</td><td>" + nvInt(v[1]) + "</td><td>" + nvInt(v[0]) + "</td>" +
+        '<td><span class="nvpill ' + nvCls(1 - div(v[0], v[1])) + '">' + nvPct(div(v[0], v[1])) + "</span></td>" +
+        "<td>" + nvCp(v[2]) + "</td></tr>";
+    });
+
+    return '<div class="panel c12">' + stats + "</div>" +
+      nvCard("c12", "Impacto financeiro das faltas — contrato inteiro",
+        "Do projetado ao realizado: o que as faltas levaram e o que os dias trabalhados compensaram",
+        caixa + ponte) +
+      nvCard("c7", "Hoje · descontando os motivos marcados · sem nenhuma falta",
+        "Marque motivos acima para preencher a coluna do meio", cenario) +
+      nvCard("c5", "Quanto cada motivo custou da meta", "Os 10 maiores; o resto soma numa linha", rank) +
+      nvCard("c12", "Projetado × realizado, mês a mês",
+        "A faixa vermelha dentro do projetado é a parte que as faltas levaram", graf4) +
+      nvCard("c12", "Perda por motivo, mês a mês", "Onde o dinheiro escapou e quando", graf5) +
+      nvCard("c6", "Faltas mês a mês", "Contagem, taxa e o que custaram",
+        nvTabela(["Mês", "Escalado", "Faltas", "Taxa", "Perda"], lmes, tmes)) +
+      nvCard("c6", "Por supervisor", "Quem tem mais escala perdida",
+        nvTabela(["Supervisor", "Escalado", "Faltas", "Taxa", "Perda"], lsup));
+  }
+
+  // ================== navegação ==================
+  // Cada aba nova aponta pras páginas que já existiam, por recorte. Onde não
+  // existia página (o contrato somado; equipes de Obras), "nv" é a página
+  // montada aqui em cima.
+  var NV_ABAS = [
+    { id: "contrato", nome: "Contrato Sul", novo: true, travaLado: "sul",
+      subs: { ec: [["Contrato Sul", "nv"]], ob: [["Contrato Sul", "nv"]], sul: [["Contrato Sul", "nv"]] } },
+    { id: "operacao", nome: "Operação",
+      subs: { ec: [["Visão geral", "geral"], ["Detalhe por centro", "fat"]], ob: [["Visão geral", "geralOb"]], sul: [["Visão geral", "nv"]] } },
+    { id: "centro", nome: "Por Centro",
+      subs: { ec: [["Por centro", "consolidadoCentro"]], ob: [["Por centro", "consolidadoCentro"]], sul: [["Por centro", "consolidadoCentro"]] } },
+    { id: "equipes", nome: "Equipes",
+      subs: { ec: [["Análise", "analiseEquipes"], ["Produtividade mensal", "produtividadeMensal"],
+        ["Comparativo mensal", "comparativoMensal"], ["Ranking", "rankingProdutividade"], ["Processo-Supervisor", "procSup"]],
+        ob: [["Análise", "nv"]], sul: [["Análise", "nv"]] } },
+    { id: "escala", nome: "Escala",
+      subs: { ec: [["Requerido x Escalado", "escaladoFat"]], ob: [["Requerido x Escalado", "escaladoOb"]], sul: [["Requerido x Escalado", "nv"]] } },
+    { id: "faltas", nome: "Faltas &amp; Impacto",
+      subs: { ec: [["Faltas", "faltasFat"], ["Impacto", "impactoFat"]],
+        ob: [["Faltas", "faltasOb"], ["Impacto", "impactoOb"]], sul: [["Faltas e impacto", "nv"]] } }
+  ];
+  var nvAba = "contrato", nvSub = 0, nvEditorAnterior = "ec";
+
+  function nvSubsAtuais() {
+    var a = NV_ABAS.filter(function (x) { return x.id === nvAba; })[0];
+    return (a && a.subs[a.travaLado || nvLado]) || [];
+  }
+  function nvPaginaAtual() {
+    var s = nvSubsAtuais();
+    return (s[nvSub] || s[0] || ["", "geral"])[1];
+  }
+  // qual grupo a barra lateral está editando
+  function nvGrupo() {
+    var a = NV_ABAS.filter(function (x) { return x.id === nvAba; })[0];
+    var l = (a && a.travaLado) || nvLado;
+    return l === "ob" ? "ob" : "ec";
+  }
+
+  function nvPintarAbas() {
+    var bar = document.getElementById("abasNv");
+    bar.innerHTML = NV_ABAS.map(function (a) {
+      return '<button type="button" class="tab-nv' + (a.id === nvAba ? " active" : "") + '" data-nv="' + a.id + '">' +
+        a.nome + (a.novo ? '<span class="nv-novo">NOVO</span>' : "") + "</button>";
+    }).join("");
+    var segl = document.getElementById("segLado");
+    var aba = NV_ABAS.filter(function (x) { return x.id === nvAba; })[0];
+    var travado = !!(aba && aba.travaLado);
+    var mostra = travado ? aba.travaLado : nvLado;
+    segl.innerHTML = ["ec", "ob", "sul"].map(function (k) {
+      return '<button type="button" data-lado="' + k + '"' + (k === mostra ? ' class="on"' : "") + ">" + NV_LADOS[k].curto + "</button>";
+    }).join("");
+    segl.className = "seg-lado" + (travado ? " travado" : "");
+
+    var subs = nvSubsAtuais();
+    var sb = document.getElementById("subTabs");
+    if (subs.length < 2) { sb.innerHTML = ""; sb.style.display = "none"; }
+    else {
+      sb.style.display = "flex";
+      sb.innerHTML = subs.map(function (s, i) {
+        return '<button type="button" class="subtab' + (i === nvSub ? " active" : "") + '" data-sub="' + i + '">' + s[0] + "</button>";
+      }).join("");
+    }
+  }
+
+  function nvIr(semZerarSub) {
+    if (!semZerarSub) nvSub = 0;
+    nvCopiarFiltros(nvEditorAnterior, nvEditor(nvLadoDaTela()));
+    nvEditorAnterior = nvEditor(nvLadoDaTela());
+    var subs = nvSubsAtuais();
+    if (nvSub >= subs.length) nvSub = 0;
+    var page = nvPaginaAtual();
+    PAGE_GROUP.nv = nvGrupo();
+    PAGE_GROUP.consolidadoCentro = nvGrupo();
+    nvPintarAbas();
+    var btn = document.querySelector('.tab-btn[data-page="' + page + '"]');
+    if (btn) btn.click();
+  }
+
+  document.getElementById("segLado").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-lado]"); if (!b) return;
+    nvLado = b.dataset.lado; nvIr();
+  });
+  document.getElementById("abasNv").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-nv]"); if (!b) return;
+    nvAba = b.dataset.nv; nvIr();
+  });
+  document.getElementById("subTabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sub]"); if (!b) return;
+    nvSub = +b.dataset.sub; nvIr(true);
+  });
+  document.addEventListener("click", function (e) {
+    var sg = e.target.closest(".seg-nv[data-segnv] button");
+    if (sg) { nvSeg[sg.parentNode.dataset.segnv] = sg.dataset.v; return nvRender(); }
+    if (e.target.closest("[data-nvlimpar]")) { nvMotSel = {}; return nvRender(); }
+  });
+  document.addEventListener("change", function (e) {
+    var cb = e.target.closest("input[data-nvmot]");
+    if (cb) { nvMotSel[cb.getAttribute("data-nvmot")] = cb.checked; nvRender(); }
+  });
+
+  function nvRender() {
+    // a restauração de sessão pode mandar renderizar antes do resto do arquivo
+    // ter rodado (os ícones dos botões de copiar ainda nem existem); nesse
+    // momento não há o que desenhar -- nvIr() no fim chama de novo
+    if (!NV_ABAS || typeof COPY_ICON === "undefined") return;
+    nvSeq = 0;
+    var alvo = document.getElementById("gridNv");
+    var html;
+    if (nvAba === "contrato") html = nvPgContrato();
+    else if (nvAba === "operacao") html = nvPgOperacao();
+    else if (nvAba === "equipes") html = nvPgEquipes();
+    else if (nvAba === "escala") html = nvPgEscala();
+    else if (nvAba === "faltas") html = nvPgFaltas();
+    else html = '<div class="panel c12"><p class="nv-aviso">Nada aqui.</p></div>';
+    alvo.innerHTML = html;
+    nvPillify(alvo);
+    initCopyButtons();
+  }
+
+
   initCopyButtons();
-  renderAll();
+  nvIr();
   var resizeTimer;
   window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderAll, 120); });
 
