@@ -5072,7 +5072,7 @@ function iniciarPainel(DATA) {
         '<span><i class="nv-sw" style="background:var(--ob)"></i>Obras <b>' + nvPct(b, 0) + "</b></span></div></div>";
     }
     var comp = barra("Peso na meta", div(T.em, T.tm), div(T.om, T.tm)) +
-      barra("Peso no buraco", gEc, gOb) +
+      barra("Peso no que falta", gEc, gOb) +
       '<p class="nv-punch">Obras responde por <b>' + nvPct(div(T.om, T.tm), 0) + "</b> da meta, mas por <b>" +
       nvPct(gOb, 0) + "</b> do que falta.<br>É o lado que decide a saúde do contrato.</p>";
 
@@ -5306,7 +5306,7 @@ function iniciarPainel(DATA) {
       nvStat("Faltas", nvInt(D.nFal), "em " + nvInt(D.escTot) + " turnos escalados") +
       nvStat("Taxa de falta", nvPct(div(D.nFal, D.escTot)), "quanto da escala não compareceu", nvCor(1 - div(D.nFal, D.escTot))) +
       nvStat("Perda por faltas", nvMi(D.perdaTot), nvPct(div(D.perdaTot, imp[0])) + " do projetado", "var(--crit)") +
-      nvStat("Peso no buraco", nvPct(div(D.perdaTot, imp[0] - imp[1]), 0),
+      nvStat("Peso no que falta", nvPct(div(D.perdaTot, imp[0] - imp[1]), 0),
         "do que falta para a meta (" + nvMi(imp[0] - imp[1]) + ")") + "</div>";
 
     var ponte = '<div class="nv-ip">' +
