@@ -4167,20 +4167,31 @@ function iniciarPainel(DATA) {
     drawEscaladoChart(chartId, items, seriesColor(group));
 
     var centros = visibleValues(group, "centro");
-    var days = Array.from(new Set(idxs.map(function (i) { return parseInt(rows.date[i].slice(8, 10), 10); }))).sort(function (a, b) { return a - b; });
+    var umMes = new Set(idxs.map(function (i) { return rows.date[i].slice(0, 7); })).size <= 1;
+    var chaveDe = function (i) { return umMes ? String(parseInt(rows.date[i].slice(8, 10), 10)) : rows.date[i]; };
+    var chaves = Array.from(new Set(idxs.map(chaveDe)));
+    chaves.sort(umMes ? function (a, b) { return a - b; } : undefined);
     function buildRows(kind) {
+      var porCentro = {};
+      idxs.forEach(function (i) {
+        var conta = kind === "escalado"
+          ? (isTrabalhou(group, rows, i) || isFaltou(group, rows, i))
+          : isTrabalhou(group, rows, i);
+        if (!conta) return;
+        var m = porCentro[rows.centro[i]] || (porCentro[rows.centro[i]] = {});
+        var k = chaveDe(i);
+        m[k] = (m[k] || 0) + 1;
+      });
       return centros.map(function (c) {
-        var cells = days.map(function (day) {
-          var sub = idxs.filter(function (i) { return rows.centro[i] === c.idx && parseInt(rows.date[i].slice(8, 10), 10) === day; });
-          return kind === "escalado"
-            ? sub.filter(function (i) { return isTrabalhou(group, rows, i) || isFaltou(group, rows, i); }).length
-            : sub.filter(function (i) { return isTrabalhou(group, rows, i); }).length;
-        });
+        var m = porCentro[c.idx] || {};
+        var cells = chaves.map(function (k) { return m[k] || 0; });
         var total = cells.reduce(function (s, v) { return s + v; }, 0);
         return { label: c.name, cells: cells.concat([total]) };
       });
     }
-    var colHeaders = days.map(String).concat(["Total"]);
+    var colHeaders = chaves.map(function (k) {
+      return umMes ? k : parseInt(k.slice(8, 10), 10) + "/" + MONTH_SHORT[parseInt(k.slice(5, 7), 10) - 1];
+    }).concat(["Total"]);
     renderTable(tblEscId, colHeaders, "Centro", buildRows("escalado"), intCell);
     renderTable(tblTrabId, colHeaders, "Centro", buildRows("trabalhado"), intCell);
   }
