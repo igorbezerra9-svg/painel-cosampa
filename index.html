@@ -4236,6 +4236,10 @@ function iniciarPainel(DATA) {
         return den ? qtd / den : null;
       });
       return { label: eq.name, cells: cells };
+    }).filter(function (eq) {
+      // esconde equipe sem produção em nenhum mês (tudo "—"), igual ao Comparativo Mensal:
+      // são equipes cadastradas que só têm dia sem produção ou sem meta no período
+      return eq.cells.some(function (c) { return c != null && c !== 0; });
     });
     var totalCells = months.map(function (mk) {
       var sub = idxs.filter(function (i) { return rows.date[i].slice(0, 7) === mk; });
